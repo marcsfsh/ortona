@@ -393,7 +393,7 @@ function GEO(opt) {
       const bootLen = P.boots && P.boots.length ? Math.max.apply(null, P.boots.map(b => { const e = ext(b); return e.x1 - e.x0; })) : null;
       const helmE = P.helmet && P.helmet.length ? ext(P.helmet) : null;
       rows.push({
-        v, side, nat: SOLDIER_VARIANTS[v].nat || side,
+        v, side, nat: SOLDIER_VARIANTS[v].nat || side, cap: SOLDIER_VARIANTS[v].pilotka ? 1 : 0,
         stature: J.crown[2] - sole, above: J.crown[2],
         headH: sk.z1 - sk.z0, headW: sk.y1 - sk.y0,
         plate: P.plate && P.plate.length ? ext(P.plate).y1 - ext(P.plate).y0 : null,
@@ -411,8 +411,8 @@ function GEO(opt) {
                     upperL: len3(sub(Q.elbowL, Q.shoulderL)), foreL: len3(sub(Q.handL, Q.elbowL)) });
       });
     });
-    ['kar', 'mp40', 'mg34', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar', 'carbine', 'a4', 'm2hb'].forEach(type => {
-      const f = weaponModel(KIT[['kar', 'mp40', 'mg34', 'mg42'].includes(type) ? 'heer' : 'usa'], type);
+    ['kar', 'mp40', 'mg34', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar', 'carbine', 'a4', 'm2hb', 'mosin', 'ppsh', 'dp'].forEach(type => {
+      const f = weaponModel(KIT[['kar', 'mp40', 'mg34', 'mg42'].includes(type) ? 'heer' : ['mosin', 'ppsh', 'dp'].includes(type) ? 'sov' : 'usa'], type);
       if (!f || !f.length) return;
       const e = ext(f);
       weapons.push({ type, len: e.x1 - e.x0 });
@@ -576,9 +576,13 @@ function GEO(opt) {
     const d = sub(B.front, B.back), l = len3(d) || 1;
     return { at: B.back, dir: d.map(x => x / l) };
   }
-  function boreEnd(r, bo) {
+  /* a rifle carried with its bayonet fixed (`bayonet`, how far the blade reaches past the
+     muzzle) ends at the bayonet's point and fires from the muzzle */
+  function boreEnd(r, bo, v) {
     let best = -1e9;
     (r.parts.weapon || []).forEach(f => f.v.forEach(p => { const t = dot(sub(p, bo.at), bo.dir); if (t > best) best = t; }));
+    const W = v && SOLDIER_VARIANTS[v] ? WEAP[SOLDIER_VARIANTS[v].weapon] : null;
+    if (W && W.bayonet) best -= W.bayonet;
     return [bo.at[0] + bo.dir[0] * best, bo.at[1] + bo.dir[1] * best, bo.at[2] + bo.dir[2] * best];
   }
 
@@ -613,7 +617,7 @@ function GEO(opt) {
         if (!r.ok || !r.hasWeapon) return;
         const bo = bore(r);
         if (!bo || !r.runtimeMuzzle) { rows.push({ v, pose: label(P), noparts: !bo, noRuntime: !r.runtimeMuzzle }); return; }
-        const end = boreEnd(r, bo);
+        const end = boreEnd(r, bo, v);
         rows.push({ v, pose: label(P), d: len3(sub(r.runtimeMuzzle, end)), got: r.runtimeMuzzle.map(r2), end: end.map(r2) });
       });
     });
@@ -771,11 +775,13 @@ function PIX(opt) {
      properties of the ground as much as of the figure, so a harness change that moved
      the stage moved four verdicts with it -- two pose pairs by one pixel, and the FJ from
      darker than the ground to brighter, because this map has pale sand in one place and
-     dark dirt in another. The spot is the open ground east of the town, where the card
-     was calibrated. If it ever has to move, every threshold here is re-read on the new
-     ground first and the move is written down. */
+     dark dirt in another. The spot was the open ground east of Ortona, where the card was
+     calibrated, until Ortona was taken out of the game. It is the open, levelled ground of
+     the American base area on Saint-Lô now, to the left of the centre headquarters, which
+     nothing stands on and nothing is dug into. If it ever has to move, every threshold
+     here is re-read on the new ground first and the move is written down. */
   const O = window.__o;
-  const spot = { x: 2180, y: 1140, dev: 0, clear: 120, open: 120, z: window.groundZ(2180, 1140) };
+  const spot = { x: 1700, y: 2470, dev: 0, clear: 120, open: 120, z: window.groundZ(1700, 2470) };
   const W = cv.width, H = cv.height;
   const realCast = window.castUnit;
   function grab() { render(); const b = new Uint8Array(W * H * 4); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, b); return b; }
@@ -948,7 +954,7 @@ function show(c, base) {
       const bc = k => (BP ? (b[k] === undefined ? null : b[k]) : undefined);
       const cells = [cell(r.stature, 20.35, .04, bc('stature')), cell(r.headH, 2.65, .08, bc('headH')), cell(r.headW, 1.82, .08, bc('headW')),
                      cell(r.plate, 5.27, .08, bc('plate')), cell(r.hips, 4.4, .08, bc('hips')), cell(r.inseam, 9.56, .06, bc('inseam')),
-                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.nat === 'usa' ? 2.88 : 3.06, .10, bc('helmet'))];
+                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.cap ? 2.2 : r.nat === 'usa' ? 2.88 : 3.06, .10, bc('helmet'))];
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(r.v, 13) + cells.map(q => q.s).join('') + f2(r.apart));
     }
@@ -959,7 +965,9 @@ function show(c, base) {
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(a.v, 13) + pad(a.pose, 8) + cells.map(q => q.s).join(''));
     }
-    const PUB = { kar: 13.06, mp40: 7.41, mg34: 14.34, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28, carbine: 10.64, a4: 11.34, m2hb: 19.46 };
+    /* the Mosin with its bayonet fixed, which is how it is built and carried: 1,660 mm */
+    const PUB = { kar: 13.06, mp40: 7.41, mg34: 14.34, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28, carbine: 10.64, a4: 11.34, m2hb: 19.46,
+                  mosin: 19.53, ppsh: 9.92, dp: 14.96 };
     console.log('\n  weapons, raw in their own frame, against the published length at 5% (the MP40 folded)\n');
     console.log('  ' + P.weapons.map(w => { const q = cell(w.len, PUB[w.type], .05); of++; if (q.bad) bad++; return pad(w.type, 9) + q.s; }).join('\n  '));
     foot('proportion', bad, of);
@@ -1208,6 +1216,11 @@ function show(c, base) {
                                        pad(r.rgb.map(v => Math.round(v)).join(','), 14) + pad(f3(r.top), 7) + pad(f3(r.bot), 7) + (r.px ? (r.shadowPx / r.px).toFixed(2) : '-')));
       let bad = 0, of = 0;
       const phone = X.mob, needMean = phone ? .04 : .05;
+      /* the darkest a figure may read against its ground. It was -0.45 on Ortona's open ground
+         east of the town; on Saint-Lô's base area, under its grey sky, the same men read darker
+         against ground about as pale (the grenadier -0.46 at 600 and -0.45 at 900 where he read
+         -0.41, the American -0.35 where he read -0.26), so the floor moved with the stage */
+      const FLOOR = -.50;
       const dists = [...new Set(X.read.map(r => r.dist))];
       dists.forEach(dist => {
         const say = (ok, s) => { of++; if (!ok) { bad++; console.log(`  ! ${dist}: ${s}`); } };
@@ -1219,7 +1232,7 @@ function show(c, base) {
         say(!!hr, 'no standing row for the grenadier');
         /* The American's own: a contrast to the ground in the band every figure is held to,
            which is what keeps him from reading as a hole in the ground or a ghost on it. */
-        if (am && !phone) say(am.contrast >= -.45 && am.contrast <= -.10, `the American's contrast to the ground is ${f3(am.contrast)}, wants -0.45 to -0.10`);
+        if (am && !phone) say(am.contrast >= FLOOR && am.contrast <= -.10, `the American's contrast to the ground is ${f3(am.contrast)}, wants ${FLOOR.toFixed(2)} to -0.10`);
         /* The grenadier is the man the American meets on the beach, so it is the American he
            has to be told apart from: field grey and black leather against a pale jacket and
            pale leggings, which is a mean apart and a colour apart, and a contrast to the
@@ -1229,7 +1242,7 @@ function show(c, base) {
         if (am && hr) {
           say(Math.abs(hr.lumFig - am.lumFig) >= needMean, `the grenadier and the American are ${f3(Math.abs(hr.lumFig - am.lumFig))} apart in mean luminance, wants ${needMean}`);
           if (!phone) {
-            say(hr.contrast >= -.45 && hr.contrast <= -.10, `the grenadier's contrast to the ground is ${f3(hr.contrast)}, wants -0.45 to -0.10`);
+            say(hr.contrast >= FLOOR && hr.contrast <= -.10, `the grenadier's contrast to the ground is ${f3(hr.contrast)}, wants ${FLOOR.toFixed(2)} to -0.10`);
             const dh = [0, 1, 2].map(i => Math.abs(am.rgb[i] - hr.rgb[i]));
             say(Math.max.apply(null, dh) >= 12, `the grenadier and the American differ by ${dh.map(Math.round).join(',')} levels, wants 12 in one channel`);
           }

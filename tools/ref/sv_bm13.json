@@ -1,0 +1,7 @@
+{ "image": "shots/ref/sv_bm13.png", "key": "sv_bm13", "prop": "bmShow", "args": [0],
+  "note": "a four-view of the BM-13N on the Studebaker with its scale bar, 59.7 px/m, taken at 60",
+  "views": {
+    "side":  { "nose": "left", "crop": [160, 40, 440, 195], "ppm": 60, "at": [0, 0, 0], "px": [355, 228], "k": 3 },
+    "plan":  { "nose": "left", "crop": [165, 300, 420, 148], "ppm": 60, "at": [0, 0, 0], "px": [355, 377.8], "k": 3 },
+    "front": { "crop": [8, 48, 148, 186], "ppm": 60, "at": [0, 0, 0], "px": [81.4, 229], "k": 5 },
+    "rear":  { "crop": [8, 278, 148, 184], "ppm": 60, "at": [0, 0, 0], "px": [79, 459], "k": 5 } } }

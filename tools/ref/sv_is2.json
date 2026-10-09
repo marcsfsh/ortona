@@ -1,0 +1,7 @@
+{ "image": "shots/ref/sv_is2.png", "key": "sv_is2", "prop": "isShow", "args": [],
+  "note": "a four-view of the early tank with the stepped nose; no scale on the sheet, the hull taken as the published 6.77 m",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 500, 152], "ppm": 50.2, "at": [0, 0, 0], "px": [317.5, 145], "k": 3 },
+    "plan":  { "nose": "left", "crop": [0, 170, 500, 178], "ppm": 50.2, "at": [0, 0, 0], "px": [317.5, 258], "k": 3 },
+    "front": { "crop": [100, 355, 190, 150], "ppm": 50.2, "at": [0, 0, 0], "px": [195, 500.5], "k": 4 },
+    "rear":  { "crop": [300, 355, 190, 150], "ppm": 50.2, "at": [0, 0, 0], "px": [392, 500.5], "k": 4 } } }

@@ -1,0 +1,8 @@
+{ "image": "shots/ref/sv_t20.png", "key": "sv_t20", "prop": "tzShow", "args": [],
+  "note": "A 1:35 four-view of the T-20 Komsomolets, second series, late build, with two side views. Its scale bar and the published 3.45 m over the towing fittings agree at 61.5 px/m in every view. The seats on the sheet are read with a coloured four-view that shows how they sit: two rows of three back to back, the backrests along the centre line.",
+  "views": {
+    "side":  { "nose": "right", "crop": [155, 0, 222, 112], "ppm": 61.5, "at": [0, 0, 0], "px": [265.4, 108.3], "k": 4 },
+    "side_l": { "nose": "left", "crop": [156, 118, 222, 108], "ppm": 61.5, "at": [0, 0, 0], "px": [264.35, 222.5], "k": 4 },
+    "plan":  { "nose": "left", "crop": [155, 238, 220, 125], "ppm": 61.5, "at": [0, 0, 0], "px": [264.35, 299.6], "k": 4 },
+    "front": { "crop": [15, 122, 128, 108], "ppm": 61.5, "at": [0, 0, 0], "px": [78.95, 227.5], "k": 5 },
+    "rear":  { "crop": [388, 122, 128, 108], "ppm": 61.5, "at": [0, 0, 0], "px": [452.3, 226.7], "k": 5 } } }

@@ -5,26 +5,65 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. A third army, the Red Army, is
+being built the same way on the Allied side, and so far it has its headquarters, the Shtab, its
+builders, the Sapery, and its rifle squad, the Strelki, out of it, its first production building, the
+Kazarma, the Shturmoviki, the 82-PM-41, the Komsomolets T-20 and the ZiS-3 out of that, its
+second, the Avtopark, the BA-64B, the ZiS-2, the BS-3, the BM-13N Katyusha, the SU-76M and the ZSU-37 out of that, its third and last, the Tankovyy park, and the T-34/76 and the T-34-85 out of that, each with a squad riding on its deck, the SU-85, the SU-122 and the IS-2, and the heavy battery its Sapery dig, the B-4, which can be rebuilt as the Br-5 (see *The Red Army*). The Soviet units under consideration and
+their stats are listed in `docs/soviet-roster.csv`, and none of them is built until it is asked for
+by name. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
-Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
-**The Gothic Line**, the Foglia valley at the end of August 1944, is two ridges with
-fourteen hundred units of no man's land between them, laid out for four players and
-mirrored about the midline to the unit. **Omaha Beach**, the Dog and Easy sectors on the
-morning of the 6th of June 1944, is the first of a second theatre and the first map that
-is not a field with a headquarters at either end: a corridor 1500 across and 4000 deep,
-the Americans starting on the sand at the bottom among the craft that brought them in and
-the Germans in a manor in the bocage at the top, with the seawall and the Atlantic Wall
-across the middle and two draws up the bluff behind it that are the only way armour gets
-off the beach. **Saint-Lô**, the 18th of July 1944, is the town on the Vire the 29th came
-into that evening, laid for three a side: 3800 by 2800, the old town walled on its rock in
-the middle, the river and the station on the right and the faubourgs on the left, laid in
-five stages (see *Saint-Lô*). They are picked on the title screen under GROUND and
-all four open in the editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
-line over the name, the name, what the battle was and two cards about the ground), and the two
-side buttons name the 29th Infantry Division and the 352. Infanterie-Division, which fight every
-ground. Written once in the markup, the header went on naming the Adriatic town over the beach.
+Two maps ship and a third is kept hidden. **Omaha Beach**, the Dog and Easy sectors on the
+morning of the 6th of June 1944, is the first map that is not a field with a headquarters at
+either end: a corridor 1500 across and 4000 deep, the Americans starting on the sand at the
+bottom among the craft that brought them in and the Germans in a manor in the bocage at the
+top, with the seawall and the Atlantic Wall across the middle and two draws up the bluff
+behind it that are the only way armour gets off the beach. **Saint-Lô**, the 18th of July
+1944, is the town on the Vire the 29th came into that evening, laid for three a side: 3800 by
+2800, the old town walled on its rock in the middle, the river and the station on the right
+and the faubourgs on the left, laid in five stages (see *Saint-Lô*). **The Gothic Line**, the
+Foglia valley at the end of August 1944, two ridges with fourteen hundred units of no man's
+land between them, is hidden (`MAPS.gothic.hidden`): neither the title screen nor the editor
+offers it, and it is kept to be rebuilt as a map of the eastern front, so the map check and the
+gate still read it and it does not rot while it waits.
+
+**Ortona is gone.** It was the first map, the town fought one building at a time in December
+1943, and it was taken out of the game whole: its map data (`defaultMapData`), its entry in
+`MAPS`, its button, its card in the editor's chooser, its line in the editor's load panel and
+menu, and the editor's ORTONA template. What is left of it is the country it stood in,
+`LANDS.ortona` (the Adriatic coast, the cliff, the valloni and the railway in its cutting),
+because the editor's own templates (country, village, town and ruins) are laid on it when a map
+names no country, along with the Italian town house and the rest of the pieces Ortona was built
+of. Every figure in this file measured on Ortona, which is most of the older ones, is history:
+it was true of that map and cannot be measured again.
+
+The two grounds are picked on the title screen under GROUND and both open in the editor. The
+title screen keeps the last one picked on the device (`ORT_MAP`, `mapLoad`) and opens on Omaha
+when nothing is kept, and a key that names a map it no longer offers is no choice at all. The
+tools are told which ground to run on instead (see *Verifying*): Saint-Lô, unless a card is
+given `--map`.
+
+**The title screen is a Signal Corps field message** (`#start`), and the game is called OMAHA on
+it and in the browser's tab. The whole menu is one printed form in blue ruled boxes on a desk
+blotter. The header across the top carries OMAHA in the message box beside PRIORITY, FROM, TO and the DATE-TIME
+GROUP; FROM follows the army (`NATIONS[k].from`) and the date-time group the ground (`MAPS[k].dtg`),
+both written by `brandSync`. Down the left, under TEXT, the chosen ground's briefing is typed in
+capitals on ruled lines: the line over the name, GROUND and its name (`#btitle`), what the battle
+was, its two cards as PARA A and PARA B and the objective as PARA C, and the keys under them. On the
+right are four numbered boxes, each choice a printed box ticked with a typed X: 1 GROUND, 2 ARMY (the
+three armies, `#pickus`, `#pickger`, `#picksov`, named by `sideSync` off `NATIONS`), 3 BATTLE (the
+opposition, the sides and the victory rule) and 4 STANDING ORDERS. The standing orders are the
+settings nobody changes from one battle to the next (the enemy's guns, the Atlantic Wall where the
+map has one, the controls, the upgrades, and the HANDICAP and OPPOSITION panels), and they fold up
+under a line that says what they are set to (`soOpen`, `soSync`, refreshed by any click on the
+screen), open from the start when either panel is set. DEPLOY is a red bar under TRANSMIT beside
+AUTHENTICATION, pinned under the thumb on a phone, where the form runs to three screens. A desktop
+lays it out as the form is printed, the text down the left and the choices on the right, and a phone
+stacks it in that order. Every control kept its class and id, so the handlers, the harness's
+`deploy` and the gate rows read it as they always did; the gate opens the fold before it measures
+the panels' touch targets. The HANDICAP and OPPOSITION buttons are `.pnl` and no longer `.arty`, because
+the enemy guns' handler loops over every `.arty` on the page.
 
 **The whole game is `ortona.html`.** Some 42,000 lines and 2.6 megabytes: CSS in one
 `<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
@@ -83,14 +122,20 @@ node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
 ```
 
-**`--map=gothic`, `--map=omaha` or `--map=stlo` runs a card on the other ground.** `harness.deploy` clicks the title
-screen's own GROUND control, which is the one path that also decides what a later
-`startGame()` inside a probe keeps, so `shoot`, `move`, `brain` and `skirmish` all take
-it and nothing else had to change. A card run only on Ortona is a card that has never
-seen a map with 1,400 units of open ground on it -- the movement card put the Gothic Line
-at 131 paths found against Ortona's 12,177, because Ortona's are nearly all the
-straight-line shortcut down a street and here the belts and the walls make the search do
-real work.
+**Every card runs on Saint-Lô unless it is given `--map=omaha` (or `--map=gothic`, for the
+hidden map).** `harness.DEFAULT_MAP` is the ground: `openGame` writes it into the title
+screen's kept choice before the page loads, so a probe that calls `startGame()` straight after
+a reload builds it, and `harness.deploy` clicks its button on the title screen even when it is
+the default, so that a `--base` run on an older file, which has a default of its own, is fought
+on the same ground. A ground the title screen hides has no button and is set instead. Ortona
+was the ground every card was written on until it was taken out of the game; a comparison
+against a revision from before then compares Saint-Lô with Saint-Lô only because of that
+click. The cards with places of their own were moved with it: the movement card's five
+journeys and the sight card's six positions are Saint-Lô's (up the ramp onto the rock, down the
+Bayeux road, over the Vire; the three victory flags, the shelf, the far bank). A card run only on
+one ground is a card that has never seen the other: the movement card put the Gothic Line at
+131 paths found against Ortona's 12,177, because Ortona's were nearly all the straight-line
+shortcut down a street and the belts and the walls made the search do real work.
 
 A `SessionStart` hook (`.claude/hooks/session-start.sh`) runs `npm install` and
 confirms Chromium is present, so a fresh session is ready without being asked.
@@ -633,6 +678,11 @@ back over the geometry the tan had been laid on came in at 0.047 against the gre
 the webbing alone, eight per cent lighter, bought 0.002 of it: what moves the mean is the
 jacket and the trousers, because they are most of him.
 
+Two things the Red Army's rifles taught it. **A side cap is not a helmet**, so PROPORTION holds a man in
+the pilotka to 2.2 across the head where a helmet is held to its published shell. And **a weapon with a
+bayonet fixed ends past its muzzle**: MUZZLE measures the flash against the furthest point of the weapon,
+and `WEAP[k].bayonet` is how far past the muzzle the point reaches, which the row takes off.
+
 ### `tools/terrain.mjs` - the ground, mechanically
 
 A photograph of ground is the one thing that looks fine whatever is wrong with it. Soft
@@ -997,7 +1047,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, 3060 before a building could burn and a burst had splinters, 3100 before the four tiers of base building, 3300 before the map editor was made over, and 3550 before the Priest, the M12, the Wespe, the Marder III and the Weasel). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, 3060 before a building could burn and a burst had splinters, 3100 before the four tiers of base building, 3300 before the map editor was made over, 3550 before the Priest, the M12, the Wespe, the Marder III and the Weasel, 3650 before the Red Army, 3750 before the T-34 and the Tankovyy park, 3850 before the ZiS-3, 3950 before the IS-2 and the BM-13N, and 4050 before the SU-76M and the ZSU-37). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1016,9 +1066,11 @@ sides survive, the HUD stays inside the viewport, touch targets are at least
 tray, keeps its controls at 44px and throws nothing. Exits non-zero on any
 failure.
 
-**It fights on the second map as well as building it**, because every other row deploys
-on Ortona and a map that boots and is never played is a map nobody has run the game on.
-That row is also where the Gothic Line's fairness is measured rather than asserted: 454
+**It fights on the hidden map as well as building it**, because every other row deploys
+on Saint-Lô or Omaha and the Gothic Line is kept for its rebuild: a map that boots and is
+never played is a map nobody has run the game on, and one nobody can pick is a map nobody
+would notice had stopped booting. The gate sets it through `window.chosenMap`, since it has
+no button. That row is also where the Gothic Line's fairness is measured rather than asserted: 454
 entities on each half with none unpaired, the ground disagreeing with its own reflection
 by at most 0.23 of a unit over 1,750 samples, no flag further from one headquarters than
 its twin is from the other, and 1,304 units between the bunker lines.
@@ -1038,7 +1090,7 @@ without storing it, measure the chrome (a strip of what he can build that agrees
 `simpleItems` to the key, the line saying what the army is doing, LOOK and PAUSE and
 nothing else, the little map, the bar gone, nothing under 44px, off screen or lying over
 anything else), and then run the brain on his slot for a minute and read it off the field:
-a plan at veteran, every fighting unit with a job and something under orders, and not one
+a plan at veteran, every fighting unit with a job and something under orders at some point in the minute (read every ten seconds, because in the dig mood a section that has reached its post has no order left and a single reading at the end came back nought on Saint-Lô with the brain working), and not one
 kind raised nor one building put up out of his till while the opposition went on buying.
 Then the strip is tapped -- the post has to go down beside the headquarters with an
 engineer on it for its price, a section into the queue for its, and the same button dimmed
@@ -1057,12 +1109,16 @@ and the classic scheme is put back and asked the same of a tap and a drag, becau
 scheme kept as an option is a scheme nobody runs. The drills want open ground, and
 `__clearPt` finds it clear of every ring of his by more than the pick and clear of any flag
 -- the first version asked `nearestOwn` at a hundred units, which is not the pick, and
-found no ground at all on the spawn. And the flag row hides the enemy from his side and
+found no ground at all on the spawn. On Saint-Lô the section the LOOK and classic rows tap is
+also one with bare ground round it on the screen, because a section in the town has houses and
+walls all round it and the classic row found none within reach of the first it took. And the flag row hides the enemy from his side and
 empties his call board for its two ticks, because a section raised beside the headquarters
 with a tank in front of it calls for help and is dealt to nobody's operation, which is the
 brain being right about the wrong thing: on one desktop run the enemy was at the
 headquarters when the row ran, and both directed operations were raised with nobody on
-them out of ten fighters.
+them out of ten fighters. A tap on a flag he holds is walked round the flag's circle in the
+world until no man of his is under the finger: once the brains dug works his engineers stood
+round it with the men they dug for, and every one of sixteen taps near the pole picked a man.
 
 **And two rows read the framebuffer rather than looking at it.** An effect that is drawn
 and invisible looks exactly like an effect that is not drawn, so the effects rows render
@@ -1071,7 +1127,22 @@ moved: every gun on the roster fires once and none of them may put nothing on th
 the biggest blast has to light many times the pixels of the smallest, a round laid across a
 house has to be hidden by it from one side and not the other, and a heavy shell has to
 still be on the screen a second and a half after it lands. The column's floor is what a
-PHONE has to clear, because a phone spawns four puffs of it rather than eleven.
+PHONE has to clear, because a phone spawns four puffs of it rather than eleven. The house the
+round is laid across is one still whole with nothing else standing in the strip the camera looks
+down: on Ortona the biggest would do, and on Saint-Lô the biggest is the one the destruction rows
+have just shelled flat and a terrace has its neighbours in both lanes, so the round in front read
+nought behind the house next door.
+
+**And a few rows have to be told where open ground is.** The hole a shell leaves is dug where
+nothing is in the cut layer as well as nowhere on the crater list, because a row that empties the
+list leaves its holes in `G.cut`, which keeps the deeper of two cuts, and on Saint-Lô the row read
+its carve 2.5 units short over a hole a row above it had dug. The corridor the hulk and the tracks
+rows stage on keeps 420 from every building, because the first one on Saint-Lô was in front of a
+German headquarters and the camera saw the bunker and not the tank; and the tracks row looks from
+150 at a pitch of .3, past the limits a player has, because under Saint-Lô's grey sky half a link
+moved 921 pixels from the player's 230. The editor's overhaul rows clear a block of the first half
+and its twin before they lay their street, their areas and their brush, because Saint-Lô has no
+open ground that size on either half, and the undo at the end takes the clearing back too.
 
 **And one row RENDERS the roster and reads it as numbers**, because a sound is the one
 thing here a screenshot cannot review at all and an ear is not available to a gate. Every
@@ -1168,14 +1239,14 @@ every brain raising something. It runs before the Omaha rows, which reload.
 to name the 29th Infantry Division, the sections the Allied side opens with have to be American
 squads of six in both variants, the headquarters has to make the American squad and queue it, a man
 of the squad who is killed has to go down and lie as an American, and a brain playing the Allied
-side from the whistle has to order American squads in its first 45 seconds. Then the Ortona button
+side from the whistle has to order American squads in its first 45 seconds. Then the Saint-Lô button
 has to name the 29th as well, because the army is the same on every ground. An army that one door
 forgets is a Canadian section walking up an American beach, which in a photograph of a battle looks
 like nothing at all. The German side on the same beach is asked the same in a row of its own: the
 button names the 352nd, the sections it has on the field and the three the wall row put in the fire
 trench are grenadier squads of six in all three variants, its headquarters makes the grenadier squad
 and queues it, its brain bought grenadiers in the wall row's minute of battle, a man of it goes down
-as the 352nd, and Ortona's German button names the 352nd as well. And the jeep is asked the same in
+as the 352nd, and Saint-Lô's German button names the 352nd as well. And the jeep is asked the same in
 a third: the motor pool makes it and queues it, the count reads it, its crew are baked, the
 periscope's eye is the gunner's at twenty-odd units up, forty wrecks throw the gun off the pedestal
 none of the time and sit down under 1.7 units, killed it leaves two American bodies. The M4A1 is
@@ -1365,8 +1436,9 @@ tube along the tube from more than forty units up, leave thirty in the rack, emp
 mission and start the reload, refuse smoke and be called the M4A1 Calliope. And the Nebelwerfer has to
 fire its six as rockets.
 
-**And the destruction rows load Ortona to run on**, because a terrace is what they are
-about and the Gothic Line is a valley floor with two farms on it. The first puts a section
+**And the destruction rows load Saint-Lô to run on**, because a terrace is what they are
+about and Omaha is a beach with a bocage behind it. They loaded Ortona until Ortona was taken
+out of the game, and every figure below that names it was measured there. The first puts a section
 in an isolated house and fires one 105 round twelve units off its face: the house has to be
 cut, a hole has to open, and three seconds later the house has to be standing, holdable and
 still held, because a building that comes down on the first hole in it is as wrong as one
@@ -1377,7 +1449,10 @@ knocked flat that still stops a boot and still stops an eye is the one fault her
 screenshot would call a success. The third counts the stone: everything the cells threw has
 to be lying in blocks and fill or let go by the ring, nothing may still be moving, at least
 one piece has to have fallen whole, the heap has to be deep, a man in the middle of it has to
-stand on it, and it has to be drawn. Then four more. A burst is fired at men on open ground at
+stand on it, and it has to be drawn. It puts the house's fire out before the stone settles and
+waits, up to ten seconds more, for a moment with nothing in the air, because a 240 through the
+roof sets a house alight and a shelled house goes on shedding stone from its cracked cells once
+a second: on Saint-Lô's three-storey houses a piece was still falling at the twelfth second. Then four more. A burst is fired at men on open ground at
 half its radius and one and a half, standing and lying down, past the splinters' reach, and
 across a house against the same distance in the open: the near men take more than the far, the
 far men something, the men lying down under seven tenths of it, nobody past the reach anything,
@@ -1398,7 +1473,11 @@ is about. And the room is the one with the most round it to burn, the middle of 
 breaking a tie: the four cells nearest the middle sit among empty cells and stone, and from them
 the fire took or died out about as often as a coin comes down, on the committed file as on the
 working one, which read as two devices failing the row with the same numbers. Lit where there is
-timber round it, it caught five times in five. And a third house has ten cells of wall cracked to seven tenths and nothing fired at
+timber round it, it caught five times in five. On Saint-Lô the room is on the layer of the house
+with the most in it to burn, which is a floor: taken as the first layer above the ground with
+anything to burn, a Norman stone house gave three cells of a door frame among the masonry of its
+ground storey, and lit there the fire went out in both stone houses it was tried in, where lit on
+a floor it took in all four. And a third house has ten cells of wall cracked to seven tenths and nothing fired at
 it: in a minute and a half they have to have shed stone. That last row puts the army back, every
 fire out and the cracked wall at rest, because a house left burning goes on spreading down the
 street through every row below it.
@@ -1417,6 +1496,181 @@ the same Sherman rendered with its tracks half a link on has to move thousands o
 nought between two frames of it standing, because a track that is built to run and does not looks
 exactly like one that is not built to.
 
+**And twenty rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
+the player's slot fields it against the 352nd, the Shtab makes the Sapery and the Strelki and refuses
+the 29th's rifle squad, the side opens with a squad of Sapery and two of Strelki, the Sapery are four
+men in the four sapper variants with the PPS-43,
+the plates, the ring and the helmet are on them, the sapper's card offers the four works with the
+minefield and the ROKS-3 and nothing of another army, a bunker fitting raises no team of his, and a
+man killed goes down as `sov_sap`. Then a brain is put on his slot for 45 seconds and has to buy
+nothing of another army, keep its Sapery to dig and deal the Strelki jobs. Then the ROKS-3 goes on for its price and
+burns a garrison out of a house from inside its reach, with the jet drawn and the house alight, and
+a minefield laid in front of the headquarters is hidden from the enemy, takes a man of a squad
+walked across it and holds a 251 driven across it, with the German brain switched off for the drill
+so that the half-track goes where it is sent. And the fourth row asks the Kazarma and the T-20: the
+sapper's card offers the Kazarma, which makes the T-20 and queues it, the Shtab refuses the tractor,
+every buffer is built and it is named the Komsomolets T-20, its DT asked to lay 1.2 radians off the
+nose stops at the edge of twenty degrees, it takes one squad and refuses a second and tows, every man
+of the squad aboard is drawn on a cushion facing outward with his feet out at the rail and none once
+it has got down, the commander wears the padded helmet and none of the SSh-40 and is the eye, two to six units over the
+roof, a Kar98k never goes through its front and a Pak 38 always goes through its side, forty wrecks
+throw nothing and sit down, killed it leaves two bodies of the army's crewmen, and a brain on his
+slot with a Kazarma standing queues a T-20 there inside forty seconds. The fifth asks the Strelki: the
+Shtab makes them and the Kazarma refuses them, seven men of 64 in five rifle variants with the Mosin at
+19.5 units over its bayonet, the pilotka on the leader and the SSh-40 on a rifleman, a man refilled at
+17 where the full price is 29, the card offering both fittings, the Molotov and Ura! and, once the
+DP-28s are fitted, not the PPSh-41s, the fifth and sixth men firing the DP-28 on its own clock, a bottle
+on a grenadier squad in the open leaving one fire on the ground and hurting the squad, the squad walking
+more than a quarter faster after the shout, a bottle into a held house setting cells of it alight, a
+man killed going down as `sov_str`, and a brain on his slot buying them out of the Shtab, with its queues emptied and money put in the till
+first: it ran on what the rows above had left, and once the Kazarma made a mortar the row above queued one there, it
+came out during this row with the Shturmoviki behind it, and the brain counted two sections and bought no Strelki. The sixth asks
+the Shturmoviki: the Kazarma makes them and the Shtab refuses them, six men of 96 in four variants with
+the PPSh-41 and the SN-42 on all four, the card offering the grenades, the satchel and the smoke, forty
+volleys from in front against forty from behind with the same seeded rolls coming to .80 and a shell to
+1, a volley of RGD-33s hurting a grenadier squad, the satchel sent at a 251 and at a Kaserne taking 150
+and 200 or more off each, the smoke grenade making a cloud of more than 40, a man killed going down as
+`sov_sht`, and a brain on his slot buying them out of the Kazarma. The seventh asks the Avtopark and
+the BA-64B: the card offers the Avtopark, which needs the Kazarma, makes the car and queues it, and the
+Kazarma refuses the car; every buffer is built and it is named the BA-64B, its turret asked to lay over
+the tail comes all the way round, the DT's flash leaves the gun's own muzzle off the middle of the
+turret, the commander standing in it wears the padded helmet and is the eye, two to six units over the
+rim, a Kar98k never goes through its front and a Pak 38 always does, eighty wrecks throw the turret
+some of the time, killed it leaves two of the army's crewmen, and a brain on his slot with a Kazarma
+standing pegs out an Avtopark and buys the car out of it. The row puts the clock past six hundred
+seconds first, because the car's rung opens at 210 seconds times the difficulty's gate, which is 315 at
+regular, and a row that leans on how long the rows before it ran is a row about those rows. It writes the
+ZiS-2 into what the side has ordered as well, because the gun comes out of the same building a rung later
+and is one of the things that kill a heavy, which the brain brings forward whenever the enemy has one on
+the field, and it takes the car off it: the row queued a car above to ask the Avtopark, which the list
+counts as ordered, and a rung ordered once is bought again only as a replacement, dearest first, so on two
+desktop runs the brain bought ZiS-2s and no car. It writes what the Tankovyy park makes into it too, because
+on one desktop run the brain had the park up by then and bought a T-34 first. The eighth
+asks the Tankovyy park, the T-34/76 and its riders: the card offers the park, which needs the Avtopark,
+makes the tank and queues it, and the Avtopark refuses the tank; every buffer is built, the hatch's
+three among them, and it is named the T-34/76 with a coaxial DT and tows, its turret asked to lay over
+the tail comes all the way round, the commander up in the hatch wears the padded helmet, the eye is two
+to nine units over the roof head out and drops when the lid shuts, a Kar98k never goes through its front
+and a Panzer IV always does, forty wrecks throw the turret some of the time and sit down, and killed it
+leaves the army's crewmen. Then a squad of Sapery boards it and a second is refused, every living man
+kneels on the deck over the hull, the squad has no cover, and the tank, under command so that it leaves
+the shooting to them, drives a hundred and sixty units with the squad on it; a grenadier squad put in
+front of them is shot at and hurt, a burst beside the tank hurts the riders, a move order with the tank
+in it leaves them aboard and one without it gets them down, and the tank killed under a squad throws it
+off. Then a brain on his slot with the Avtopark standing pegs out a Tankovyy park and buys a T-34 out of
+it, with the clock past seven hundred seconds for the reason the seventh row puts it past six, and with
+everything else the park and the Avtopark make written into what the side has ordered: with a heavy of
+the enemy's on the field the brain brings the guns that kill one forward and sends the T-34, which cannot,
+to the back, and on one desktop run it bought an SU-85 and an SU-122 and no T-34. The later rows for the
+park write the same. The ninth
+asks the SU-85: the park makes it and queues it and the Avtopark refuses it, every buffer is built, the
+hatch's three among them, it is a casemate named the SU-85 with no machine gun, its gun asked to lay 1.2
+radians off the nose stops at the edge of its ten degrees, the commander up in the hatch wears the padded
+helmet, the eye is two to nine units over the roof head out and drops when the lid shuts, a Kar98k never
+goes through its front and a Panzer IV always does, its 85 mm goes through a Panzer IV's front every time
+at three hundred and a Panther's front less often than its side, forty wrecks throw nothing and sit down,
+killed it leaves the army's crewmen, and a brain on his slot with the park standing buys one. The row
+writes two T-34s into what the side has ordered before the brain runs and takes any SU-85 off it, because
+the SU-85's rung comes after theirs on the ladder and the eighth row's brain, with the money in the
+till, buys an SU-85 as well as its T-34; a row that leans on what the rows above it bought is a row about
+those rows. The tenth asks the T-34-85: the park makes it and queues it and the Avtopark refuses it, every
+buffer is built, the cupola's three among them, it is named the T-34-85 with a coaxial DT and tows, its
+gun is right of the middle and the turret comes all the way round, the commander in the cupola wears the
+padded helmet and the eye is over the roof head out and drops when the lid shuts, a Kar98k never goes
+through its front and a Panzer IV always does, its 85 mm goes through a Panzer IV's front every time at
+three hundred and a Panther's front less often than its side, a squad of Strelki boards it with every man
+on the deck and the nearest more than a unit behind the turret, forty wrecks throw the turret some of the
+time, killed it leaves the army's crewmen, and a brain on his slot buys one with every rung under its own
+written into what the side has ordered. The eleventh asks the SU-122 the SU-85's questions, with its
+hollow charge through a Panzer IV's front more often than not at three hundred. The twelfth asks the ZiS-3: the Kazarma makes it and queues it and the Shtab refuses it, it is
+named the 76 mm ZiS-3 and the bunker's anti-tank fitting is it; sited on open ground with a Panzer IV
+coming at it from 520 it fires first, before the tank has found it; it is six men with every variant, the
+served bodies and its three meshes baked; set up, the loader kneels at the right of the breech facing it
+and the bearers are back behind the gun, the flash comes off the muzzle and a bearer has his case in his
+hand; packed, the trails close and the piece rides beside the gunner; with the AP round up it picks
+nothing out of a grenadier squad alone and the Panzer IV out of the two, and with the HE round up it
+reaches 600 and picks the squad; a brain on his slot puts HE up with only men in front of it and AP up
+when a tank comes into reach; and a man killed goes down as `sov_at`. The drill and the crew are staged on
+ground with room round it, because the first spot the search found was beside the headquarters and the
+loader's place at the breech was inside it, so he stood where he was; and the rounds are asked along the
+drill's own line, which was traced clear both ways, because asked three hundred out on whatever bearing the
+gun happened to face, something stood in the way on the full gate's run and the gun picked nothing at all
+on either device, where a page with no rows before it had been clear. The 57's and the Pak 38's rows ask
+for the same room round their spot, because on one desktop run both put their gun down where the bearers'
+places were refused, and they print where the bearers stood when they are not in place. Both lay the gun on its own
+bearing before they read the crew (`u.faceA`, as a right-drag gives one), because a halted piece with nothing to
+shoot at turns toward the nearest enemy its side can see, and once the brains could pay for their works a pioneer
+out digging off to a flank kept both guns traversing and every man of both crews walking. The thirteenth asks the
+ZiS-2 the ZiS-3's questions out of the Avtopark, which makes it where the Kazarma refuses it: it fires
+first sited against a Panzer IV from 520, it is six men in the ZiS-3's drill with its own long tube, it
+has the AP round alone and reaches 620, a T-20 hitches it, and a brain on his slot with the Avtopark
+standing buys one. The fourteenth asks the 82-PM-41: the Kazarma makes it and queues it and the Shtab refuses it, it is named and the bunker's
+mortar pit is it; it is three men with the variants, the served bodies and its two meshes baked; set up,
+the gunner kneels at the left of the bipod and the loader at the right of the tube facing it, with the man
+who brings the bombs beside the gunner, the flash comes off the muzzle and he has his tray in his hand;
+packed, it is on its wheels 22 units behind the gunner and two to his right, which is the strap at his
+hand; it reaches 570, fires the ten rounds of a mission laid five hundred off with the bursts switched off,
+and takes a smoke mission; a man killed goes down as `sov_at`; and a brain on his slot with a Kazarma
+standing buys one. The row puts an MG 34 team of theirs by their own headquarters first, because the brain
+wants a tube when the enemy has a machine gun or men in a house, or holds as much ground as it does, and
+with the German brain switched off for the rows above the Red Army held more ground and had nothing for a
+tube to do. It stands the Kazarma's T-20 and two ZiS-3s on the field as well, with the queues emptied and
+money in the till: the ladder buys back whatever has died and the row above it kills everything, so once the
+brains could pay for their works a T-20 bought back at the Kazarma held its queue for the whole row and the
+post's list, where the tube is, never ran. The bearer's place is beside the gunner and not behind the plate, because behind the plate it
+was outside the circle a crew is held to on a phone, where a man is a fifth bigger, and he stood where he
+was. The fifteenth asks the IS-2: the park makes it and queues it, the Avtopark refuses it and a second is
+refused while one is on the field, every buffer is built, the cupola's three and the DShK's among them, it
+is named the IS-2 with a coaxial DT, the DShK fitted is a secondary of its own, it tows, its gun is left of
+the middle and the turret comes all the way round, the commander in the cupola wears the padded helmet and
+the eye is over the roof head out and drops when the lid shuts, a Kar98k never goes through its front and a
+Panzer IV's round goes through its side more often than its front, its 122 mm goes through a Panzer IV's
+front every time at three hundred and a Panther's front less often than its side, forty wrecks throw the
+turret some of the time, killed it leaves the army's crewmen, and a brain on his slot buys one with every
+rung under its own written into what the side has ordered. The sixteenth asks the BM-13N: the Avtopark
+makes it and queues it and the Kazarma refuses it, every buffer is built, the rack, the two screws, the
+rockets lying on the rails and the M-13 in the air, it is a soft lorry named the BM-13N Katyusha that
+traverses ten degrees either way; laid on a point six hundred off and square to it, it brings the truck
+round, lays the rack up to the elevation the range asks for before the first rocket leaves and fires all
+sixteen, every one bent onto its mark and leaving its rail along the rail from more than twenty units up;
+the rails are empty after it with the reload begun, smoke is refused, forty wrecks throw nothing, killed it
+leaves the army's crewmen, and a brain on his slot with the Avtopark standing buys one. The rockets are
+counted with the bursts switched off, for the reason the Calliope's are. The seventeenth asks the BS-3: the
+Avtopark makes it and queues it and the Kazarma refuses it, it is named the 100 mm BS-3; sited on open ground
+with a Panther coming at it from 560 it fires first, before the tank has found it; it is seven men with every
+variant, the served bodies and its three meshes baked; set up, the loader stands at the right of the breech
+facing it and the bearers are back behind the gun, the flash comes off the muzzle and a bearer has his case in
+his hand; packed, the trails close; with the AP round alone it picks nothing out of a grenadier squad and the
+Panzer IV out of the two, out to 680; a T-20 hitches it; a man killed goes down as `sov_at`; and a brain on
+his slot with the Avtopark standing and every rung under it bought buys one, with the queues emptied first,
+because the brain runs of the rows above leave what they queued standing in them and a population that is
+nearly full has room for a fifteen-point tank and none for a sixteen-point gun. The eighteenth asks the SU-76M:
+the Avtopark makes it and queues it and the Kazarma refuses it, every buffer is built, it is a casemate named the
+SU-76M, and its gun asked to lay 1.2 radians off the nose stops at the edge of its fifteen degrees; the commander
+in the padded helmet is the eye, his head over the walls; a Kar98k never goes through its front and a Pak 38
+always does, and its AP round goes through a Panzer IV's side every time and its front less often; along a line
+of open ground traced clear both ways, with the AP round up it picks nothing out of a grenadier squad and the
+Panzer IV out of the two, and with the HE round up it reaches 480 and picks the squad; a brain on his slot puts
+HE up with only men in front of it and AP up when a tank comes into reach; forty wrecks throw nothing, killed it
+leaves the army's crewmen, and a brain on his slot with the Avtopark standing and every rung under it bought
+buys one. The nineteenth asks the ZSU-37: the Avtopark makes it and queues it and the Kazarma refuses it, every
+buffer is built, the gun laid up and down on its trunnions among them, it is named the ZSU-37 and has no arc;
+asked to lay over the tail it comes all the way round and is laid up over the walls with its muzzle six units
+or more over the top of the box, and brought back to the nose it comes down level with the muzzle under the
+top; the eye is the commander's, over the top of the box; a Kar98k never goes through its front and a Pak 38
+always does, and its 37 mm goes through a Panzer IV's side more than eight times in ten and never its front
+at two hundred; forty wrecks throw
+nothing, killed it leaves the army's crewmen, and a brain on his slot buys one. The twentieth asks the B-4:
+the army names it as its battery and the sapper's card offers it and none of the other armies'; it is refused
+inside 700 of home and a second is refused with the first standing; dug forward it stands with its seven men
+where the work lays them and every buffer built, named and reaching 1250; laid on clear ground six hundred off
+it fires its five rounds into its circle, and stood within reach of the enemy's base a mission 300 short of his
+headquarters is refused as `safe`. Then the Br-5: AUTO is not offered on it and the brain's routine does not
+fit it; fitted by hand for its price it is drawn as the Br-5 with all three buffers, named, reaching 900 with a
+round of 950, the B-4's own def untouched, and after the forty seconds of change-over its three rounds go into
+the circle. And a brain on his slot with two Sapery, four squads and the money digs one. The rounds are taken
+off the list as they leave the tube.
+
 **And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
 a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
 Saint-Lô, the heaviest map, and reads the vertex buffer bytes the battle made: under 160 MB on the
@@ -1432,8 +1686,8 @@ and two more at the even game, where nothing caps a queue but the till. The row 
 graphics context on purpose (`WEBGL_lose_context`) and asks that the battle stops where it stood and the page says so, with a
 RELOAD a thumb can hit; the editor's reload gives the rows after it a context again.
 
-**And the editor's rows ask its overhaul as arithmetic**, last of all on the copy of Ortona the
-editor opens on. The editor opens on its three ways in with nothing over the map; a tool is found
+**And the editor's rows ask its overhaul as arithmetic**, last of all on the copy of Saint-Lô the
+gate opens it on (`#edsdup-stlo`), which was a copy of Ortona until Ortona went. The editor opens on its three ways in with nothing over the map; a tool is found
 by name and by use, and a starred and a used one are kept; Escape takes back one thing at a time;
 every tool says what its next action is. Then the shapes: a house has four corners, four edges
 and a turn, a corner makes it bigger and the turn turns it a quarter; a line takes a point at a mid
@@ -1555,8 +1809,8 @@ is no state container and no immutability; systems mutate `G` directly.
 **World.** 2800 x 1900 units unless the map says otherwise (`data.w`, `data.h`; Omaha is
 1500 x 4000, and `setWorld` is the one place that follows it). `makeSectors` / `buildMap` /
 `makeTerrain` build it from `G.mapData`, which is plain JSON the map editor also reads and
-writes (`defaultMapData()` is Ortona, `gothicMapData()` the Gothic Line and `omahaMapData()`
-Omaha; `MAPS` is the table
+writes (`omahaMapData()` is Omaha, `stloMapData()` Saint-Lô and `gothicMapData()` the hidden
+Gothic Line; Ortona's `defaultMapData()` went with it; `MAPS` is the table
 the title screen, the deploy button, the briefing and the editor's load panel all read).
 A separate 4-unit heightfield (`makeHeight`, `groundZ`, `groundNormal`) carries
 elevation, with trenches and craters cut in by `carve`.
@@ -2516,7 +2770,7 @@ round with it.
 
 Measured: every model turns the wheels its drawing has, both sides together (22 on the M4A1, 28
 on the Panzer IV with its rollers, 9 a side on the 251 counting its front wheel, 3 on the KS 750,
-none of the spares), and on all twenty belts the bottom run goes back and the top run forward. A
+none of the spares), and on all twenty-four belts the bottom run goes back and the top run forward. A
 Sherman driven 209.3 units rolled both tracks 209.2, and turned half a radian on the spot ran them
 6.54 and -6.54 against 6.54 wanted. The running gear is most of a tracked vehicle's vertices (86,040
 of 121,491 on the M4A1), so the attribute is packed in shorts: eight bytes a vertex of it.
@@ -4106,7 +4360,8 @@ for every fitted upgrade key, not only the one that swaps the gun.
 
 **The two armies.** The Allied side is 'us' everywhere in the file and the German side 'ger',
 and both stay that way. On every map the Allied side is the 29th Infantry Division and the
-German side the 352. Infanterie-Division: `NATIONS` is those two entries (`usa` and `heer`),
+German side the 352. Infanterie-Division: `NATIONS` is those two entries (`usa` and `heer`, with the
+Red Army's beside them as `sov`, which only a player fields; see *The Red Army*),
 each a name, a short name and a line for the title screen, the HUD and the after-action page,
 and `FACTION` carries the same names. The side buttons (`sideSync`) and the victory-point
 labels say so on every ground.
@@ -4531,7 +4786,10 @@ grey and black leather against poplin and canvas: on the card at 600 units his m
 is 0.29 against the American's 0.36 and the colour 80,74,56 against 102,92,65, while the two
 top fifths are level (0.37 against 0.37) because both men wear a dark helmet. His
 contrast to the ground is -0.41 against a floor of -0.45 for every figure, so the field grey
-has very little darker to go. And judge him on the ground he fights on: photographed on Ortona
+has very little darker to go. Those are Ortona's figures, where the card stood until Ortona went;
+on its stage in Saint-Lô's American base area, under that map's grey sky, he reads 0.268 against
+the American's 0.321 on the desktop at 600, -0.46 to the ground against the American's -0.35, and
+the floor moved with the stage to -0.50. And judge him on the ground he fights on: photographed on Ortona
 he comes out pale and his boots brown, because that December sun lifts everything, where on
 Omaha's overcast morning he is field grey with black leather.
 
@@ -6363,7 +6621,9 @@ is not on the brain's ladder.
 
 **And a bunker's fittings are the two armies' own** (`BUNKUP`): the .30 cal team or the MG 34
 team, the 57 or the Pak 38, and the side's mortar, and the cap check and the population count read
-the same key. Before the retirement they went through `natKey`, and before that an American
+the same key, through `bunkUnit(W, slot)`, which hands back the team out of the player's own army or
+none: the Red Army's anti-tank fitting is the ZiS-3 and its mortar pit the 82-PM-41, and it has no
+machine gun team yet, so its bunkers take no machine gun post. Before the retirement they went through `natKey`, and before that an American
 bunker's anti-tank casemate was a Canadian 6-pounder.
 
 **And the brain's shopping list is written in the live keys.** `LADDER`, the role table and
@@ -6373,6 +6633,1117 @@ skirmish card asks after the carrier: with the counts keyed on what was actually
 given a jeep for every carrier it orders and counts them, where a count keyed on the carrier
 never moved and it bought them for ever. A rung for a unit the roster does not have is money
 saved for nothing, which is why the head of the list is only ever a live key.
+
+**The Red Army.** A third army, on the Allied side, built a unit at a time off rows the player
+pastes in, in the column order side, the building it comes out of, the unit, its status, manpower,
+fuel, time, population, toughness, armour, speed, sight, main weapon, and abilities and upgrades. It
+has twenty-two things so far: its headquarters, the Shtab; its builders, the Sapery, with their
+flamethrowers, their minefield and the B-4 position, its heavy battery, which can be rebuilt as the
+Br-5; its rifle squad, the Strelki, out of the Shtab; its first
+production building, the Kazarma; its assault engineers, the Shturmoviki, its battalion mortar, the
+82-PM-41, the Komsomolets T-20, its armoured tractor, and the ZiS-3, its divisional gun, out of the
+Kazarma; its second production building, the Avtopark; the
+BA-64B, its armoured car, the ZiS-2, its anti-tank gun, the BS-3, its heavy anti-tank gun, the
+BM-13N Katyusha, its rocket artillery, the SU-76M, its light self-propelled gun, and the ZSU-37, its
+self-propelled anti-aircraft gun, out of that; its third and last, the Tankovyy park; and out of
+that the T-34/76 and the T-34-85, its medium tanks, which a squad can ride on, the SU-85, its tank
+destroyer, the SU-122, its assault howitzer, and the IS-2, its heavy tank.
+
+**The rows are kept in `docs/soviet-roster.csv`**, one line a unit in those columns with a note at
+the end: `Core` or `Optional` in the status, and in the note whether a row is an alternative to
+another (`Alt to BA-10M`), an extra or a what-if. It is the list of units under consideration and the
+stats each would be built to, and nothing in it goes into the game until that unit is asked for by
+name. When the file was added the player said explicitly that nothing else in it was to be built
+yet. When a unit is asked for ("add the IS-2", with a drawing), its stats come off its
+row: the price, the time and the population, the hit points and the plate (front, side and rear in
+millimetres, with the turret's in brackets), the speed and the sight, the weapon, and what it carries
+beside it. The units already built (the Sapery, the Strelki, the Shturmoviki, the 82-PM-41, the
+Komsomolets T-20, the ZiS-3, the ZiS-2, the BS-3, the BA-64B, the BM-13N, the SU-76M, the ZSU-37, the
+T-34/76, the T-34-85, the SU-85, the SU-122, the IS-2 and the B-4) took their rows' numbers as they stand in the file, and a new one does the same unless told
+otherwise. The file is the player's: a row changes when the player changes it, and a duel that
+disagrees with a row is reported to the player, who decides.
+
+`NATIONS.sov` is the army, with `side: 'us'`, and every army names its headquarters (`hq`), the
+company it opens with (`open`), its production buildings in order (`tiers`) and its heavy battery's
+work (`battery`, the B-4's for the Red Army). A slot carries the army it fields (`nat`, laid by
+`buildSlots` and read by `natOfSlot(k)`): the player's own slot fields the army he picked on the
+title screen (`chosenArmy`, `startGame`'s last argument) if it fights on the side he picked, and
+every brain fields its side's first army, so the Red Army is only ever the player's and an AI on the
+Allied side is the 29th. What a player may build is filtered by his army: a building by
+`bldFor(slot, def)` (its army is `def.nat`, or its side's first), a work by `workFor(slot, W)` (its
+`side` and `nat`), a bunker fitting by `bunkUnit(W, slot)`, and a unit by the building that makes
+it, so the Shtab refuses the 29th's rifle squad and the sapper's card offers no 240 position and no
+building of another army. `armyOf(side)` names a side's army off its first slot, for the
+victory-point labels, the game-over screen and the record. The title screen carries it as the third
+box under ARMY (`#picksov`, `data-army="sov"`), under the two divisions.
+
+**The Shtab** (`sov_hq`, `svShtab`) is a regiment's command post dug in the way the Red Army dug
+them: a front wall of round logs laid between posts with the door in it and the gas curtain over
+the door, a roof of logs laid side by side with their ends out over the front, a second layer across
+them and the earth out of the hole heaped over the lot and banked down the sides; a passage down to
+the door between log walls revetted with earth, a stovepipe and a vent through the mound, the
+wireless mast on its guys, a map table under a net in front, a sentry under a mushroom roof, a
+woodpile, crates and a drum, and the red banner with the gold star and the hammer and sickle on a
+pole beside it (`svBanner`). The logs are their own colours in `BASE` (`log`, `logL`, `logD`, and
+`logEnd` for the cut ends), tagged as bark and wood. It is 132 by 104 like the other two
+headquarters and makes the Sapery and the Strelki.
+
+**The Sapery** (`sv_sap`) are four men of 64 hit points with the PPS-43, for 160 manpower and 14
+seconds, 5 of population, 68 of speed and 250 of sight, and they are the army's builders: they put
+its buildings up, lay sandbags, weapon pits, wire and minefields and repair its vehicles. While the
+army had no line infantry they took its ground as well (see below); with the Strelki they dig. The
+side opens with one, beside two squads of Strelki. The PPS-43 is
+5.4 a burst every 0.40 seconds out to 150 at an accuracy of .54. The kit is a fifth on the rig
+(`KIT.sov`, `V.nat === 'sov'`): the gymnastyorka in khaki, pulled on over the head with a placket of
+three buttons and worn outside the trousers with the belt round it (`manRig`'s `sv` branch, with
+the skirt), the shoulder boards of the 1943 pattern, the trousers into kirza boots (the German
+marching boot's anklet mode, and the fuller German leg in `scLeg`), the SSh-40 in green
+(`helmetSSh40`), and the belt with a pouch of three magazines either side of the buckle, the small
+shovel on the left hip and the flask and the grenade pouch on the right (`figKitSov`). Four
+variants: `sv_sap` with the greatcoat rolled in its ring over the left shoulder (`figRope`, a smooth
+tube along a closed loop, because built of four-sided limbs the ring read as a chain of boxes),
+`sv_sap_b` in the SN-42 breastplate, `sv_sap_c` with the sack on his back and the long sapper's
+shovel down its side, and `sv_sap_d` in the breastplate with the ring. He falls as a sapper
+(`body: 'sov_sap'`). The PPS-43 is cut as a side profile (`weaponModel(k, 'pps')`): the square
+pressed receiver and the shroud with its brake, the curved magazine, the grip and the stock folded
+over the top, swung back for the aim (`WEAP.pps`), and it is one of the weapons a sculpted man
+shoulders standing and kneeling (`SC_ARMS`). The numbers are the row's as it was pasted, and on the
+duel card over sixteen runs a row they take the 29th's engineers and the 352nd's pioneers every
+time in twelve seconds, which is four men against three, and lose every fight with the grenadier
+squad inside ten, as the engineers do.
+
+**The ROKS-3** (`UPGRADES.roks`, 70 manpower and 15 fuel, O) is the first second weapon that takes
+the place of the first. It goes through the rifle grenade's door (`glUp`, `glOf`, `launcherMan`)
+with two new flags: `flame`, which makes the round a jet, and `swap`, which takes the men who carry
+it out of the main weapon's volley (`glSwap`), because a man with the gun of a flamethrower in his
+hands has no PPS in them. The third and fourth men become `sv_flame`, with the cylinder upright on a
+frame of straps, the air bottle beside it, the hose round the right hip, and the gun, which was made
+to look like a rifle (`weaponModel(k, 'roks')`: a Mosin's stock and fore-end round a steel tube,
+the valve under it and the drum of incendiary cartridges at the muzzle), fired from the hip. Each
+puts out 18 every 0.25 seconds out to 80 at an accuracy of .82 with a suppression of .07, and a
+forced attack on anything that is not a vehicle closes to the jet's reach, and so does an
+attack-move, which otherwise stopped at the PPS's 150 with two of the four men holding nothing that
+reached: so fitted, the squad won none of its fights with a grenadier squad and left it whole, and
+it takes 19 per cent of them now at 120 and 13 with both sides in heavy cover, leaving the squad at
+two thirds. A line squad in the open is not what it is for. Against a garrison the
+reach is measured to the wall and not to the middle of the house (`jetDist`), because a jet goes in
+at a window. The cover it meets counts for no more than light, it throws no sparks off plate, and
+against men holding a building that burns it sets the room nearest the jet alight one time in five
+for every man it reaches (`flameBurn`, through the fire's own `frIgnite`), so a garrison is burnt
+out of its house and the house goes on burning. It is drawn as a jet (`flameJet`): gouts of burning
+fuel flown on ballistic arcs from the nozzle to the target, a hot core in a glow that grows as it
+flies (`fx` kind `jet`), staggered a fiftieth of a second apart so they read as a stream, with
+burning puddles where they land, oily smoke over them, a light and a roar (`sfx('flame')`); a man
+firing it shows the jet and not a muzzle flash (`m.jet`). Measured by the gate against a grenadier
+squad of 480 holding a house: 28 jets in twelve seconds, the furthest from 40 units of the wall,
+burnt the squad out to nothing with nine to seventeen cells of the house alight.
+
+**The minefield** (`WORKS.mines`, 40 manpower, 10 seconds, 7) is the army's own work: a strip 120
+long and 44 deep laid on a bearing with five mines in it, marked with stakes, a rope and two boards,
+with the spoil of the holes in mounds (`workFaces`). It is drawn to its own side and to nobody else
+until it has gone off under them (`mineShown`, `f.seen`), in the draw and the shadow pass, and its
+site is hidden from the enemy as well. `updateMines` asks every field ten times a second about
+everything of the enemy's that is moving: a vehicle whose centre is within half its beam of the
+strip sets one off a tick in five, which takes 180 times its blast factor off it, bursts on it and
+holds it for nine to fifteen seconds with a track or the wheels gone; a man on the strip sets one
+off a tick in twenty, an anti-personnel mine of 95 over 22 with the grenade's rules, which takes the
+man who stepped on it. Spent, the field and its marking go. Measured by the gate: a grenadier squad
+walked across set one off, lost a man and could see the field afterwards; a 251 driven along it lost
+180 and was held for seven to eleven seconds. The drill drives it along the strip and not across it:
+across its 44 units at speed a half-track is inside for about four of the mine ticks and comes out
+untouched two times in five, which is about what five mines spread over 120 units should do to it, and
+on one desktop run of the gate it crossed every time without a mine going off. Along the strip it is
+inside for five or six ticks a pass, and the drill gives it ten passes and stops at the first mine.
+
+**The Strelki** (`sv_strel`, out of the Shtab, 230 manpower, 19 seconds, 8 of population, R) are the
+army's line infantry: seven men of 64 hit points with the Mosin-Nagant, 64 of speed and 300 of sight,
+the rifle at 7.8 a round every 0.95 seconds out to 265. A squad that has lost men is filled up at
+three fifths of what another army pays a man (`reinf` on the def, which `reinfCost(u)` reads for the
+reinforcement block): a man of the Strelki is 17 manpower where a man of the 29th's rifle squad is 29.
+The side opens with two squads of them beside its one of Sapery, and those are the row's numbers.
+
+The kit is `KIT.sov`'s with three things on it. **The pilotka** (`capPilotka`, `V.pilotka`, through
+`helmetOf`) is the side cap: a loft of six stations from front to back, wider at the crown than at the
+band, with the flap turned up round it and the red star on the front, tilted to the right on its points
+because `roll()` drops a face's material and a cap rolled after it is built comes out on the flat tile.
+Half the squad wear it and the rest the SSh-40. **The loads** (`figKitSov`): the man with the Molotovs
+has a canvas bag on his right hip with the necks of three bottles out of it, rags in them; the squad
+leader his map case on the left hip and his field glasses on his chest; a PPSh-41 man a spare drum in
+its round pouch and a DP-28 man a pan in its case on his back. Seven variants: `sv_str_lead`, `sv_str`
+with the greatcoat in its ring, `sv_str_b` in the pilotka with the sack, `sv_str_c` with the ring and
+the sack, `sv_str_m` with the bottles, `sv_str_dp` and `sv_str_pp`. He falls as a rifleman of the
+Strelki (`body: 'sov_str'`).
+
+**The three weapons are cut as side profiles** (`weaponModel`): the Mosin 91/30 with its bayonet fixed,
+which is how the Red Army carried it, the stock in one piece, the receiver and the straight bolt, the
+magazine, the two bands, the hooded front sight and the socket bayonet with its spike, 19.53 units
+against a published 1,660 mm over the bayonet; the PPSh-41, the wooden stock, the receiver, the slotted
+jacket with the brake over its muzzle and the drum, 9.92 against 843 mm; and the DP-28, the stock with
+its grip, the pan flat on top with its ribs, the holed jacket, the gas tube, the flash hider and the
+bipod folded back, 14.96 against 1,272 mm. All three are among the weapons a sculpted man shoulders
+standing and kneeling (`SC_ARMS`). The bayonet is the furthest thing forward of the muzzle, so
+`WEAP.mosin.bayonet` says how far past the muzzle it reaches and the men card's MUZZLE row takes it
+off, where it read the flash 5.04 units short of the end of the rifle.
+
+**Two fittings, one or the other.** TWO DP-28 (`UPGRADES.dp28`, 80 manpower and 10 fuel, O) hands the
+fifth and sixth men the DP-28 and TWO PPSH (`UPGRADES.ppsh`, 60 and 5, I) the second and third the
+PPSh-41, and each carries `excl: 'strel'`, so with one fitted the other is off every card and the
+brain's list (`hasExclusive`). Each is a weapon of its own on a clock of its own, through the rifle
+grenade's door (`glUp`), with a new flag: `pair` hands every one of its men a round of his own in its
+volley, where `flame` and a launcher fire one man turn about, and with `swap` those men are out of the
+rifles' volley. The DP-28 is 7.0 every .62 seconds out to 280, the PPSh-41 3.6 every .14 seconds out to
+160; a man with the PPSh fires nothing at a target past 160. A volley of the DP-28 plays the machine
+gun's report (`w.lmg`).
+
+**The Molotov** (`ab.molo`, G, 35 seconds) is the Knight's Cross Holders' grenade with three things
+changed: one man throws it (`one`), it has no fuse, and what it leaves is a fire. It goes at men in the
+open or in a house inside 140 (`abGrenTarget`), flies with a trail of flame off the rag and bursts where
+it lands (`moloBurst`): 30 to a man at the middle falling off over its 16 units, anybody in the room of
+a held house it lands in, and a pin. Into a held house it sets the room alight through the ROKS-3's own
+`flameBurn`. On open ground it leaves a patch of burning fuel for six seconds (`G.fires`, `updateFires`,
+24 at most) that burns 9 a second into any man standing in it and pins him, and a squad halted in it
+walks out to the near side of its edge. Flames on the patch, oily smoke over it and a scorch; the sound
+is a smash (`sfx('bottle')`). **Ura!** (`ab.ura`, U, 45 seconds) sends the squad forward at 1.4 times
+its pace for eight seconds (`u.uraT`, `u.uraK`, read in `moveUnit` and by each man's own pace), in the
+run, with five voices shouting it (`sfx('ura')`: `auVoice`, a sawtooth through two formant filters that
+move).
+
+**The throws were the Knight's Cross Holders' and are anybody's now.** `abGren` and `abBundle` were
+written for one squad's grenades and one squad's bundle charge, and every throw takes a key (`k`) and
+reads its numbers off `u.def.ab[k]`: the reach, the cooldown, the damage, the burst, the fuse, whether
+one man throws it or every man (`one`), and what is drawn in his hand and in the air (`nade`, a buffer
+of `MODELS.nade` for the RGD-33, the bottle, the satchel and the smoke grenade, built by `sovNade`). A
+pick mode for a throw is in `ABMODE` and `callPick` answers it on the click and the tap paths. The brain
+uses the bottle at three men or more, a crew or a house, and the shout when the squad has more than
+150 to go and is under fire or has the enemy inside 320 (`abUraWant`); under SIMPLE the cards are on
+the unit's card. Measured by the gate: a bottle on a grenadier squad in the open took 72 off it and left
+one fire, and the squad walked 128 units in two seconds before the shout and 180 after it.
+
+**Their numbers are the row's, and the duel card has them a step behind the grenadier squad at their own
+reach.** Over twelve runs a row the bare squad takes the grenadier squad a third of the time at 217 and
+92 per cent at 130; with the DP-28s half the time at 217; and with the PPSh-41s 8 per cent at 217,
+because the two men with them fire nothing past 160, and every time at 130. The MG 34 team takes them
+eleven times in twelve and the Knight's Cross Holders every time, and they take the KS 750 a quarter of
+the time.
+
+**The Kazarma** (`sov_bar`, `svKazarma`, 200 manpower, 26 seconds, hotkey 1) is the army's first
+production building and its only tier so far (`NATIONS.sov.tiers`): a company's barrack of round
+logs, long across the front, six courses of the Shtab's logs high with the corners crossed, under a
+roof of boards with battens and a ridge board, the gables boarded in, a porch on two posts over the
+door with the red star on its gable (`tzStar`, the T-20's), four windows along the front and one in
+each gable with white frames (`svWindow`), and two stovepipes through the roof; in front, the banner
+on its staff, the field kitchen on two wheels with its boiler, firebox and chimney, the rifles stood
+together round a post, a table and its log benches, the wall newspaper on its board and a barrel of
+water, and behind it the woodpile and the crates. It is the 29th's barracks' size, 116 by 96, and
+makes the Shturmoviki, the 82-PM-41, the T-20 and the ZiS-3. On a beach whose landing side builds out of the craft, a Soviet
+player's Kazarma is a barracks post out of a craft (`craftPostFaces` reads it as one).
+
+**The Shturmoviki** (`sv_shturm`, out of the Kazarma, 400 manpower, 30 fuel, 30 seconds, 10 of
+population, N) are six assault engineers of 96 hit points in the SN-42 breastplate, every one with the
+PPSh-41 and its drum, at 68 of speed and 320 of sight, the PPSh at 4.0 every .14 seconds out to 170.
+**The breastplate is a rule on the def** (`plate` .8, read by `plateOf`): a round of small arms that
+arrives from within sixty degrees of the squad's own facing (`PLATE_ARC`) does four fifths of what it
+would, and anything with a shell, a flame or a burst in it does all of it, because the plate was two
+millimetres of steel against a pistol round and a splinter at a distance. Measured by the gate over forty
+volleys a side with the same seeded rolls, fire from in front does .80 of fire from behind. Every
+variant wears the plate (`V.sn42`): `sv_sht_lead` with the field glasses and two smoke grenades on his
+belt, `sv_sht` with a drum pouch and the RGD-33s in a bag at the front of his belt with their handles
+out, `sv_sht_b` with the sack, and `sv_sht_s` with the satchel charge on his back on its own strap. He
+falls as one (`body: 'sov_sht'`).
+
+Three things they throw, each an order. **Grenades** (`ab.gren`, G, 35 seconds) is an RGD-33 from every
+man at the nearest thing inside 140, 44 over a burst of 22 on a fuse of a second. **The satchel charge**
+(`ab.satch`, E, 60 seconds) is the bundle charge's door with a building on it as well: the card arms a
+pick (`G.mode = 'satch'`) and a tap on a vehicle or a building of theirs, or a house they hold, sends the
+squad after it until it is within 90 of the hull or the wall (`abWall`), when the man who carries it
+throws. It is 220 whole to a vehicle it lands on or under, falling to nothing 26 units off the hull, with
+the track blown on half its bursts close in, and 220 whole to a building it lands beside (`s.bld`, which
+`damage` would otherwise take four tenths off). Its burst of 30 is read against masonry at twice its
+weight (`w.breach` 2) where a stick grenade's is read at three tenths, so a satchel thrown at a wall
+cuts about the hole a 240's shell does. **Smoke** (`ab.smk`, K, 45 seconds) is a grenade on a piece of
+ground the player picks inside 130 (`G.mode = 'smkg'`, `callSmokeGren`), which goes up as a cloud of 52
+for 24 seconds through the mortar's own smoke (`smokeBurst`, `G.smoke`), so it blinds the eye and the gun
+the way a screen does, with a hiss for the sound. The brain throws grenades at two men or more, a crew or
+anyone in a house, the satchel at a vehicle inside 330 (a halted one first) and with none in reach at a
+held house or a building of theirs inside 200 and 180, and smoke a little short of halfway to whatever is
+shooting at a squad on the move (`abSmokeWant`).
+
+**Their numbers are the row's, and the duel card says they are past every infantry squad the 352nd has
+and no use against armour.** Over twelve runs a row they take the grenadier squad every time in seven
+seconds untouched, at 139 and at 130, the Knight's Cross Holders every time in eight seconds with 97 per
+cent of themselves left, and the MG 34 team every time in three. The 251 takes them every time: the
+satchel takes 220 of its 340 and the PPSh cannot open it, and its MG 34 has them pinned before the
+satchel is back. The Panzer IV takes them every time in fifteen to sixteen seconds with seven tenths of
+itself left.
+
+**The Komsomolets T-20** (`sv_t20`, out of the Kazarma, 180 manpower, 15 fuel, 18 seconds, 6 of
+population, K) is the Red Army's light armoured artillery tractor: 260 hit points, 10 mm of plate in
+front and 7 at the sides and the back (`ARM`), open above where the men sit (`blastRes` 1.25), 100 of
+speed and 320 of sight, a DT in a ball in the cab's front plate at 7.5 a burst every 0.20 seconds
+out to 280 with 9 mm of penetration, traversing twenty degrees either way (`arc` .7) and turning the
+hull for anything wider; it carries one squad (`carries`) and tows a gun (`tows`). Those are the row's
+numbers as it was pasted.
+
+It is laid over a 1:35 four-view of the second series, late build, with two side views
+(`tools/ref/sv_t20.json`), whose scale bar and the published 3.45 m over the towing fittings agree at
+61.5 px/m in every view; at that scale the width over the rails at the seats is 1.87 m against 1.86
+and the height to the backrests 1.56 against 1.58. A coloured four-view the player supplied was read
+for one thing, the seats: two rows of three back to back along the centre line, each cushion on a
+slatted frame with its backrest leaning back toward the middle, so the men sit facing outward with
+their legs over the sides. What the first overlay had right was nearly all of it, running gear, cab,
+housing, seats and rack within a line; it found the cab's foot, which falls from the mudguard at the
+front to the sponson at the back along a plumb plate with a row of rivets on it (the first build kept
+it level), the towing hook, which hangs lower and further out than built, and the rack, half a unit
+lower. On `tools/dims.mjs` it reads 3.46 m long against 3.45, 1.90 wide over the rails against 1.86,
+1.59 high against 1.58 (`hullZ` holds the open door out) and 0.29 of clearance against 0.30.
+
+What carries it (`tz` and `TZG`, `TZH`, `TZC`): four road wheels a side, each two pressed discs on
+rubber tyres either side of the guide horns with five spokes on the outer face (`tzWheel`), in two
+bogies whose bracket comes out of the hull between the wheels inside the loop of the track, with the
+beam along the outside to both axles and a leaf spring on it (`tzBogie`); two return rollers, the
+sprocket in front with its four holes and a ring of teeth either side of the guides, and the spoked
+idler behind and higher, so the top run falls from front to back; and a track of pressed shoes with a
+rib across the face and the guide horn inside (`tzLink`). The tub between the tracks runs from the
+belly up to the nose deck, with the sponsons out over the tracks behind the cab and the deck the seats
+stand on over both (`tzBody`). The mudguards over the sprockets are plates bent along a profile
+(`tzBent`), with the headlamps on brackets at their inner edges and the towing hooks on the nose
+(`tzFront`). The cab (`tzCab`) is as wide as the vehicle at its foot and narrows to the roof on every
+side but the back: the front plate laid back at twenty degrees, the side plates leaning in, the back
+plumb, and on the roof two doors hinged at their rear edges, the left shut and the right standing open
+with the commander head and shoulders out of it and the dark inside of the cab under it (`m8Lit`, so
+the eye does not see the ground through the hole). The DT's housing is an oval drum out of the front
+plate on the right (`tzDrum`), with the ball in its face; the driver's visor with its slit is on the
+left, a vision port in each side, a red star on each side plate and on the front, and rivets round
+every plate (`tzRivets`, each laid flat on its plate). The tail (`tzRear`) carries the louvres along
+the top of the back plate, the spare road wheel upright on it, the box for the jack, the pintle with
+its hook, the tail lamp, and the slatted rack across the back of the deck behind the seats; and the
+seats (`tzSeats`, `tzBack`) are the two rows, a slatted frame along the deck under each, the cushions
+on it, the backrests leaning back with a rail along the top of each row, and the uprights between the
+rows carrying them, so from the front or the back the two stand together as a ridge. A rail at the
+men's feet runs along each side on four brackets, turned in to the body at both ends.
+
+The mount is the ball and the DT (`tzMount`), built about the ball's centre, which is what turns; the
+model is `fixed`, so a wreck throws nothing. **The squad aboard sits on the seats** (`SEATS`, `seatMen`,
+`seatDraw`): each living man on a cushion, the first four two a row, facing outward with his feet on
+the rail at the men's feet and his weapon across his chest (`POSE_RIDE`, `FIGPOSE.ride`, baked the first
+time a squad boards and kept out of the warm queue, so a battle nobody boards in bakes none of it),
+drawn and shadowed in the hull's own frame so the men go where it goes and lie over with it, and at the
+vehicle's own scale, as its commander is, where a man on the ground is drawn a fifth over on a phone:
+at a fifth over, the feet went down past the rail. The pose was set by counting the figure's vertices
+inside the deck, the cushion, the backrest and the rail over a grid of leg angles: the thigh 1.77 from
+plumb, the knee bent 1.40 and the foot turned back .30, which puts the sole a tenth of a unit over the
+rail with the heel inside it and nothing of him in the plates (`RIDE_LEG`). It is a
+picture and no more: the squad is aboard the way a squad in the Weasel is, out of the fight, with
+nothing of it in the world, and the T-34's riders are the ones that shoot and are shot. It was not
+drawn at all at first, and a player noticed a tractor whose six seats stayed empty with a squad on it.
+The commander is `sv_crew`, the gymnastyorka with a belt
+and a pistol and nothing a hatch would catch, under the padded tanker's helmet, the shlemofon
+(`helmetShlem`: a leather cap close over the head with three padded rolls front to back over the crown
+and one round the brow, the ear flaps with the earphones in them and the strap under the chin), and
+he is the eye (`VIN.sv_t20`, off the hull). He carries `body: 'sov'`, so the two men a dead vehicle
+leaves on the ground (`natOf` the vehicle, which is `sov`) are crewmen in the padded helmet. The paint
+is the 4BO green (`TZC`, tagged as paint), a step greener than the Americans' olive drab beside it,
+with the seats in brown leather.
+
+**The Avtopark** (`sov_mot`, `svAvtopark`, 240 manpower, 30 fuel, 32 seconds, hotkey 2) is the army's
+second production building and needs the Kazarma (`need`): a battalion's vehicle park. At the back a
+shed of the Shtab's round logs with two bays open to the front under a lean-to roof of boards, the
+wall between the bays and the ends boarded in under the roof, a bench with a vice and the tools hung
+over it and a stack of tyres in the bays; in front of it the ramp a car is driven up to be worked on
+from underneath, two tracks of three logs climbing to a level top on cribs of cross logs; beside it a
+tripod of poles with a chain block hanging over an engine lifted out onto its crate; the fuel in drums
+behind a low wall of logs, cans, tyres and crates, the banner, and the board with the red star on its
+two posts by the way in. It is the 29th's motor pool's size, 136 by 106, and makes the BA-64B, the ZiS-2,
+the BS-3, the BM-13N, the SU-76M and the ZSU-37.
+
+**The BA-64B** (`sv_ba64`, out of the Avtopark, 200 manpower, 20 fuel, 20 seconds, 6 of population, B)
+is the Red Army's light armoured car: 300 hit points, 15 mm of plate in front and 9 at the sides and the
+back with 10 round the open turret (`ARM`), `blastRes` 1.25, wheeled, 145 of speed and 380 of sight, a
+DT at 8 a burst every 0.20 seconds out to 290 with 9 mm of penetration, in a turret that goes all the
+way round, and no upgrades. Those are the row's numbers as it was pasted.
+
+On the duel card over twelve runs a row it takes the grenadier squad every time in 29 seconds without
+losing a hit point, the KS 750 every time in 29 and the MG 34 team every time in 16, all untouched,
+because nothing any of them carries opens its front. The 251 and the car are the same fight the other
+way round: the MG 34's belt and the DT both go through 9 mm and neither goes through the other's front,
+so all twelve ran to the card's limit of 150 seconds with both whole. What opens it takes it: the 234/1
+every time in 15 seconds untouched, the Panzer IV in 5, and the Knight's Cross Holders in 3, with the
+bundle. The controls beside it on the same afternoon read the M8 against the 234/1 at 17 per cent and
+the jeep against the grenadier squad at 33, against 63 and 44 in the paragraphs on those two.
+
+It is laid over a four-view with two side views and the DT's mount drawn apart
+(`tools/ref/sv_ba64.json`). The sheet has no scale; its side views agree with the 2.10 m wheelbase at
+81 px/m, and the plan and the two ends with the 1.69 m over the mudguards and the 1.44 m track at the
+same scale, and a photograph of the car at a museum was read for the tread and the paint. The first
+overlay had the body, the wheels, the mudguards, the door, the vision ports, the headlamp, the shovel
+and the extinguisher within a line in every view, and put the DT's pan half a metre too far back,
+because the circle on the plan is the pan on top of the gun and not a pivot; it found the spare a hair
+high on the tail, two tools on the left side and a V-shaped deflector on the roof in front of the
+turret, which went in. On `tools/dims.mjs` it reads 3.64 m long against 3.67 over the spare, 1.70 wide
+against 1.69, 1.87 high to the rim against 1.90 and 0.22 of clearance against 0.21.
+
+What carries it (`ba` and `BAG`, `BAH`, `BAT`; the paint is the T-20's `TZC`, aliased as `BAC`): the
+body is ten rings along it, nose first (`BAH.ring`), each the edge of the top, the crease and the edge of
+the belly on one side, and every facet is laid between two rings and turned out from a line down the
+middle (`baFace`, through `m8Quad` where a panel twists), which serves because the body is convex
+everywhere but the foot of the driver's plate (`baBody`). The top runs from the louvred plate at the
+nose (with its six slats, `baFront`) to a short bonnet with its hatch, up the driver's plate with the
+visor in its housing, along the roof and down the tail plate; the crease rises from the nose to the
+middle and falls to the tail, with a weld bead along it. The roof under the turret is laid on its own
+with the ring cut out of it (`baRoof`, strips from the ring out to the roof's edge with its corners
+among the angles, the M8's way), because the turret's well goes down through it. The mudguards are bent
+plates (`tzBent`): the front ones flat over the wheel with a lip at the front and sloping down behind
+to the foot of the door, the back ones flat with a slope in front of the wheel and behind it, and a
+sidelight on each front one (`baFenders`). Each side carries the door in the lower plate, hinged at its
+back edge, and the vision port in the upper plate by the driver (`baSides`), the shovel on the right
+of the tail, the pick and the crowbar on the left and the extinguisher behind the left front wheel; the
+blackout headlamp stands on its bracket over the left mudguard; and the tail carries the spare leaning
+on the tail plate on its carrier, the port over it, the bumper with a lamp at each end and the pintle
+(`baRear`). Four 7.00-16 cross-country tyres with a tread of bars staggered either side of the middle
+on pressed disc wheels with ten holes (`baTyre`, `baWheel`), on two axles with the differential on the
+housing, the knuckles, a leaf spring each side and the shock absorbers (`baAxle`), and the shaft, the
+transfer box and the exhaust with its silencer under the right (`baUnder`).
+
+The turret (`baTurret`) is eight plates leaning in from a foot as wide as the roof to a rim three
+quarters as wide, each plate moved in by how far its own wall leans (`BAT.d`, through `k4Inset`, so
+every wall is a plane), open above, with the inside in the light paint and the ledge and the well the
+commander stands in down through the roof to the floor, all left out of the occlusion bake (`m8Lit`);
+the slot the DT fires through in the front plate and a vision slit in each side. The DT (`baDT`, thin to
+the bake) stands right of the middle as the plan has it, with its pan on top, the receiver, the grip and
+the stock behind it and the barrel out through a sleeve along the front plate, on a post from the floor.
+The muzzle point is laid off the middle of the turret (`barY` on the model, which `mountPose` and
+`gunMuzzle` read, nought for every other vehicle), so the flash leaves the gun and not the middle of
+the turret. The commander is `sv_crew` standing in the well with his hands on the grip (`baCrew`, the
+234's `k4Man`), head and shoulders over the rim, turning with the turret (`turCrew`), and he is the eye
+(`VIN.sv_ba64`, off the turret); the driver is under the plates in front and is not drawn. Killed, it
+leaves two crewmen in the padded helmet, and the turret is a turret, so a wreck throws it some of the
+time.
+
+**The Tankovyy park** (`sov_tank`, `svTankpark`, 300 manpower, 60 fuel, 40 seconds, hotkey 3) is the army's
+third and last production building and needs the Avtopark (`need`): a long shed of the Shtab's round logs
+across the back with three bays open to the front under a lean-to roof of boards, a bench, crates and
+spare road wheels in the bays, stacked and stood against the back wall; in front of it the place a tank is
+worked on, under a gantry of logs with a chain block hung from its beam over an engine lifted out onto its
+crate; a length of track laid out on the ground, its links alternating with and without the horn; the fuel
+in drums behind a wall of logs, the banner, and the board with the red star by the way in. It is the
+29th's tank yard's size, 156 by 124, and makes the T-34/76, the T-34-85, the SU-85, the SU-122 and the
+IS-2. On a beach whose landing side builds out of
+the craft it is a tank yard post (`craftPostFaces`).
+
+**The T-34/76** (`sv_t34`, out of the Tankovyy park, 310 manpower, 80 fuel, 30 seconds, 13 of
+population, F) is the Red Army's medium tank: 700 hit points, 88 mm of plate across the hull's front, 45
+at the sides and 40 at the back and 65 round the turret (`ARM`), 96 of speed and 360 of sight, the 76 mm
+F-34 at 135 a round every 3.4 seconds out to 380 with 95 mm of penetration, a coaxial DT (`sec`) and no
+upgrades; it tows a gun, and a squad rides on its engine deck (`riders`, below). Those are the row's
+numbers as it was pasted.
+
+It is laid over a four-view of the 1941 tank (`tools/ref/sv_t34.json`) whose scale bar reads 154 px/m.
+At that scale it is the published 3.00 m wide and 2.36 m to the top of the periscope on the turret
+against a published 2.40; its road wheels come out at 0.77 m where the published wheel is 0.83 and the
+hull at 6.2 m over the fenders where the published length is 5.92, and the drawing was taken in both. The
+views disagree about where the turret's foot stands by about a unit (the side view has the bustle's lower
+edge a unit and a half over the hull roof, the front view the walls' foot on it), and the turret stands
+on the roof. The first overlay agreed with the drawing to about a line width in all four views, running
+gear, hull, turret, mantlet and fittings. On `tools/dims.mjs` it reads 6.19 m long against 5.92, 6.66
+with the gun against 6.62, 3.00 wide, 2.35 high against 2.40, 2.52 across the feet of the side plates
+and 1.85 across the roof against the drawing's 2.53 and 1.85, and 0.40 of clearance; the width at the
+sponson is measured with a straddling slice above the fenders and the roof with one just over it, because
+`aoSplit` cuts the side plate into pieces and a straddling piece gives its widest point.
+
+What carries it (`tt` and `TTG`, `TTH`, `TTT`; the paint is the T-20's `TZC`, aliased as `TTC`): five big
+road wheels a side, each two pressed discs on rubber tyres vented through a ring of holes either side of
+the guide horns, with the ridge and the hub's bolts on the outer face (`ttWheel`), on the arms of the
+Christie suspension, whose springs are inside the hull; no return rollers, so the top run lies on the
+tops of the wheels (`ttPulleys` walks the wheels twice, under the bottom run and under the top); the idler
+in front, two discs with six holes in each (`ttIdler`); the sprocket behind, two discs with six big holes
+and the rollers between their rims that drive the horns, on the final drive in its drum out of the lower
+rear plate (`ttSprocket`); and a track that alternates its links, a cast shoe with the waffle of its
+grousers and every other one carrying the horn (`ttLink`, laid by `beltLink` with a period of two). The
+hull (`ttBody`) is the lower hull between the tracks extruded along its own profile, the nose plate and
+the lower rear plate with it, and over it the upper hull: the side plates leaning in forty degrees from the
+fenders to the roof, the glacis laid back sixty degrees from the nose to the roof across the whole width,
+and the upper rear plate leaning in at the back, so each meets the side plates along a diagonal, which is
+the joint every plan of the tank shows. Anything on a plate goes on in its frame (`ttOnGl`, `ttOnSide`,
+`ttOnRear`): the driver's hatch on the left of the glacis with its two vision blocks, the DT's ball in its
+armoured housing on the right, the headlamps on their stalks at its top corners and the towing hooks by
+the nose (`ttFront`); two long stowage boxes on each side plate and the aerial at the front of the right
+(`ttSides`); the grille across the back of the engine deck, the raised engine cover with its louvred
+sides and its hatch, the intakes along the roof's edges and the filler caps (`ttDeck`); and on the rear
+plate the two exhausts under their horseshoes of armour, left out of the bake (`m8Lit`), which turned
+them black, the round-cornered access hatch between them and the towing eyes (`ttRear`). The fenders are
+a shelf along each side over the track, rounded down over the idler on a strut in front and drooping
+over the sprocket behind (`ttFenders`).
+
+The turret (`ttTurret`) is lofted between its plan at its foot and its plan at its roof, both read off the
+drawing's plan (`TTT.base`, `TTT.roof`, sampled as rays out of the ring's centre by `ttRing`), so it is
+long, rounded behind and leaning in hard all round. The mantlet's housing is a plate bent round a U from
+the roof over the gun and down under it, standing out of the front (`m4Sweep`, written from the top down,
+because written from the bottom up it rendered black, which is the gotcha the M4A1's shield already
+records); in front of it the cast mantlet, the F-34's sleeve, tube and muzzle lip, and the coaxial DT
+through the housing on the right. The vision blocks stand in their armoured boxes on the cheeks over the
+pistol ports (`ttWallAt` hands back the wall at a bearing and a height with its normal), the bolted plate
+is on the back, and on the roof the periscope in its cover on the left, the ventilator's dome and the
+lifting eyes. The one big hatch over the back of the roof is a trapezoid widening forward, hinged at its
+front edge (`ttHatch`), and opened it swings up and over until it stands a little past upright in front
+of the commander, who stands in the opening on the left in the padded helmet (`sv_crew`). **In the
+periscope that hatch is left out** (`pov: false` on `HATCHES`, read as `povLeaf`): upright a foot in front
+of the commander's eye it filled the whole of the view, which is the complaint every crew made of it and
+no use to a player. The room under it (`VIN.sv_t34`) is laid out round the commander, who lays the gun as
+well: the basket down to the hull floor, the wall stopping at his chest and the roof hanging low over his
+head, the F-34's breech with the coaxial DT on its right, his telescope, his two handwheels and his seat
+on the left, the loader's seat across the breech, a dozen rounds in clips round the back of the wall and
+the boxes on the floor under their mat. The seated crew in a room are the army's own crewmen now
+(`drawInterior` picks `sv_crew` for the Red Army). His eye is 6.1 over the roof head out and drops to 5.2
+over the turret ring when the lid shuts.
+
+**A tank can carry its squad on the outside** (`def.riders`). The T-34 does: a squad of infantry ordered
+onto it, by the same right-click onto a friendly vehicle that boards a carrier, climbs onto the engine deck
+rather than into the hull. `u.ride` is the flag, beside `u.inside`, and the vehicle's `cargo` is the
+squad either way, so the Unload card, one squad to a vehicle and the refusal of a second are the
+carrier's (`liftOf` is whether a vehicle takes a squad at all). Where `inside` takes a squad out of the
+world, `ride` leaves it in it: the men are seen, shot at and shooting the whole time. `rideModels` kneels
+each living man at a place on the deck (`RIDE`, in the hull's frame, round the engine cover and clear of
+where the turret's overhang sweeps), put there through the hull's own matrix (`vehFrames`) so he goes
+where the tank goes and lies over with it, at the deck's height (`m.rz`, which `manZ` reads for the
+drawing, the shadow and the muzzle); he turns to what the squad is shooting at and fires kneeling
+(`POSE_CFIRE`). The squad does not walk (`moveUnit`), is pushed by nothing and pushes nothing (`unwedge`,
+`manNear`, the steering), and **takes full damage**: `coverOf` gives it none, and a burst asks no cover and
+no lee of its men. A move order with the tank in it leaves the squad aboard (`orderMove`, `issueOrder`),
+and an attack order with the tank in it leaves it to fire at what is in reach; any other order gets it down
+behind the tank, and so do an order to attack something out of its reach and a retreat. Killed, the tank
+throws its riders off, a fifth hurt and pinned, and a squad killed on the deck frees it (`killUnit`). A
+click on the tank picks the tank, because a riding squad is its men and not its ring (`hitsUnit`,
+`nearOwnDist`). One thing it does not do: the gun traversed over the tail sweeps through the men on the
+deck, as it did on the real tank, and nothing stops it.
+
+On the duel card the row's numbers make it a tank for men and light armour and not for other tanks.
+Over twenty-four runs head on it takes the Panzer IV none of the time, the tank left with 54 per cent of
+itself, where the M4A1 on the same afternoon takes it 38 per cent of the time: at the 312 the pair are
+staged at, the F-34's 95 mm has lost a fifth of itself and is 76 against the Panzer IV's 82 of hull
+front, and the KwK 40 goes through the T-34's 88 every time. Over twelve runs a row it takes a Panther
+none of the time (the Panther left at nine tenths) and the StuH 42 none of the time, and a Pak 38 sited
+at 312 takes it every time in 16 seconds; it takes the grenadier squad every time in 7.6 seconds without
+losing a hit point, the Knight's Cross Holders every time in about 7 seconds with seven tenths of itself
+left at 189 and three quarters at 130, the Wirbelwind every time in 25 seconds and the Puma every time in
+14 with half of itself left. The penetration is the lever: at the M4A1's 104 it would open a Panzer IV's
+front about as often as the M4A1 does.
+
+**The SU-85** (`sv_su85`, out of the Tankovyy park beside the T-34, 380 manpower, 90 fuel, 34 seconds, 13
+of population, S) is the Red Army's tank destroyer: 640 hit points, 88 mm of plate across the front, 45 at
+the sides and 40 at the back, the same over the casemate (`ARM`, `cm` .5), 90 of speed and 440 of sight,
+and the 85 mm D-5S at 150 a round every 3.2 seconds out to 460 with 140 mm of penetration, in a ball mount
+in the front plate that traverses ten degrees either way (`arc` .35), with no machine gun and no upgrades.
+Those are the row's numbers as it was pasted.
+
+It is the T-34's hull and running gear (the tracks, the wheels, the idler and the sprocket, the engine
+deck, the rear plate, and the fenders, `ttFenders` taking where the front plate meets the sponson) with a
+fixed casemate built up out of the glacis, laid over a four-view of it (`tools/ref/sv_su85.json`). The
+sheet has no scale; every view is at about 52.5 px/m, where the five road wheels agree with the T-34's
+stations to a pixel, the track centres in both end views agree with the T-34's and the width with the
+published 3.00 m, and at that scale the length over the gun is the published 8.15 m. The front view is
+drawn three per cent taller than the side and takes a vertical scale of its own. At that scale the hull is
+6.02 m against a published 6.10 and the top of the commander's periscope 2.34 m against a published 2.45,
+and the drawing was taken in both; its road wheels are 0.82 m, where the T-34 here was laid over a drawing
+with 0.77 m wheels, and the T-34's are kept because the chassis is the T-34's. The first overlay agreed
+with the drawing to about a line width in all four views and found five things: the housing's underside
+slopes back to the plate where the first build had it level, the driver has a periscope in a box over his
+hatch, a blackout lamp stands off the casemate's right front corner, the straps on the fuel tanks were a
+unit out, and the loader's periscopes a unit forward. On `tools/dims.mjs` it reads 6.19 m long (the T-34's
+hull, which reads the same), 8.20 with the gun against 8.15, 3.00 wide, 2.32 high against 2.45, a body of
+2.52 across the feet of the casemate's sides and a roof of 1.94 between their tops against the drawing's,
+and 0.40 of clearance.
+
+What carries it (`s85` and `S85`): one plate from the nose to the roof laid back fifty degrees, where the
+T-34's glacis is laid back sixty, meeting the T-34's lower nose plate a unit behind the T-34's nose; the
+casemate's side plates standing up off the sponsons and leaning in twenty degrees to the roof, where the
+T-34's lean in forty; and the rear plate leaning back down from the roof onto the engine deck and filling
+the two corners between a casemate side and the T-34's own side plate behind it, which meet at the sponson
+and stand apart at the deck (`s85Body`). Anything on a plate goes on in its frame (`s85OnFp`, `s85OnSide`,
+`s85OnRp`). The gun's housing stands out of the front plate right of the middle as a box flush with the
+roof, a chamfer along the top of its face, the ball in its face and a ring of bolts round it; on the
+plate, the driver's hatch on the left with its two periscopes and a third in its box above it, two spare
+track links under the housing, the towing hooks by the nose, the headlamp at the top on the right and the
+blackout lamp off the casemate's right front corner (`s85Front`). On the sides a pistol port each, the tow
+cable on its pegs and a stowage box on each fender alongside (`s85Sides`); on the engine's sides two fuel
+tanks a side in their straps (`s85Tanks`). On the roof the commander's raised plate on the right front with
+vision slits round it, his periscope standing out of it in its hood with the fixed periscope's box in front
+of it; on the left behind it the loader's hatch with two periscopes beside it; and two vision ports in the
+rear plate (`s85Roof`). The gun (`s85Gun`) is the mount, about the ball's centre: the ball, the collar
+bolted to it, the thick part of the tube to the step, the tube tapering to the muzzle and the lip there,
+with no brake. The commander's hatch is the back half of his raised plate, hinged at its back edge, with a
+periscope turned across it; opened, it stands up behind him leaning back and he stands in the opening in
+the padded helmet (`s85Hatch`, drawn with the hull because it is a casemate). The room under the roof is
+read off the shell (`insideOf`, as the StuH 42's is), and his eye is over the roof head out and drops when
+the lid shuts.
+
+On the duel card the row's numbers make it what a tank destroyer is: it kills what the T-34 cannot and
+dies to what outranges it. Over twenty-four runs head on at 328 it takes the Panzer IV 54 per cent of the
+time in 17 seconds, where the T-34 on the same afternoon takes it none of the time: the 85 mm goes through
+the Panzer IV's front at any range it reaches and the KwK 40 goes through the SU-85's 88 every time, so the
+fight is who lands five first. Over twelve runs a row it takes the StuH 42, the Wirbelwind, the Puma, the
+grenadier squad (in 7.7 seconds without losing a hit point, off its high explosive) and the Knight's Cross
+Holders (with two thirds of itself left after their bundles) every time, the Marder three times in four and
+the Tiger a quarter of the time. A Panther takes it every time, head on with nine tenths of itself left and
+caught side-on with three quarters, because the 85 mm opens the Panther's front at 377 one time in a
+hundred and its side only once the Panther has stopped turning; and a Pak 38 sited at 377 takes it eleven
+times in twelve in 15 seconds.
+
+**The T-34-85** (`sv_t3485`, out of the Tankovyy park beside the T-34/76, 390 manpower, 105 fuel, 38
+seconds, 15 of population, G) is the T-34 as it was built from the spring of 1944: 780 hit points, the
+T-34's 88 mm across the hull's front, 45 at the sides and 40 at the back, 90 round the turret (`ARM`), 90 of
+speed and 390 of sight, the 85 mm ZiS-S-53 at 150 a round every 3.6 seconds out to 420 with 140 mm of
+penetration, a coaxial DT (`sec`) and no upgrades; it tows a gun and a squad rides on its deck (`riders`).
+Those are the row's numbers as it was pasted.
+
+It is laid over a four-view of the late tank (`tools/ref/sv_t3485.json`) whose side and plan are at 43.1
+px/m, where the five road wheels agree with the T-34/76's stations to a pixel, and whose two ends are at
+43.7, where the track centres agree with its 2.45 m. The T-34/76's hull lies on that drawing to about a
+pixel in all four views, and it is that hull (`ttHull(1)`): what is new on it is the late hull's sides,
+two fuel tanks on the right over the engine and one on the left with a box ahead of it in place of the
+stowage boxes, a rail down each side for the men riding the deck, no aerial on the hull, and the two MDSh
+smoke canisters across the top corners of the rear plate (`t85Sides`, `t85Rear`, the tank itself
+`ttFuel`, which the SU-85's tanks go through now). The drawing's views disagree about the turret in two
+places: the plan puts the face of the mantlet a unit further forward than the side does, and the mantlet
+is stood between them; and the plan's turret is 22 units across at its widest where both ends have it at
+23.3, which is the width it is built to. The round the end view showed at each rear corner was the rear
+fuel tank seen end on, and the round the side view showed at the rear corner is the smoke canister, so
+the canisters lie across the hull. On `tools/dims.mjs` it reads 6.19 m long against 6.10, 8.13 with the
+gun against 8.15, 3.00 wide, 2.62 high against 2.72 (the cupola's lid is not in the measured mount), and
+the T-34/76's body, roof and clearance.
+
+The turret (`t85Turret`, `T85`) is a casting lofted from one plan (`t85TurretPlan`, smoothed through
+`m4Smooth`) scaled at each height for the front, the sides and the back (`T85.K`, through `m4TurRing`),
+with the edge two fifths of the way up where the wall below leans out from the ring and the wall above
+leans in, and a bead along it; the front falls back hard over the mantlet to the roof. The mantlet is a
+block standing out of the front, rounded over the top and under the gun, with its face bolted either side
+of the collar, the gunner's sight through it on the left and the coaxial DT on the right. The ZiS-S-53 is
+a little right of the middle (`barY`, which the muzzle point reads), out of a collar bevelled at its
+front, tapering to a plain muzzle. On the roof: the cupola on the left over the commander, a drum with
+five vision slots under their brows and a split lid (`t85Hatch`, `HATCHES.sv_t3485`), its front half with
+the MK-4 periscope hinged at its front edge and its back half at its back edge, so opened they stand up
+in front of him and behind; the loader's hatch on the right with its periscope; the gunner's and the
+loader's periscopes forward; two mushroom vents over the back; the aerial by the gunner's periscope; the
+lifting hooks; and on each side a handrail and a pistol port's plug, with brackets and a rail across the
+back. Anything fixed to the wall is put there by `t85At`, which is `m4TurAt` asked of this plan. The room
+under the cupola (`VIN.sv_t3485`) is the M4A1's `m4Room` the other way about, with the commander at the
+left rear, the gunner low in front of him and the loader on the right beside the coaxial: `m4Room` takes
+`o.S` for the side the gunner is on now. The squad on its deck kneels three units further back than the
+T-34/76's (`RIDE.sv_t3485`), because its turret reaches that much further back.
+
+On the duel card the row's numbers make it a T-34 that can fight a Panzer IV and not a Panther. Over
+twenty-four runs head on at 328 it takes the Panzer IV 42 per cent of the time in 22 seconds, where the
+M4A1 on the same afternoon takes it 38; a Panther takes it every time head on with nine tenths of itself
+left, and caught side-on as well, because the hull comes round in a second or two. Over twelve runs a row
+it takes a Tiger a quarter of the time, and the grenadier squad (in 6.5 seconds untouched), the Knight's
+Cross Holders (with seven tenths of itself left after their bundles) and the Puma every time; a Pak 38
+sited at 344 takes it every time in 17 seconds.
+
+**The SU-122** (`sv_su122`, out of the Tankovyy park, 340 manpower, 85 fuel, 32 seconds, 12 of
+population, U) is the Red Army's assault howitzer: 680 hit points, the SU-85's 88, 45 and 40 (`ARM`, `cm`
+.5), 88 of speed and 420 of sight, and the 122 mm M-30S at 175 a round over a burst of 68 every 5.5
+seconds out to 400 with a hollow charge of 100 mm, which loses nothing over its reach (`heat`), in a mount
+that traverses ten degrees either way (`arc` .35), with no machine gun and no upgrades. Those are the
+row's numbers as it was pasted; the accuracy and the suppression are the StuH 42's, which is the same
+sort of gun.
+
+It is laid over a four-view at 189.3 px/m (`tools/ref/sv_su122.json`), where its five road wheels agree
+with the T-34's stations to a third of a unit and its track centres in both end views with the T-34's 2.45
+m, and at that scale the SU-85's hull, casemate, fenders, fuel tanks and stowage lie on the drawing to
+about a line width; they are the SU-85's (`s85Body`, `s85Sides`, `s85Tanks`, and `s85Front(1)`, which
+leaves the SU-85's gun housing and spare links off). What is its own is the mount, the plate bolted over
+the front plate below it and the roof. On `tools/dims.mjs` it reads 6.19 m long against 6.10, 6.89 over
+the gun against 6.95, 3.00 wide and 2.17 high against 2.235, and the SU-85's body, roof and clearance.
+
+What carries it (`s122` and `S122`): the mantlet is lofted from rounded plans (`s122Ring`) at nine
+heights, square behind inside the casemate and with its front corners rounded, standing out of the front
+plate a little right of the middle and as wide as half the casemate, near upright down its front and
+rounded back over its top to the roof; out of it the recuperator's armoured box, deep and narrow, its top
+sloped down to its face, with two bosses and two studs on each side and a lifting eye on top; and the
+short fat tube out of a collar in its face, with no brake (`s122Gun`, the mount, turning about a point
+behind the mantlet). Below it a plate is bolted over the front plate from the nose up, wider at the top
+than the bottom (`s122Front`). On the roof (`s122Roof`): the periscope in its drum on the right front; the
+square hatch on the left front with its four pairs of hinges and the hood standing over it on four struts
+with slits round it; the mushroom vent behind it; the big hatch on the right behind the periscope, hinged
+at its front edge, which is the commander's (`s122Hatch`, left out of the periscope for the T-34's
+reason); a box on the right-hand edge; and on the rear plate a rail across it on pegs, a pistol port and a
+vision slit. The room is read off the shell (`insideOf`), as the SU-85's is.
+
+On the duel card it is the StuH 42 of the Red Army. Over twenty-four runs head on at 328 it takes the
+Panzer IV 38 per cent of the time in 22 seconds, where the StuH 42 takes an M4A1 42 per cent of the time
+on the same afternoon. Over twelve runs a row it takes the grenadier squad every time in 6.8 seconds
+untouched, the MG 34 team every time in 1.8, the Knight's Cross Holders every time with two thirds of
+itself left, the Wirbelwind every time and the Marder 42 per cent of the time; a Panther takes it every
+time with five sixths of itself left, and a Pak 38 sited at 328 every time in 16 seconds.
+
+**The IS-2** (`sv_is2`, out of the Tankovyy park, 640 manpower, 160 fuel, 62 seconds, 20 of population, one
+at a time, I) is the Red Army's heavy tank: 1150 hit points, 135 mm of plate across the hull's front, 90 at
+the sides and 60 at the back and 155 round the turret (`ARM`), 70 of speed and 460 of sight, the 122 mm
+D-25T at 250 a round over a burst of 60 every 9 seconds out to 460 with 175 mm of penetration, a coaxial
+DT (`sec`), and the DShK on the loader's ring as its one fitting (`dshk`, 70 manpower, a secondary of its
+own in `SECW`); it tows a gun. Those are the row's numbers as it was pasted. The row gives the turret one
+figure, which is the turret's all round, as it was for the T-34s.
+
+It is built from nothing, off a four-view of the early tank with the stepped nose (`tools/ref/sv_is2.json`)
+with no scale on the sheet: its hull is the published 6.77 m at 50.2 px/m, and at that scale the road wheels
+are 0.55 m and the track centres 2.44 m apart, which is the check. The first overlay agreed with the drawing
+to about a line width in all four views, running gear, hull, turret, mantlet, gun and fuel tanks, and found
+two things: the headlamp stands lower on the glacis and further out than it was built, and the upper rear
+plate carries the transmission's arched cover with two struts down to the round inspection plate.
+On `tools/dims.mjs` it reads 6.90 m long against 6.77, 9.71 with the gun against 9.83, 3.36 wide against
+3.07 (the published width is over the tracks, and the drawing stands the fuel tanks on the rear fenders out
+past them), 2.66 high to the cupola against 2.73, and 0.39 of clearance against 0.42.
+
+What carries it (`is` and `ISG`, `ISH`, `IST`, in the T-20's 4BO green): six road wheels a side, each two
+cast discs with six holes on rubber tyres either side of the guide horns, on trailing arms with a bump stop
+over each (`isWheel`); three return rollers, the spoked idler in front and the sprocket behind with two
+toothed rings, and a cast track with two grousers and a horn on every link (`isLink`). The lower hull is one
+profile from the belly to the deck with the stepped nose, the glacis laid back two thirds of the way to flat
+and the two rear plates, and the sponsons stand out over the tracks to the fenders with their fronts in the
+glacis and their backs in the rear plate (`isBody`, `isGlZ`, `isRrX`); anything on a plate goes on in its
+frame (`isOnGl`, `isOnRear`). On the glacis the driver's visor in its box and the headlamp; on the fenders a
+box each side in front and two long fuel tanks each side behind; on the deck the engine's round plate, the
+grilles and the louvres; on the rear plate the exhausts under their covers and the arched cover (`isFront`,
+`isDeck`). The turret (`isTurret`) is a casting lofted from one plan scaled at each height (`isTurretPlan`,
+`IST.K`, through `m4TurRing`), widest at its foot and longer behind its ring than in front of it, with a
+mantlet like a box laid on its face, wider to the left, and out of it the D-25T, its thick part tapering to
+the long chase and the big double-baffle brake, a little left of the middle (`barY`). On the roof the
+cupola on the left with six vision slots and a lid hinged at its back (`isHatch`, `HATCHES.sv_is2`), the
+loader's hatch on the right with the DShK's ring round it, the periscopes, two vents, the aerial and a
+handrail; on the sides a handrail and a pistol port; and a DT in a ball in the back. The room under the
+cupola (`VIN.sv_is2`) is the T-34-85's arrangement in the bigger casting.
+
+On the duel card the row's numbers make it a tank that kills a Tiger and loses to a Panther. Over twelve runs
+a row head on at 377 it takes the Tiger every time in 54 seconds with two thirds of itself left and the Panzer
+IV every time at 328 in 31 seconds with nine tenths, and the Panther and the King Tiger take it every time, the
+Panther in 43 seconds with three fifths of itself left and the King Tiger in 80 with seven tenths. At 377 the
+D-25T's 175 mm has lost a fifth of itself and is 139 against the Panther's 150 of hull front, while the
+KwK 42's is 147 against the IS-2's 135, and the Panther loads in 3.8 seconds to its 9. With the Panther caught
+side-on it wins a quarter of the time over eight runs. Over eight runs a row it takes the grenadier squad every
+time in under two seconds without losing a hit point, off its high explosive, and the Knight's Cross Holders
+every time in as little; a Pak 38 sited at 377 never takes it, and is gone in 36 seconds.
+
+**The ZiS-3** (`sv_zis3`, out of the Kazarma beside the Shturmoviki and the T-20, 330 manpower, 25 fuel,
+28 seconds, 10 of population, T) is the Red Army's 76 mm divisional gun: six men of 64 hit points, 36 of
+speed and 600 of sight, in action 4.5 seconds after it halts and packed 5 seconds after it is ordered off,
+with two rounds. The AP round (`w`) is 125 every 3.0 seconds out to 540 with 98 mm of penetration, and the
+HE round (`wUp.he`) is 90 over a burst of 45 out to 600. Those are the row's numbers as it was pasted; the
+accuracies, the suppression, the shield's blast factor and how it stands at its gun are the Pak 38's.
+
+It is laid over a sheet of two side views, a plan and the two ends (`tools/ref/sv_zis3.json` for the plan
+and the front with the trails open, `sv_zis3_s.json` for the side and the rear with them closed, which is
+how the sheet draws them). The sheet has no scale; every view is read at 75.5 px/m, which puts the wheels
+0.79 m over the tyre on a 1.37 m track, the bore 0.82 m up and the top of the shield 1.35 m up, and makes
+the gun 6.10 m long with the trails closed against the published 6.095. The front view draws the top of the
+shield a few pixels higher than the side does, and the side was taken. The first overlay agreed with the
+drawing to about a line width in all four views and found three things: the carrying handle on each trail
+lies along its top edge where it was built a hand lower, the lifting handle's grip bends back down at its
+end, and the opening the cradle comes through is arched up half a unit higher than it was built.
+
+What carries it (`zs` and `ZSG`, in the T-20's 4BO green, and baked the way the Pak 38 is): the GAZ-AA's
+wheels on 6.50-20 tyres with two staggered rows of lugs and a pressed disc dished out to the hub with five
+holes in it (`zsWheel`); the trails, riveted box girders deeper at the hinge than at the end, each with a
+pointed spade hanging under its end and leaning back into the ground, a lifting handle up and back off the
+end, a carrying handle on its outer face and a stud on top near the end, and the lunette on the right one,
+swung in between the two ends when they are closed for the move (`zsTrail`); the shield, one plate leaning
+back twenty-three degrees, wide above the wheels and cut in over each in a quarter round to a lower plate
+that hangs straight down between them behind the axle, with the opening for the cradle, the sight's window
+on the left with its shutter lifted, a stay out to it from each side of the cradle and two cases hung on
+its back (`zsShield`, the quarter round laid as a fan because `m1Plate` wants a convex outline); the
+cradle, its collar at the front, the recuperator lying over the tube in front of the shield and the buffer
+under it, running back under the breech in a tray; the panoramic sight cranked down from behind the window
+to the kneeling gunner's eye, and the two handwheels (`zsCarriage`); and the tube with its brake, its two
+windows a side and the sliding-block breech ring, which recoils (`zsTube`).
+
+The gunner and the loader serve it in the gymnastyorka with nothing in their hands (`sv_atg`), the gunner
+kneeling at the sight on the left and the loader at the right of the breech facing it, and the other four
+bring the rounds up a wooden case at a time with the PPS-43 the army issued its crews (`sv_atb`, with his
+greatcoat rolled over his shoulder, and `sv_atb_b`, in the pilotka with his sack; the case is `box76`).
+Packed, the trails close and the piece rides beside the gunner. A man killed goes down as `sov_at`, and
+the Red Army's bunker takes it as its anti-tank fitting.
+
+**An anti-tank gun with its HE round up fires at men** (`atNow(u)`). An anti-tank gun (`atOnly`) waits for
+armour, in `acquire` and in the brain's own pick, and that is now true while its AP round is up: with the
+HE round up the ZiS-3 engages whatever its side can see out to 600, men, crews and houses, as a field gun
+does. The crew pick the round the way the eighty-eight's do, on the AP and HE cards, which cost most of a
+reload, and the brain's rule (`flak.round`) reads a gun that walks as well as one that never moves, and
+looks for armour out to the gun's own reach and a little past it rather than the eighty-eight's 660. The
+brain buys two ZiS-3s out of the Kazarma, the rung opening at 130 seconds as the anti-tank guns' does
+across the beach, and one ahead of anything else whenever the enemy has more armour than it has guns to
+answer it (`K.at`); `aiCutLadder` counts it among the things that kill a heavy. The duel card does not run
+the brain, so `--ua=he` fights it on its HE round.
+
+On the duel card, set up (`--sited`) and staged at 328 against a Panzer IV coming at it, it wins all
+twenty-four fights in 19 seconds with half of itself left, and the 57 on the same afternoon does the same
+with a little less left; in the gate's drill at 520 it fires first, at 2.5 seconds from 363, three seconds
+before the tank answers. Over twelve runs a row, set up, it takes the Puma, the 251 and the Marder every
+time and the StuH 42 three times in four. A Panther takes it every time, head on with nineteen twentieths
+of itself left and caught side-on with four fifths, and a Tiger takes it every time: the AP round goes
+through a Panther's side and never its front, and it takes seven hits to kill one. On the HE round
+(`--ua=he`) it takes the grenadier squad every time in 17 seconds with four fifths of the crew left and
+the MG 34 team every time in 9 seconds; on the AP round a grenadier squad walking into it takes it every
+time in 9 seconds without losing a man, because the gun is waiting for armour.
+
+**The ZiS-2** (`sv_zis2`, out of the Avtopark beside the BA-64B, 380 manpower, 30 fuel, 34 seconds, 12 of
+population, Z) is the Red Army's anti-tank gun: six men of 64 hit points, 30 of speed and 660 of sight, in
+action 5 seconds after it halts and packed 5.5 seconds after it is ordered off, with the AP round alone,
+140 every 3.0 seconds out to 620 with 140 mm of penetration (`atOnly`, so it waits for armour). It can be
+hitched to a tow (`towable`, the lunette `towAt` 38 behind the axle). Those are the row's numbers as it
+was pasted; the accuracy, the suppression, the shield's blast factor and how it stands at its gun are the
+ZiS-3's.
+
+It is the 57 mm tube of seventy-three calibres on the split trail the ZiS-3 was later built on, so the
+carriage, the shield, the cradle and the wheels are the ZiS-3's (`zsCarriage`), and only the tube is its
+own (`z2Tube`, `Z2`): from the breech ring through the cradle to a plain muzzle, tapering from 0.11 m
+across at the cradle to 0.08 at the muzzle, 3.15 m ahead of the axle against the ZiS-3's 2.64. It is laid
+over a sheet of three side views, a plan and the two ends with no scale on it (`tools/ref/sv_zis2.json`):
+the front view puts the wheels on the ZiS-3's 1.37 m track and the shield at its 1.52 m at 39.05 px/m, the
+side views put the wheel at its 0.79 m at 40.3, and the side and the plan are read at 39.7, where the ZiS-3's
+carriage and trails lie on the drawing to about a line width. The crew are the ZiS-3's men and drill
+(`variantForModel`, `gunMate`, `gunCrew`).
+
+On the duel card, set up (`--sited`) and staged at 328 against a Panzer IV coming at it, it wins all
+twenty-four fights in 13 seconds with two thirds of itself left, where the ZiS-3 on the same afternoon
+wins eleven in twelve. Over twelve runs a row, set up, it takes a Tiger eleven times in twelve, because the
+57 mm goes through the Tiger's front at 394, and the Puma and the StuH 42 every time; a Panther takes it
+every time, head on with three quarters of itself left and caught side-on with half, and a grenadier squad
+walking into it takes it every time in 10 seconds without losing a man.
+
+**The BM-13N Katyusha** (`sv_bm13`, out of the Avtopark beside the BA-64B and the ZiS-2, 400 manpower, 70
+fuel, 34 seconds, 10 of population, K) is the Red Army's rocket artillery: eight rails of the 132 mm M-13 on
+a Lend-Lease Studebaker US6, 320 hit points and soft-skinned (`ARM`, as the jeep is), 120 of speed and 300
+of sight. It fires only on a mission (`barrageOnly`), and a mission is the whole rack: sixteen rockets of 110
+over a burst of 60, rippled off at one every .45 seconds into a circle of 190 out to 950, and then sixty
+seconds of reloading (`rack`, `reload`). It is in action four seconds after it halts (`setup`), and the rack
+turns ten degrees either way on the frame under it (`arc`), the lorry turning for anything wider. Those are
+the row's numbers as it was pasted, and nothing it throws is smoke.
+
+It is laid over a four-view of the BM-13N on the Studebaker (`tools/ref/sv_bm13.json`) whose scale bar reads
+59.7 px/m; at that scale the front axle is the US6's published 148 in from the middle of the bogie and the
+bogie's two axles are its 44 in apart, which is the check, and the drawing is taken at 60. The first overlay
+agreed with the drawing to about a line width in all four views, the rack, the rails, the frame of struts
+under them, the cab, the bonnet, the wheels and the jacks; the plan draws the rockets' tails about a quarter
+of a metre further aft than the side does, and the side was taken.
+
+It is entered on `tools/dims.mjs` at the drawing's own figures, because the drawing's scale is what was
+checked: 6.12 m from the bumper to the tail of the frame (7.06 over the fins of the rockets lying on the rails,
+which the card does not count), 2.21 m wide, 2.86 m to the top of the rack lying down and 0.32 m under the
+differentials. What it is built of (`sb` and `SBG` for the truck, `bm` and `BMR` for the rack, in the T-20's
+4BO green): 7.50-20 tyres, single in front and twinned on the bogie
+(`sbTyre`, `sbWheels`), a banjo axle in front on its springs and two behind walking on one spring a side
+(`sbAxle`, `sbBogie`), the frame with its bumper, tow hooks, fuel tank and spare (`sbFrame`), the bonnet
+narrowing to the grille of upright bars with the headlamps on the flat wings (`sbBonnet`, `sbWings`), the
+closed cab with its split windscreen (`sbCab`), the box of tools behind it, the rear wings flat over the bogie,
+the posts the launcher stands on and the two jacks let down at the tail (`sbBack`), and on the posts the
+turntable and the two beams of the footing out to the pivot's brackets, with the crank the crew lay it with
+(`bmBase`).
+
+The rack is the Calliope's machinery. What turns on the lorry is the footing (`bmBase`, the mount); the rack
+(`bmRack`) is an elevating part laid up on it about the pivot at its back (`VMODEL.elv`, `elvP`), with the two
+elevating screws as links (`bmLinks`), so `barrageTick` lays it up to the range before a rocket leaves as it
+does the Calliope's. Two doors were opened for it. **A vehicle names its own rack** (`VMODEL.rk`: the pivot,
+the rest angle, where a rocket lies on its rail and where the rail ends, and which place the k-th rocket
+leaves from, `bmTube`, striding across the rack top and bottom turn about), and `rkLaunch` reads it, with the
+Calliope's `CLG` for a vehicle that names none. **And what lies on the rails is drawn while it is there**
+(`VMODEL.rkLoad`: one rocket, `bmRocket`, at each place in firing order), so a ripple empties the rails one
+rocket at a time and a reload fills them; `elvDraw` draws the places the rack has not yet fired and the wreck
+all sixteen. The M-13 in the air is `RKT.m13`, the same rocket.
+
+**The BS-3** (`sv_bs3`, out of the Avtopark beside the ZiS-2, 480 manpower, 50 fuel, 44 seconds, 16 of
+population, V) is the Red Army's heavy anti-tank gun: the 100 mm field gun M1944, seven men of 66 hit
+points, 18 of speed and 700 of sight, in action 6.5 seconds after it halts and packed 7 seconds after it is
+ordered off, with the AP round alone, 210 every 4.2 seconds out to 680 with 175 mm of penetration
+(`atOnly`), and it can be hitched to a tow (`towable`, the lunette `towAt` 52 behind the axle). Those are the
+row's numbers as it was pasted; the accuracy, the suppression, the shield's blast factor and the brake are
+the ZiS-3's, and it traverses half a radian either way on its carriage (`carr`), the published 58 degrees.
+
+It is laid over a four-view of it travelling (`tools/ref/sv_bs3.json` for the side and the two ends,
+`sv_bs3_p.json` for the plan, because the side view has the tube raised about ten degrees and the plan has
+it level), with the trails closed and lifted level onto the limber, which `bsShow` lays by pitching them
+about their hinges. The sheet has no scale: the front view puts the published 2.15 m over the wheels at
+51.6 px/m, and at that the wheels are 0.86 m, which is the 34 by 7 lorry tyre, and the tube from the back of
+the breech ring to the brake 5.7 m against the published 5.96, so the sheet's tube is a twentieth short and
+is taken as drawn. The first overlay agreed with the drawing to about a line width in all four views but for
+a block over the tube at the front of the cradle, which the side view showed to be the cradle's own sleeve;
+it came off.
+
+What it is built of (`bs` and `BSG`, in the 4BO green, baked the way the ZiS-3 is): a pair of 34 x 7 tyres
+on each hub with a pressed disc between the rims (`bsWheel`); the axle with the bottom carriage over it and
+the trails hinged behind it, riveted box girders with the spade, the lifting handle, the handspike stowed
+on the left one and the lunette on its drawbar on the right (`bsTrail`); the top carriage with its two
+cheeks up to the trunnions; the shield in one surface (`bsShX`), flat across the middle with its wings folding
+back, full width over the wheels and narrowing below them, with the opening for the cradle, a window in
+each wing with its shutter lifted and a stay out to each wing; the sight behind the left window, cranked
+down to the eyepiece, and the two handwheels on the left; and in the bore's frame the cradle with its collar,
+the recuperator under it, the elevating arc and the big recoil guard behind the breech. The tube (`bsTube`)
+is fifty-nine calibres from the tall breech ring through the cradle to the double-baffle brake with two
+windows a side. Its bore stands 1.3 m up, two thirds of a metre over the ZiS-3's, so the gunner stands bent
+at the sight and the handwheels (`gunSit` 'laying', the 105's) where the ZiS-3's kneels, and the loader
+stands at the right of the tall breech facing it; the other five bring the rounds up a case at a time.
+
+On the duel card, set up (`--sited`), the row's numbers make it the gun that kills every German tank but
+one. Over twenty-four runs head on at 377 it takes a Panther every time in 23 seconds with three fifths of
+itself left, and over twelve with the Panther caught side-on every time as well; at that range the 100 mm
+has 175 mm of penetration less a seventh and goes through the Panther's 150 of hull front most times it
+lands there. Over twelve runs a row it takes the Tiger every time at 394 with three quarters of itself
+left, the Panzer IV every time at 328 in 14 seconds, where the ZiS-2 on the same afternoon does the same
+in 13.6 with a little less left, the StuH 42 every time and the Puma every time in five seconds untouched.
+The King Tiger takes it every time, in 113 seconds at 426 with all but a twenty-fifth of itself left,
+because the round never goes through its front and the tank's high explosive needs most of two minutes to
+work through a crew of seven behind a shield. A grenadier squad walking into it takes it every time in 12
+seconds without losing a man, because the gun is waiting for armour.
+
+**The SU-76M** (`sv_su76`, out of the Avtopark beside the BA-64B, 320 manpower, 65 fuel, 28 seconds, 12 of
+population, S) is the Red Army's light self-propelled gun: the 76 mm ZiS-3Sh in an open fighting compartment
+over the back of a lengthened T-70, 440 hit points, 35 mm of plate in front and 15 at the sides and the back
+(`ARM`, `cm` .66, which is where the walls begin on the box a round lands on), open above and taking 1.4 times
+a burst (`blastRes`), 96 of speed and 440 of sight. It carries the ZiS-3's two rounds: the AP round, 125 every
+2.6 seconds out to 440 with 98 mm of penetration, which waits for armour (`atOnly`), and the HE round, 90 over a
+burst of 45 out to 480. The gun traverses fifteen degrees either way (`arc` .52) and the hull turns for
+anything wider, and it has no upgrades. Those are the row's numbers as it was pasted; the accuracies and the
+suppression of the two rounds are the ZiS-3's. `bcls: 'med'` reads it as a tank to a build preference, because
+read off its plate it would count as an armoured car.
+
+It is laid over a four-view of it (`tools/ref/sv_su76.json`) with no scale on the sheet: the side view agrees
+with the published 2.10 m of height and 4.97 m over the tracks at 85.2 px/m, and the plan across, the front and
+the rear with the published 2.715 m over the fenders at 87.3. The fighting compartment stands a little to the
+left of the middle and the gun further left again, as every view of the sheet has them. Laid over it, the running gear, the hull,
+the compartment and the gun with its shield agree with the drawing to about a line width in all four views. The
+drawing carries the fender guards out past the sprocket and the idler, so `tools/dims.mjs` reads it at 5.28 m
+over them against the published 4.966 m of hull, which is the length the ZSU-37 on the same chassis is published
+at.
+
+What it is built of (`sm` and `SMG`, `SMH`, in the T-20's 4BO green): six road wheels a side, each two pressed
+discs on rubber tyres either side of the guide horn on an arm trailing from a pivot ahead of it (`smWheel`),
+three return rollers, the sprocket low in front with its two toothed rings (`smSprocket`) and the idler behind
+at the height of the wheels on its crank (`smIdler`), and a track of pressed shoes with a grouser across the face
+(`smLink`). **The chassis is a builder of its own** (`smChassis`), because the ZSU-37 below is built on it: the
+running gear, the tub up to the floor, the nose and the glacis in one long plate up to the engine deck, the deck
+as far back as a station it is handed, the back plate where it is told, the hull's sides lined inside round the
+fighting compartment, and the fenders with the guards turned down over the sprocket and the idler. On the SU-76M
+(`smHull`) the deck carries a hatch over each engine and the radiator's louvred housing on the right, the two
+silencers lie side by side on the right fender behind, two boxes and the headlamp are on the left with the tow
+cable along it, and the back plate carries the grille over the engines' outlet, the T-bar, the pintle and the
+towing eyes. The fighting compartment (`smCasemate`) is two walls leaning in from the deck, level along the top
+over the front and falling to a low rear wall with the door in it, the front plate laid back with the opening the
+shield stands in, a ledge under the left wall where the compartment stands out past the hull, a rail over the
+open back, and inside the rounds racked along the right wall and across the back and the wireless on the left,
+all of it lined in the white of the interiors and left out of the bake (`smPlate`). The ZiS-3Sh is the mount
+(`smMount`), built about the pivot it turns on: the tube with the ZiS-3's slotted brake, the tall housing over the
+recoil gear run forward of the shield, the curved shield (an `m4Sweep` profile run from the top down) that stands
+forward of the front plate and closes its opening, and behind it the cradle, the breech ring and its block, the
+guard behind it, the sight and the two handwheels on the gunner's side, the cheeks and the pedestal down to the
+floor. The gunner stands at the left of the breech and turns with it; the loader with a round in his hands and
+the commander at the back on the right ride on the hull with their heads and shoulders over the walls, all three
+in the padded helmet (`smMen`), and the commander's is the eye in the periscope (`VIN.sv_su76`, off the hull).
+
+**And the brain picks its round as it does a gun's.** `flak.round` read a crew-served piece and nothing else, so
+a vehicle that carries HE as well as AP went on waiting for armour with men in front of it; it reads anything
+with `wUp.he` now, so the brain on the Soviet slot puts HE up on the SU-76M with only men in front of it and AP
+up when a tank comes into reach. The AP and HE cards were already offered off the weapon, so the player has them
+on the vehicle. It has a rung on the brain's ladder at 280 seconds, after the ZiS-2s, and `aiCutLadder` reads it
+as a medium.
+
+On the duel card the row's numbers make it a gun for the light half of the 352nd. Over twenty-four runs head on
+at 328 it takes the Panzer IV 21 per cent of the time, leaving it at 0.45, where the ZiS-3 with the same gun sited
+at the same range takes it every time over twelve: the towed gun is a crew behind a shield that the tank has to
+find, and a hit on it takes one man, where the SU-76M is found at once and three or four of the Panzer IV's
+rounds finish it against the five or six it needs. Its AP round goes through the Panzer IV's front about two
+times in three at that range. Over twelve runs a row it takes the Puma every time in under ten seconds and the 251
+every time in six untouched; the StuH 42 takes it eleven times in twelve, a Panther every time head on and caught
+side-on, and a Pak 38 sited at 361 every time in under ten seconds. On the HE round it takes the grenadier squad
+every time in 15.5 seconds untouched and the Knight's Cross Holders every time in 13 seconds, left at a quarter;
+on the AP round a grenadier squad and the gun ran to the card's limit of 150 seconds with neither hurt, because
+the gun waits for armour and nothing in the squad opens 35 mm.
+
+**The ZSU-37** (`sv_zsu37`, out of the Avtopark beside the SU-76M, 340 manpower, 70 fuel, 28 seconds, 12 of
+population, Q) is the Red Army's self-propelled anti-aircraft gun: the 37 mm 61-K on its own carriage in an open
+box over the back of the SU-76M's chassis, 460 hit points, 15 mm of plate in front and 10 at the sides and the
+back (`ARM`), open above (`blastRes` 1.25, as the T-20 and the BA-64B are), 90 of speed and 350 of sight. Its
+weapon is a burst of 42 every 0.4 seconds out to 360 with 45 mm of penetration (`w.mm`), an automatic cannon
+(`w.auto`, so the eye and the ear read it as the Wirbelwind's and the burst is five rounds), with a suppression of
+.10 capped at .95, which is the row's "very high suppression" written as the M16's. The gun goes all the way round
+and the vehicle has no upgrades. Those are the row's numbers as it was pasted; the row gives no blast factor and
+1.25 is the one the army's other open vehicles carry.
+
+It is laid over a four-view of it (`tools/ref/sv_zsu37.json`) with no scale on the sheet. Its six road wheels
+agree with the SU-76M drawing's at 73.6 px/m along the side and the plan, the front with the same track centres
+at 78.8 across and the rear at 75.2, both read at 74.5 up, and at those scales the sheet stands the box 2.19 m
+off the ground against a published 2.18 m and the hull is 5.28 m long against 5.29. **The chassis is the SU-76M's, and
+the two drawings disagree about it**: on the same road wheels this sheet draws the hull, the fenders and the
+return rollers about 0.9 units higher and the idler 1.5 higher and smaller. The SU-76M's drawing was taken for the
+chassis, the ZSU-37's views are pinned at the deck rather than the ground, and what this sheet draws on top of
+the chassis is laid off this sheet along the vehicle and across it, so on the SU-76M's chassis the box stands
+2.13 m. Laid over it on those terms, the box, the slot, the frames, the turntable and the gun agree with the
+drawing to about a line width.
+
+What it is built of (`zk` and `ZKH`): `smChassis` carried further back, with the deck ending at the front of the
+box and the back plate three units behind the SU-76M's; over the fenders behind the engine the hull is widened out
+into sponsons (`zkSponsons`), louvred along the engine and in three panels behind it, with their floors where the
+guard turns down over the idler; and the deck over the back is laid round the hole the box's well opens into
+(`zkDeck`). On top of it (`zkHull`) the oval cover over the glacis with the driver's hatch, the radiator's
+housing on the right of the engine deck, the silencers on the right fender ahead of the sponson, the box and the
+headlamp on the left, and the stowage box on its legs on the back plate. The box (`zkBox`) is thin plate standing
+straight up off the deck round an outline pointed at the front, widest at the shoulders and cut off at the back
+corners (`ZKH.box`, the right side; the left is its mirror), with a low plate across the point under the slot the
+barrel fires through, a post either side of the slot, a braced frame leaning against each front wall with a stay
+down to it, the rail round the back on its posts, and inside the racks of clips braced against the walls at the
+back corners and the bins under them, all of it lined and left out of the bake. The turntable is the mount
+(`zkMount`): the platform the crew stand on, the pedestal and the carriage, the cheeks the trunnions turn in, the
+two layers' seats on their arms either side with their backs and footrests, a handwheel in front of each and the
+ring sight in front of the right-hand one. The two layers sit and the loader stands behind the gun, and all three
+turn with it; the commander stands at the back of the box on the right and his is the eye (`zkMen`,
+`VIN.sv_zsu37`).
+
+**The gun is laid up over the walls whenever it is turned off the slot.** Built level, as the drawing has it, the
+61-K's bore is six units under the top of the box, so a gun laid level anywhere but through the slot in the point
+fires into its own walls. The gun is an elevating part on the mount (`VMODEL.elv`, `zkGun`, thin to the bake),
+pitched about its trunnions by `u.el`, and two doors were opened for it. **`def.wallEl`** is the slot's
+half-width in radians and the elevation that clears the walls, `[.09, .92]`: the vehicle's update lays the gun up
+to the second whenever the mount is turned more than the first off the nose, and back down to level when it comes
+back into the slot, at .9 radians a second. **`VMODEL.elMuz`** names the elevating part the muzzle is read off, so
+`gunMuzzle` puts the flash and the tracer at the end of the laid barrel through `elvPt`, the point the draw puts
+it, rather than at the end of a level one six units down inside the box. The Calliope's rack and the BM-13N's
+rails are laid up on a mission and have no muzzle; this is the first elevating part that fires direct. Nothing
+about the combat reads the elevation: a round laid up over the wall goes where a level one would, which is a
+gun firing at men on the ground at fifty degrees, and is drawn so that the barrel at least comes out of the box.
+
+It has a rung on the brain's ladder at 300 seconds, after the SU-76M, and `aiCutLadder` reads it as flak. On
+the duel card it strips men out of the open and opens anything with thin plate, and it has no business near a
+tank. Over twelve runs a row it takes the grenadier squad every time in 13 seconds untouched, where the M16 on the
+same afternoon takes it in 8.8, the MG 34 team every time in six, the KS 750 every time in under five and the 251
+every time in 5.3, all without losing a hit point, and the Knight's Cross Holders every time with a third of
+itself left after their bundles. The 234/1 is an even fight, 58 per cent, because its 2 cm opens 15 mm as readily
+as the 37 mm opens the car; the Wirbelwind takes it every time with three quarters of itself left, and the Panzer
+IV every time untouched.
+
+**The B-4** (`sv_b4`, dug by the Sapery as `WORKS.howb4`, 520 manpower, 180 fuel, 90 seconds, 14 of
+population, 9) is the Red Army's heavy battery: the 203 mm howitzer M1931 on its tracked carriage with the
+box trail, seven men of 62 hit points and 300 of sight, dug where it will stay. It fires only on a mission,
+five rounds of 400 over a burst of 160 into a circle of 160 out to 1250, and it is the third battery of the
+game under the same four rules as the 240 and the Mörser: one a side, never within 700 of its own
+headquarters, never into the enemy's base (`safe` 600), and slow onto a new bearing. Those are the row's
+numbers as it was pasted; the rate is not on the row and is taken between the other two, a round every ten
+seconds. Its top carriage turns four degrees either way (`carr` .07), which is the published eight degrees
+of traverse, and past that the crew heave the whole carriage round on its tracks by the trail (`traverse`
+.10). `NATIONS.sov.battery` names its work, so the sapper's card offers it, the SIMPLE strip arms it and
+the brain digs it, through the doors the other two batteries go through.
+
+It is laid over a four-view of it in firing position with the tube level (`tools/ref/sv_b4.json`). The
+sheet's own scale bar reads 58.7 px/m, and at that the barrel comes out 4.86 m against the published 5.087
+and the height 2.39 m against 2.5; at 56.0 both agree and the width over the tracks is 2.6 m against 2.7,
+so every view is read at 56.0 and the bar is taken as a twentieth out. The first overlay agreed with the
+drawing to about a line width in all four views: the track units with their wheels, rollers and the rivets
+on the frame plate, the drums and the seats on the platforms, the cheeks, the cradle and its recuperators,
+the breech ring, the trail with its stowage, spade and brackets, and the crane.
+
+What it is built of (`b4` and `B4`, in the 4BO green, baked the way the Mörser is): two track units
+(`b4Unit`), each a belt of cast shoes with three windows through them (`b4Link`) round a spoked wheel in
+front, four small road wheels in pairs either side of the guide, a toothed wheel behind and two rollers on
+top, with the riveted frame plate inside the loop and the boss in the middle of it that the unit rocks on;
+the bottom carriage between them with its deck and the ring the top carriage turns on; a platform over the
+front of each track with a layer's seat on a frame of tube, facing the breech, and a drum lying across under
+it (`b4Seat`); the traversing gear at the front left with its handwheel; the box trail (`b4Trail`), two
+girders closing together and falling toward the end, open between them at the front and decked from the
+middle back, with three stowage tubes, the spade across the full width with a bracket either side, the pad,
+the end plate and the round plate the limber takes; and the shell crane on its post at the trail's front
+left (`b4Crane`). The top carriage (`b4Top`) is two riveted cheeks with the trunnion bearings near their
+backs, the gear case and the elevating handwheel on the left and the sight on the right, and on its
+trunnions the cradle: the sleeve and its collar, the two recuperators over the tube joined to it by a web,
+the block at their front ends, the yoke at the back and the toothed arcs under the trunnions. The tube
+(`b4Tube`) is twenty-five calibres with no brake and a jacket where it goes into the cradle, and behind it
+the square breech ring with its corners rounded (`b4RBox`) and the screw's carrier with its lever. Three
+pieces, as the 240 is: the tracks, the trail and the crane on `u.baseA`, the top carriage on `u.facing`,
+and the tube recoiling down its bore, laid at 0.38 radians. The position is the Mörser's banked pit a
+little wider (`hvR` 84), and its seven men are laid by the work: the two layers out beside the tracks at the
+handwheels, two loaders behind the breech either side of the trail, the man at the crane, and two bringing
+the rounds up.
+
+**It can be rebuilt as the Br-5** (`UPGRADES.br5`, 440 manpower and 210 fuel, by hand only): the 280 mm
+mortar M1939 on the same carriage, through Little David's doors (`defUp`, `piece`, `gmKey`): three rounds of
+950 over a burst of 200 into a circle of 180 out to 900, a round every 24 seconds (the row gives no rate, and
+the real one was a round every four minutes), and forty seconds of change-over in which it does not fire.
+There is no drawing of it here, so its tube is built to the published figures (`br5Tube`, `BR5`): seventeen
+calibres overall, 4.75 m from the back of the ring to the muzzle against the B-4's 5.09, in walls 0.42 m
+across at the muzzle and 0.55 m where it goes into the cradle, whose collar is opened out to take it
+(`b4Top`'s `big`), laid up at 0.62 radians where the B-4 is laid at 0.38.
+
+**The 82-PM-41** (`sv_mor`, out of the Kazarma beside the Shturmoviki, 250 manpower, 10 fuel, 26 seconds,
+6 of population, M) is the Red Army's battalion mortar: three men of 54 hit points, 46 of speed and 260 of
+sight, in action 3 seconds after it halts and packed 2.5 seconds after it is ordered off. On its own account
+it is 58 over a burst of 34 every 4.2 seconds out to 480, and on a mission ten rounds into a circle of 56 out
+to 570, or smoke. Those are the row's numbers as it was pasted; the accuracy, the suppression and the
+mission's rate of fire are the 81's and the GrW 34's.
+
+There is no drawing of it. It is built off the American 81 (`mo81Model`), whose Brandt bipod it shares, to
+the published 1,220 mm of tube and 82 mm of bore, and to two photographs of one at a dealer's, read for what
+stands where and not for any measure (`pmModel`, `PMG`, in the 4BO green and baked the way the ZiS-3 is). The
+plate is round, 0.6 m across, turned down at its edge and rising to the socket, with an eight-pointed star
+pressed round the socket, ribs out to the edge between its points, four wire handles and a bracket at the
+back. The collar is a little over half way up the tube, the traversing mechanism across in front of it with
+a rod and knob out of its right end and the sight on its left, and two buffers run along the front of the
+tube down past a band with its clamp screw. The column comes down from the head with the elevating screw
+black at its foot, a lever with a ball near its top and the cross-levelling lever on the clamp at its foot,
+and the two legs are pressed channel from a hinge there to a stub axle each. The wheels are what tells it
+from the 81: pressed discs with five holes through them on a steel rim with its edges rolled over, a hub
+with five bolts and a split pin through the cap, standing with their tops leaning in at 0.38 radians, as
+both photographs have them (`pmWheel`). The holes are real (`pmDisc`): the disc is laid on a grid round the
+axle with the cells whose middle falls in a hole left out and the corners that fall in one moved out onto
+its edge, so they come out round and the ground shows through them. And a part turned by `roll` loses its
+normals and its tile, so the wheels are turned by a matrix of their own (`pmXf`) that keeps both.
+
+It is pulled along on its wheels by the muzzle. Its travel shape (`pmModel(true)`) is the whole mortar tipped
+forward 1.17 radians about the axle, so the tube lies level with the plate standing up behind the breech and
+a canvas strap on the muzzle, and the legs are built again from where the hinge has gone to the wheels, which
+do not turn: turned with the rest, a wheel leaning in would have come out toed 18 degrees. `runAt` puts the
+piece 22.4 units behind the gunner and 2.3 to his right, which is the strap at his hand. Set up, the gunner
+kneels at the left of the bipod with his right hand on the lever (`gunY` -3.8, `gunAt` -0.9, the plate
+behind him and to his right), where kneeling behind the plate as the 81's gunner does put him on it; the
+loader kneels at the right of the tube facing it with his hands on it (`gunMate`), and the man who brings
+the bombs up stands beside the gunner with three of them in a tray (`box82`, `pmTray`, the PPS-43 man the
+ZiS-3's bearers are). A man killed goes down as `sov_at`, the Red Army's bunker takes it as its mortar pit,
+and the brain buys it on the rule the other two armies' tubes are bought (`K.mor`).
+
+On the duel card, over twelve runs a row, a grenadier squad takes it every time in 7.4 seconds and an MG 34
+team every time in 6.5, where the American 81 on the same afternoon loses the same two fights in 7.7 and 6.6
+seconds; the Knight's Cross Holders take it every time in 4.1 seconds and the KS 750 every time in 11.3. The
+card stages a pair at the shorter reach, so a mortar meets everything inside the reach of what it is meant to
+be shelling, which is the fight it is helpless in, and the two tubes are level at it.
+
+The brain on the Soviet slot builds the Kazarma as its first building (`K.b1`) and buys a T-20 out of
+it (`LADDER`, one) and two ZiS-3s after it, the rung opening at 130 seconds as the anti-tank guns' do
+across the beach: `K.vb1` says that army's vehicles come out of its first building, which `vehOn`
+reads, because the other two armies' armour waits for the second. It builds the Avtopark second
+(`K.b2`), saving for it the way the other armies save for their motor pools, and buys one BA-64B out of
+it, the rung opening at 210 seconds as the M3 half-track's does across the beach, two ZiS-2s, the rung
+opening at 250, an SU-76M at 280, a ZSU-37 at 300, a BS-3 at 400, and a BM-13N at 340, which is a gun to the brain the way the Priest is (`aiGun`) and which
+the title screen's switch that takes the opposition's artillery away takes off the ladder. It builds the
+Tankovyy park third (`K.b3`) and buys two T-34s out of it, the rung opening at 310 seconds as the M4A1's
+does, an SU-85 after them, its rung opening at 380, an SU-122 at 420, two T-34-85s at 470, an IS-2 at
+560, and more T-34-85s as the count of mediums allows; `aiCutLadder` reads the T-34 and the SU-76M as
+mediums, the ZiS-2, the BS-3, the SU-85, the T-34-85 and the IS-2 among the things that kill a heavy, the
+T-20 and the BA-64B as light armour and the ZSU-37 as flak, which comes forward against an enemy that is all
+infantry the way the Wirbelwind and the M16 do. Its engineers dig the B-4 on the rule the other two armies' batteries are dug,
+off `NATIONS.sov.battery`. It puts nobody on the deck. The post's own shopping (the machine gun, the
+mortar, the assault squad) runs once the first building stands, and the Red Army has the second and the
+third of them: the 82-PM-41 is its mortar (`K.mor`), bought on the rule the other two armies' tubes are,
+and the Shturmoviki are its assault squad (`K.elite`); it has no machine gun team, and a key the army has
+not got is a thing it cannot buy (`canPost`), where it threw.
+
+**A brain fields the army it is given.** `aiTick` reads its keys off the slot's army (`K`), so a
+brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders, the
+Strelki as its line (`K.inf`), the 82-PM-41 as its mortar and the Shturmoviki as its assault squad, has a T-20, two ZiS-3s, a BA-64B, two ZiS-2s, a BS-3, a BM-13N, an SU-76M, a ZSU-37, the T-34s, an SU-85, an SU-122, the T-34-85s and an IS-2 on its shopping ladder, digs the B-4 and lays a minefield every fourth work.
+**And an army whose only infantry is its builder fights with it.** Every rule that leaves an
+engineer out of the fighting read `def.builder`, so a Red Army of nothing but Sapery was an army of
+engineers: the brain dealt none of them a job, the enemy's brain counted it as no army, and an order
+to ALL under SIMPLE took nobody. `natLine(nat)` is whether an army has infantry that is not its
+builder, worked out once off the roster, and `aiDig(u)` is a builder that digs rather than fights:
+every builder of an army with a line, and none of one without, read wherever `def.builder` was read
+for that question. The brain on such an army still keeps one back to dig (the one already at work,
+or the first), in `aiLook`. Measured by the gate: in 45 seconds the brain on the Soviet slot queued
+four Sapery and nothing of another army, kept one as its engineer and dealt the other five jobs
+taking ground. With the Strelki on the roster `natLine` is true for the Red Army, its Sapery dig like
+anybody's engineers and the Strelki take the ground, with nothing else changed; the rule stays for an
+army that is ever built builder first again.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
@@ -7268,7 +8639,9 @@ the one before it standing (`BUILDINGS[k].need`, read by `bldReady`):
 | 2 | Motor Pool (`us_mot`, 240 and 30 fuel) | Kraftfahrpark (`ger_dep`) | M8, M3, M16, 75 mm GMC, M7 Priest, 105, 3-inch / 234/1, Puma, 251, Wirbelwind, Marder III, Wespe, leFH 18, Nebelwerfer |
 | 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, Calliope, M18, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
 
-A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
+The Red Army has the Shtab (`sov_hq`), which makes the Sapery, and three tiers over it, the Kazarma
+(`sov_bar`, 200), which makes the Shturmoviki, the 82-PM-41, the T-20 and the ZiS-3, the Avtopark (`sov_mot`, 240 and 30 fuel), which makes the
+BA-64B, the ZiS-2, the BS-3, the BM-13N, the SU-76M and the ZSU-37, and the Tankovyy park (`sov_tank`, 300 and 60), which makes the T-34/76, the T-34-85, the SU-85, the SU-122 and the IS-2; its Sapery dig the B-4. A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
 motorcycle come out of two buildings, so `aiMaker(slot, key)` is the brain's door: the finished
 building of that player's that makes the unit, the one with the shortest queue. `queueUnit` hands an
 order sent to the wrong building of an AI to the right one, because a brain out of an older revision
@@ -7315,8 +8688,11 @@ round the lot. The 352nd lives in poured concrete: a command bunker, a personnel
 open bays and a tank shelter, each with the earth banked up its back and sides, turf on the roof
 (on the earth tile, because on the grass tile its blades came out as rows of green stripes from
 above), the board marks of the shuttering printed in the walls and the field company's paint over
-them. `tools/shoot.mjs buildings` stood them on Ortona's cliff, so they are photographed on Omaha's
-sand by a script of the session's own.
+them. Each of the four flies the Iron Cross flag from a pole at its front, where they flew a grey
+pennant (`gerFlag`: a red field, a white disc and a black cross pattée, after the flag Hearts of
+Iron IV gives the German army). `tools/shoot.mjs buildings` stood them on Ortona's cliff, so they are
+photographed on Omaha's sand by a script of the session's own. The Red Army's Shtab is logs and
+earth (see *The Red Army*).
 
 **The brain builds in order and saves for the next one.** `aiTick` raises the barracks, the motor
 pool and the tank yard in that order (`K.b1`, `K.b2`, `K.b3`), each where `baseSite` says or out of
@@ -7709,10 +9085,20 @@ shoe with a spike. The baseplate is square with its edge turned down, a raised r
 the ball turns in and a carrying handle, and the bombs stand beside it in their crates. It is
 baked, and its numbers are the ones it had.
 
+**And no brain had dug a work of any kind**, the battery among them, for as long as this file has a history.
+`aiTick` declared `var keep` twice: at the top it is the money held back from a purchase, and three hundred
+lines further down a second `var keep` took the sector the army was pressing, so from there on every
+purchase that asked for `cost + keep` compared the till against a sector added to a number, which is NaN, and
+was refused. That is the works ladder (pits, bags, wire and the Red Army's minefields), the eighty-eight and
+the heavy battery. The counters said so to anyone who read them -- `battery.want` firing on every tick and
+`battery.money` never, with six thousand marks in the till -- and it was found because the B-4's gate row
+asked a brain to dig one and it did not. The sector is `mainS` now.
+
 **And the heavy battery, which is a position rather than a unit.** `am_240` (the 240 mm
-Howitzer M1 on the M1 carriage) and `ger_how210` (the 21 cm Mörser 18, where the Italian Obice
-da 210/22 mod. 35 stood until it was rebuilt, the key kept) are never
-queued: `WORKS.how240` and `WORKS.how210` are how they arrive, the engineers spend a minute or
+Howitzer M1 on the M1 carriage), `ger_how210` (the 21 cm Mörser 18, where the Italian Obice
+da 210/22 mod. 35 stood until it was rebuilt, the key kept) and the Red Army's `sv_b4` (the 203 mm
+B-4, see *The Red Army*) are never queued: `WORKS.how240`, `WORKS.how210` and `WORKS.howb4` are how
+they arrive, the engineers spend a minute or
 more and a lorry-load of fuel digging one in, and it stands where it was dug for the rest of
 the battle. The American one was an eight-inch on a platform first, then for one commit each
 the 105 mm M2A1 on the M2A2 carriage and the 8-inch Howitzer M1 on its own carriage, and is
@@ -8029,7 +9415,7 @@ because being bled faster is pressure the opponent applies rather than a modifie
 player's units.
 
 `PD` is the player's own side, thirteen settings on the title screen behind a HANDICAP
-button that lights when any of them is off even: manpower income and fuel income, what is
+button under STANDING ORDERS that lights when any of them is off even: manpower income and fuel income, what is
 in the till at the first shot in each of the two, production speed (a unit out of a
 queue), construction speed (a building or a field work going up), the manpower cap from a
 hundred to a thousand, the damage his units take, the damage they deal, how far they
@@ -8040,7 +9426,7 @@ of step the moment somebody adds another. `pdMake()` resolves the indices once i
 `startGame` so the income tick and the population check read a number, and `pd()` hands
 the even game to anything that reaches it before a battle. The setting is kept in
 `localStorage` under `ORT_HCAP`, and a handicap carried over from the last battle opens
-the panel rather than hiding in it.
+the standing orders and the panel rather than hiding in them.
 
 **Manpower and fuel are two settings each, not one.** A single income multiplier and a
 single starting purse could only ever scale the two together, and the two are not the same
@@ -8315,9 +9701,11 @@ player an ally.
 after a game on Omaha put the German headquarters at 1250 and the Gothic Line was mirrored
 about the middle of a map 1500 across. Both write their width out now.
 
-Measured by the gate row for it on Ortona: the three buttons and five roles on the panel;
-six headquarters on six owners, the nearest two allies 290 apart, all six with walkable
-ground to march out of and none standing on more than 9.4 units off its plane; five
+Measured by the gate row for it, on Ortona when it was written and on Saint-Lô now: the three
+buttons and five roles on the panel; six headquarters on six owners (on Saint-Lô the map's own
+six spots, the nearest two allies 1,340 apart; on Ortona the split, 290 apart), all six with
+walkable ground to march out of and none standing on more than 1.9 units off its plane (9.4
+on Ortona); five
 brains, the points on the first slots only, every AI raising something in two minutes;
 the labels; and the battle going on after an ally's headquarters and the second one fall
 and ending on the last.
@@ -8695,6 +10083,14 @@ takes out anything the check would name. Every draw comes from the seed, so a nu
 a map. `check.mjs` generates every template at three seeds and asserts the check comes
 back clean. The CHECK panel can also copy one half over the other (`edMirrorAll`).
 
+**A template is laid on the old field's 2800 by 1900 and says so** (`w` and `h` on the map, as
+the blank map does), and the mirror reads the width of the map it is mirroring (`edMW`) rather
+than `WORLD`, which is the map built last. Both read `WORLD` once, and the chooser hid it by
+setting the world first; NEW MAP inside the editor did not, so with a copy of Saint-Lô open a
+template came out laid round x 1900 on a map 2800 across, with every street running into the
+far half. The gate found it the day the editor rows moved to Saint-Lô: twelve maps, twelve with
+a street 1600 long.
+
 **A first pass from a rough layout.** LAYOUT is five areas and five area brushes. An area (a
 `zone`: a ring of points and a kind) is drawn round the ground in one stroke and called a
 village, fields, woods, defended ground or ruins, and FILL lays it out (`edFillZone`,
@@ -8759,8 +10155,9 @@ and drawn out with its route when it is the one being looked at, and GO flies to
 into the part of the screen the sheet leaves (`edLookAt`). Below the findings is the balance
 table (`edBalance`): buildings, cover, craters, trees, trenches and wire on each half, and every
 flag's distance from each headquarters, with anything lopsided marked. The shipped maps come
-back clean from the rules, which is the calibration, and Ortona reads two findings in about 70
-ms.
+back clean from the rules, which is the calibration. Ortona read two findings in about 70 ms;
+the gate's copy of Saint-Lô, after the edits the rows before it make, reads eight in about 240
+(five of them conflicts those edits made, two chokepoints and a route a tank is forced through).
 
 Two things made it say false things at first, and both read as findings. **A wall is not
 solid to it**, because the game prices a wall of any height through `wallg` and never blocks
@@ -8779,7 +10176,8 @@ pushed a terrace's back walls into the next street, which is a fix that makes tw
 an exposed approach `edCoverAlong` lays shell holes and rubble along it. The preview draws where
 each thing was and where it would go, with whatever the fix would still put in something
 (`edFixConflicts`, `edDrawFix`), and APPLY or CANCEL decides (`edFixApply`, after a restore
-point). On the gate a cramped street on Ortona goes from 54 units to 106.
+point). On the gate a cramped street on Ortona went from 54 units to 106, and a chokepoint on
+Saint-Lô goes from 36 to 75.
 
 ---
 
@@ -8875,7 +10273,12 @@ rate while the ground the wave was about to cross went unshelled, and the smoke 
 the go was gone by the end of the same tick, cancelled by the reflex three hundred lines
 below it. A tube on a mission keeps it now, and one on its post is left to the support
 job, which lays the next; its own `acquire` still shoots at what is in front of it
-between missions, so nothing is silenced.
+between missions, so nothing is silenced. And the support job itself does not send a tube
+with a mission running to a new post until it has worked the mission for forty-five
+seconds, because the walk cancels it: the screen goes to the nearest tube standing still,
+and on Saint-Lô that was a tube off its post, sent to it further down the same tick, so the
+smoke was ordered and never fired. The limit is there because a mission whose rounds are
+refused never ends.
 
 And the same row found a second one, older than anything on this page: **a tube on a
 mission was turned back off its bearing every frame.** A halted section with nothing to
@@ -9226,6 +10629,7 @@ tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
 tools/overlay.mjs              a model's faces laid over its reference drawing, view by view
 tools/ref/                     the overlay specs: scale and pin per view (the drawings are in shots/ref/)
+docs/soviet-roster.csv         the Soviet units under consideration and their stats; built only when asked for
 .claude/hooks/session-start.sh installs dev dependencies on session start
 .claude/skills/refdraw/        the method for checking and correcting a model against a drawing
 shots/                         screenshot output, gitignored
@@ -9235,6 +10639,31 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **A crew's place round its gun has to fall inside the unit's circle on a phone as well.** A place
+  laid off the gun (`gunMate`, `gunCrew`) is refused when it lands outside `selRadius` less three, and
+  on a phone the place is a fifth further out (`FIG_SCALE`) while the circle is not. The 82-PM-41's
+  bearer was given a place behind the plate that was 36 units from the unit's middle on a desktop and
+  41 on a phone against a limit of 39, so he took it on the one and stood in his formation slot fifty
+  units in front of the gun on the other. Measure a place from `u.x`, which is not the gun, at 1.2.
+- **A squad on a tank's deck is in the world.** `u.inside` was the one flag that took a squad off
+  the field, and every system that skips a squad aboard a carrier asks it; a riding squad (`u.ride`)
+  is not inside, so it is seen, shot at and shooting, and anything that has to leave it alone has to
+  ask `u.ride` as well: `moveUnit`, `unwedge`, `manNear` and the steering, which would otherwise push
+  the squad off the tank it stands on, and `coverOf` and `explode`, which would otherwise give its men
+  the cover on the ground under the tank.
+- **A block of the brain written for one army's buildings runs for every army that has them.** The
+  barracks' shopping list read its mortar's price straight off `UNITS[K.mor]`, which was safe while
+  only the 29th and the 352nd had a first building; the Red Army's Kazarma made the block run for an
+  army with no mortar key and the brain threw on its first tick with the Kazarma standing. Read an
+  army key through something that answers no for a key that is not there.
+- **`def.builder` is not the question of whether a unit fights.** Every rule that leaves an
+  engineer out of the fighting asked it, and an army whose only infantry is its builders (the Red
+  Army, until it had the Strelki) was then no army at all: its brain dealt none of them a job,
+  the enemy's brain counted it as nothing, and an order to ALL took nobody. Ask `aiDig(u)`.
+- **A drill that stages the enemy's units has to switch the enemy's brain off.** A unit spawned on
+  the opposition's slot is that brain's to command on its next tick, so a half-track ordered across
+  a minefield drove off somewhere else and never touched it, and the row read the mines as broken.
+  `slotOf('ger').ai = 0` for the drill, and put it back or reload after.
 - **A part baked on its own reads its own bottom half as a hull's belly.** The bake's dust is laid by
   height off the extent of whatever is in the bake, so a part baked alone (the Calliope's rack) took the
   road's dust over the lower half of itself and came out pale khaki over an olive hull. Bake a part that
@@ -9279,6 +10708,10 @@ shots/                         screenshot output, gitignored
   virtual clock, which only moves between frames, so a loop that works until a few milliseconds
   have passed runs to the end of its queue: the men's warm queue bakes everything it holds in the
   first step of a fast forward. That is harmless there, and a loop that has to stop needs a count.
+- **`roll()` hands a face back without its tile, as `at()` does.** The pilotka was built and then
+  rolled to sit over the right ear, and all forty of its faces came out on the flat tile on every
+  variant that wore it; `place` and `pitch` keep `m`. It is tilted on its own points before the faces
+  are made now.
 - **`at()` hands a face back without its tile.** It copies the vertices, the colour and the
   normals and drops `m`, so a part moved with it falls back to looking its colour up. For a
   palette tagged hard that is usually the same tile by luck; for the American's, one trouser
@@ -9499,6 +10932,12 @@ shots/                         screenshot output, gitignored
   loses two per cent; at sixty frames a second the same .16 fires every .167. Every fast weapon on
   the roster carries it (an MG 42 at .08 fires every .1 on the card), so a rate under a fifth of a
   second is picked as a multiple of the card's step, or its row is read knowing it is short.
+- **A `var` declared twice in one function is one variable.** `aiTick` is two thousand lines long and
+  declared `keep` at its top as the money a purchase holds back and again, far below, as the sector the
+  army was pressing; the second assignment turned the first into an object for the rest of the tick, and
+  every `G.res.mp >= cost + keep` after it compared against NaN and was refused. Nothing threw and the brain
+  went on buying units, so the only sign was that no work, eighty-eight or battery was ever dug. `grep` a
+  name inside the function before declaring it there.
 - **A new global can take the name of an old one without a word.** Every `var` at the top of
   the script is one namespace forty thousand lines long, and a second `var` of a name is
   legal and wins. The carry anchor was first written as `MG_HOLD`, which was already the

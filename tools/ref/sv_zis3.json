@@ -1,0 +1,5 @@
+{ "image": "shots/ref/sv_zis3.png", "key": "sv_zis3", "up": [], "crew": false,
+  "note": "One scale, 75.5 px/m, along the gun, up it and across it in every view, which puts the wheels 0.79 m over the tyre on a 1.37 m track. The plan has the trails open and the front view is drawn with them so; sv_zis3_s.json is the side and the rear with them closed.",
+  "views": {
+    "plan":  { "nose": "left", "crop": [0, 10, 480, 235], "ppm": 75.5, "at": [0, 0, 0], "px": [212.7, 153.6], "k": 3 },
+    "front": { "crop": [25, 0, 135, 120], "ppm": 75.5, "at": [0, 0, 0], "px": [90, 112.8], "k": 5 } } }

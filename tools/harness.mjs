@@ -69,7 +69,13 @@ export async function launch({ headed = false, slowMo = 0 } = {}) {
  * Open the game and wait until WebGL has come up.
  * Returns { page, log } where log collects console output and page errors.
  */
-export async function openGame(browser, deviceKey = 'desktop', { file = GAME, quiet = false, ctrl = null } = {}) {
+/* The ground every tool runs on unless it is told otherwise. Ortona was the first map and every
+   card was written on it; it is gone, and Saint-Lô is the town the cards run on now, because a
+   terrace, a garden wall and a street are what most of them are about. The game's own default
+   is Omaha. */
+export const DEFAULT_MAP = 'stlo';
+
+export async function openGame(browser, deviceKey = 'desktop', { file = GAME, quiet = false, ctrl = null, map = DEFAULT_MAP } = {}) {
   const dev = DEVICES[deviceKey];
   if (!dev) throw new Error(`unknown device "${deviceKey}". known: ${deviceNames().join(', ')}`);
   const { name, ...ctxOpts } = dev;
@@ -81,6 +87,9 @@ export async function openGame(browser, deviceKey = 'desktop', { file = GAME, qu
      and sites a post in the first seconds: a probe that wants a pristine deploy asks for
      classic and switches simple on where it measures it. */
   if (ctrl) await context.addInitScript(v => { try { localStorage.setItem('ORT_CTRL', v); } catch (e) {} }, ctrl);
+  /* and the ground, the same way: the title screen keeps the last one picked, so a probe that
+     calls startGame() straight after a reload builds whatever this says */
+  if (map) await context.addInitScript(v => { try { localStorage.setItem('ORT_MAP', v); } catch (e) {} }, map);
   const page = await context.newPage();
   page.setDefaultTimeout(180000);
 
@@ -575,13 +584,21 @@ export async function installHooks(page) {
 
 /* ---------------------------------------------------------------- controls */
 
-export async function deploy(page, { side = 'us', diff = 1, map = null } = {}) {
+export async function deploy(page, { side = 'us', diff = 1, map = DEFAULT_MAP } = {}) {
   /* The ground first. It is clicked on the title screen rather than assigned, because
      that is the one path that also sets what a later startGame() inside a probe keeps:
      startGame does not touch G.mapData, so whichever map the deploy button built is the
-     map every re-deploy in the same page runs on. */
-  if (map) await page.click(`.gmap[data-map="${map}"]`);
-  await page.click(side === 'ger' ? '#pickger' : '#pickus');
+     map every re-deploy in the same page runs on. It is clicked even when it is the default,
+     so that an older file, which has its own default, is fought on the same ground. A ground
+     the title screen hides (the Gothic Line) has no button and is set instead. */
+  if (!map) map = DEFAULT_MAP;
+  {
+    if (await page.$(`.gmap[data-map="${map}"]`)) await page.click(`.gmap[data-map="${map}"]`);
+    else await page.evaluate(m => { window.chosenMap = m; }, map);
+  }
+  /* 'sov' is the Allied side fought as the Red Army, which the title screen offers as a card of
+     its own */
+  await page.click(side === 'ger' ? '#pickger' : side === 'sov' ? '#picksov' : '#pickus');
   await page.click(`.pill[data-diff="${diff}"]`);
   await page.click('#deploy');
   await page.waitForFunction(() => window.G.running && window.SCENE.ready, null, { timeout: 180000 });
@@ -589,12 +606,12 @@ export async function deploy(page, { side = 'us', diff = 1, map = null } = {}) {
 }
 
 /* The editor opens on a choice of how to start; `start` is a shipped map's key to duplicate
-   (the default, Ortona), or 'continue' for the draft kept on this device. */
-export async function openEditor(page, start = 'ortona') {
+   (the default, Saint-Lô), or 'continue' for the draft kept on this device. */
+export async function openEditor(page, start = DEFAULT_MAP) {
   await page.click('#openeditor');
   await page.waitForSelector('#edstart:not(.hidden)', { timeout: 30000 });
   if (start === 'continue' && await page.$('#edscont')) await page.click('#edscont');
-  else await page.click(`#edsdup-${start === 'continue' ? 'ortona' : start}`);
+  else await page.click(`#edsdup-${start === 'continue' ? DEFAULT_MAP : start}`);
   await page.waitForFunction(() => window.ED.on, null, { timeout: 120000 });
   await frames(page, 2);
 }

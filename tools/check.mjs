@@ -70,8 +70,11 @@ for (const device of TARGETS) {
   /* and with BOTH panels open, because that is where most of the buttons are and where
      every one added since has landed: the sides picker, the role strip, eleven stepper
      rows a panel and the eight the shopping weights carry. A control a thumb cannot hit
-     is a control that is not there. */
+     is a control that is not there. The panels live under the standing orders, which
+     fold up, so the fold is opened first and put back after. */
   const startTap = await page.evaluate(() => {
+    const fold = document.getElementById('morders'), shut = fold && !fold.classList.contains('open');
+    if (shut) document.getElementById('moret').click();
     document.getElementById('hopen').click(); document.getElementById('aopen').click();
     const small = [...document.querySelectorAll('#start button')]
       .filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.width < 44 || r.height < 44); })
@@ -80,6 +83,7 @@ for (const device of TARGETS) {
     const n = document.querySelectorAll('#start button').length;
     const hScroll = document.documentElement.scrollWidth - window.innerWidth;
     document.getElementById('hopen').click(); document.getElementById('aopen').click();
+    if (shut) document.getElementById('moret').click();
     return { small, n, hScroll };
   });
   ok('every title-screen control is a touch target, panels open',
@@ -174,6 +178,24 @@ for (const device of TARGETS) {
      hundred and eighteen units away. Measured on a real battle, near half of the
      player's own men stand further from their marker than a click could reach, so a
      player who clicked what he could see selected nothing. --- */
+  /* and men to click: nobody gives the player's side an order in these three minutes, and on
+     Saint-Lô on a phone the German brain had killed every man of it outside a building by now,
+     which left the row nobody to click. Two sections walked a short way are men on the move,
+     which is what the row is about. */
+  const staged = await page.evaluate(() => {
+    const live = window.G.units.filter(u => !u.dead && !u.inside && u.models && u.side === window.G.side)
+      .reduce((n, u) => n + u.models.filter(m => m.alive).length, 0);
+    if (live >= 6) return 0;
+    const own = window.G.own, hq = window.hqOf(own), F = window.frontOf(window.G.side);
+    for (let i = 0; i < 2; i++) {
+      const al = (i - .5) * 120, sp = window.nearestFree(hq.x + F.x * 160 - F.y * al, hq.y + F.y * 160 + F.x * al);
+      const u = window.spawnUnit(own, window.G.side === 'us' ? 'am_rifle' : 'hr_gren', sp.x, sp.y, 0);
+      const to = window.nearestFree(sp.x + F.x * 220, sp.y + F.y * 220);
+      window.orderMove(u, to.x, to.y, false);
+    }
+    return 2;
+  });
+  if (staged) await fastForward(page, 6);
   const pick = await page.evaluate(() => {
     let men = 0, far = 0, hit = 0, worst = 0;
     window.G.units.forEach(u => {
@@ -190,7 +212,8 @@ for (const device of TARGETS) {
   });
   ok('a click on a man selects his section, wherever he has walked to',
      pick.men > 0 && pick.hit === pick.far,
-     `${pick.men} men, ${pick.far} of them past a click's reach of their marker, ${pick.hit} still selectable; furthest ${pick.worst}`);
+     `${pick.men} men${staged ? ' (of ' + staged + ' sections put down, the battle having left none)' : ''}, ` +
+     `${pick.far} of them past a click's reach of their marker, ${pick.hit} still selectable; furthest ${pick.worst}`);
 
   /* --- the dead, and what it costs to draw them. The list runs to two hundred and
      twenty and every one of them used to be drawn every frame wherever it lay, off
@@ -358,19 +381,26 @@ for (const device of TARGETS) {
      of battle above are fought with nobody running his army and what is left of it by
      now is sometimes nothing at all. --- */
   await page.evaluate(() => {
-    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own);
+    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own), F = window.frontOf(window.G.side);
     for (let i = 0; i < 4; i++) {
-      const sp = window.nearestFree(hq.x + (us ? 200 : -200) + i * 50, hq.y - 100 + i * 70);
+      const al = (i - 1.5) * 70, sp = window.nearestFree(hq.x + F.x * 200 - F.y * al, hq.y + F.y * 200 + F.x * al);
       window.spawnUnit(own, us ? 'am_rifle' : 'hr_gren', sp.x, sp.y, 0);
     }
+    window.__ordSeen = {};
   });
-  await fastForward(page, 60);
+  /* in tens of seconds, noting every unit of his that is under an order at any of them: in the
+     dig mood a section that has reached its post has no order left, so a reading taken once at
+     the end of the minute came back nought on one run in two on Saint-Lô with the brain working */
+  for (let k = 0; k < 6; k++) {
+    await fastForward(page, 10);
+    await page.evaluate(() => window.G.units.forEach(u => { if (window.owned(u) && !u.dead && u.cat && u.order) window.__ordSeen[u.id] = 1; }));
+  }
   const brain = await page.evaluate(() => {
     const own = window.G.own, him = window.foe(window.G.side), P = window.AIP[own];
     const mine = window.G.units.filter(u => window.owned(u) && !u.dead && u.cat && !u.inside);
     const fighters = mine.filter(u => !u.def.builder);
     return { plan: !!P && P.own === own, skill: window.aiDiffOf(own).skill, runs: window.aiRuns(window.slotOf(own)), buys: window.aiBuys(own),
-             n: fighters.length, jobs: fighters.filter(u => u.job || u.op).length, ordered: mine.filter(u => u.order).length,
+             n: fighters.length, jobs: fighters.filter(u => u.job || u.op).length, ordered: Object.keys(window.__ordSeen).length,
              made: Object.keys(window.G.made[own]).length, blds: window.G.blds.filter(b => window.owned(b)).length,
              foeMade: Object.keys(window.G.made[him]).length, foeBuys: window.aiBuys(him),
              status: document.getElementById('tselname').textContent, mood: P && P.mood,
@@ -379,7 +409,7 @@ for (const device of TARGETS) {
   ok('simple: the brain runs his slot at veteran, deals every section a job and orders it, and buys nothing out of his till',
      brain.plan && brain.skill === 2 && brain.runs && !brain.buys && brain.n > 0 && brain.jobs === brain.n && brain.ordered > 0 &&
      brain.made === pre.made && brain.blds === pre.blds && brain.foeBuys && brain.foeMade >= 1 && brain.status.length > 0,
-     `plan ${brain.plan} at skill ${brain.skill}; ${brain.jobs} of ${brain.n} fighters with a job, ${brain.ordered} under orders; ` +
+     `plan ${brain.plan} at skill ${brain.skill}; ${brain.jobs} of ${brain.n} fighters with a job, ${brain.ordered} under orders in the minute; ` +
      `raised ${brain.made} kinds against ${pre.made} before and ${brain.blds} buildings against ${pre.blds}, the opposition ${brain.foeMade}; ` +
      `line "${brain.status}", mood ${brain.mood}, fired ${brain.fired}`);
 
@@ -564,6 +594,20 @@ for (const device of TARGETS) {
         for (let k = 0; k < 8 && !got; k++) {
           const a = (k + (rr > 46 ? .5 : 0)) * Math.PI / 4;
           got = tryAt(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
+        }
+      }
+      /* and since the brains dig works, his engineers and the men they dig for stand round
+         the flags he holds as well, so a desktop run had every one of those sixteen taps on
+         a man. The rest of the flag's circle is walked in the world for a point where no
+         man of his is under the finger, and that point is tapped. */
+      const pickR = Math.min(90, Math.max(26, window.CAM.dist * .05));
+      for (const wr of [30, 55, 80, 105, 122]) {
+        for (let k = 0; k < 16 && !got; k++) {
+          const a = k * Math.PI / 8 + wr * .01, wx = s.x + Math.cos(a) * wr, wy = s.y + Math.sin(a) * wr;
+          if (window.nearestOwn(wx, wy, pickR) || window.simpleFoeAt(wx, wy) || window.simpleSectorAt(wx, wy) !== s) continue;
+          const q = window.w2s(wx, wy);
+          if (q.x < 30 || q.y < 90 || q.x > innerWidth - 80 || q.y > innerHeight - 150) continue;
+          got = tryAt(q.x, q.y);
         }
       }
       const box = document.getElementById('tord');
@@ -843,6 +887,12 @@ for (const device of TARGETS) {
        two streets away. The flag row empties the board for the same reason; this one has
        to stop the dealing as well, because a call raised inside the tick is dealt inside it */
     const realAns = window.aiAnswer; window.aiAnswer = function () {};
+    /* and no operation raised or manned for them either: on Saint-Lô a hold raised on the
+       first tick borrowed two of the three, a unit on an operation is not in the wave, and the
+       wave went in with one section or not at all. The operations outrank the plan by design,
+       which is the brain being right about the wrong thing for a row about the plan. */
+    const realPlan = window.aiOpsPlan, realMan = window.aiOpsMan;
+    window.aiOpsPlan = function () {}; window.aiOpsMan = function () {};
     /* ATTACK given through the pad with the three sections he put down NAMED as its
        force, which is the board's own way of saying it and is what makes the deal
        readable: dealt by nearest-first they compete with whatever the battle's army has
@@ -853,7 +903,12 @@ for (const device of TARGETS) {
     window.simpleOrdOpen({ sec: S, x: S.x, y: S.y });
     document.querySelector('#tordbtns .tf[data-ord="attack"]').click();
     window.select([], false); window.ORDWHO = 'any';
+    secs3.forEach(u => { u.op = 0; });
     P.asKey = null; P.asT = -99; P.t = 0;
+    /* every smoke mission laid in the two ticks, and by which tube, so that a screen ordered
+       and then taken off again in the same tick says so rather than reading as no screen */
+    const realOB = window.orderBarrage, smokeLaid = [];
+    window.orderBarrage = function (u, x, y, smoke) { const r = realOB.apply(this, arguments); if (r && smoke) smokeLaid.push(u); return r; };
     const tick = () => { window.AIP[own].t = 0; window.aiThink(1); };
     tick();
     /* what the tube was laid on after a tick: the preparation on the flag's defenders, or
@@ -905,14 +960,16 @@ for (const device of TARGETS) {
     const fD = sm && mo.fupX ? Math.round(Math.hypot(sm.x - mo.fupX, sm.y - mo.fupY)) : -1;
     const screenFired = (window.AIR.fired['smoke.screen'] || 0) - (f0['smoke.screen'] || 0);
     const kind = (q) => q ? (q.smoke ? 'smoke' : 'HE') + ' ' + q.d + ' from the flag' : 'nothing';
+    const laid = smokeLaid.map(u => `${u.key} ${u === m ? '(the staged one) ' : ''}${u.barrage && u.barrage.smoke ? 'holds it' : 'DROPPED IT, ' + (u.order || 'no order')}`).join('; ');
     /* down again */
-    window.aiAnswer = realAns;
+    window.orderBarrage = realOB;
+    window.aiAnswer = realAns; window.aiOpsPlan = realPlan; window.aiOpsMan = realMan;
     window.aiDirSet(own, S.id, null);
     P.asKey = null; P.asT = -99; P.asSec = null;
     raised.forEach(u => { u.barrage = null; const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); });
     window.G.smoke.length = 0; window.G.shots.length = 0;
     window.select([], false);
-    return { name: S.label || S.id, known, obj, dirFired, spent, state, went1, went, fD, screenFired, dealt, deal, n: secs.length,
+    return { name: S.label || S.id, known, obj, dirFired, spent, state, went1, went, fD, screenFired, dealt, deal, n: secs.length, laid,
              m1: kind(m1), m2: kind(m2), heD: he ? he.d : -1, smD: sm ? sm.d : -1 };
   });
   ok('simple: ATTACK with a tube in reach lays it on the men holding the flag, and the go lays smoke short of the flag',
@@ -920,7 +977,8 @@ for (const device of TARGETS) {
      dirArty.went && dirArty.screenFired >= 1 && dirArty.smD > 0 && dirArty.smD <= 170,
      dirArty.none ? dirArty.none : `${dirArty.name}: defenders seen ${dirArty.known}; tick 1 laid ${dirArty.m1} (objective ${dirArty.obj}, went ${dirArty.went1}); ` +
                             `spent ${dirArty.spent} (${dirArty.state}); tick 2 dealt ${dirArty.dealt} of ${dirArty.n} to it (${dirArty.deal}), went ${dirArty.went}, laid ${dirArty.m2}; ` +
-                            `mortar.dir ${dirArty.dirFired}, smoke.screen ${dirArty.screenFired}, the screen ${dirArty.fD} from the fup`);
+                            `mortar.dir ${dirArty.dirFired}, smoke.screen ${dirArty.screenFired}, the screen ${dirArty.fD} from the fup` +
+                            `${dirArty.laid ? ' (smoke laid by ' + dirArty.laid + ')' : ''}`);
 
   /* --- LOOK with nothing picked, a tap on a unit that picks it and gives no order, and
      a tap on the ground that lets go --- */
@@ -928,12 +986,22 @@ for (const device of TARGETS) {
      unit of his: under SIMPLE a tap within 130 of a flag is a tap on the flag, and a tap on a
      section standing in another picks whichever is nearer, so the first section in the list
      read as a picked-nothing on one run in ten */
+  /* and one with bare ground round it on the screen, because the rows tap that as well: on
+     Saint-Lô a section in the town has houses and walls all round it, and the classic row found
+     no open ground within reach of the first section it took */
   await page.evaluate(() => {
     window.__aloneSec = function () {
-      return window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar &&
+      const ok = q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar && !q.ride;
+      const alone = window.G.units.filter(q => ok(q) &&
         !window.G.sectors.some(s => Math.hypot(s.x - q.x, s.y - q.y) < 170) &&
-        !window.G.units.some(o => o !== q && !o.dead && !o.inside && window.owned(o) && Math.hypot(o.x - q.x, o.y - q.y) < 80)) ||
-        window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+        !window.G.units.some(o => o !== q && !o.dead && !o.inside && window.owned(o) && Math.hypot(o.x - q.x, o.y - q.y) < 80));
+      const all = alone.concat(window.G.units.filter(q => ok(q) && alone.indexOf(q) < 0));
+      for (const q of all) {
+        window.__o.camera({ x: q.x, y: q.y, dist: 520, pitch: 0.9 }); window.render();
+        const p = window.w2s(q.x, q.y);
+        if (window.__clearPt(p.x, p.y, 150)) return q;
+      }
+      return all[0] || null;
     };
   });
   const look = await page.evaluate(() => {
@@ -948,13 +1016,19 @@ for (const device of TARGETS) {
     window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
     const picked = window.G.sel.length === 1 && window.G.sel[0] === u;
     const tap = window.__clearPt(p.x, p.y, 150);
+    /* and what was under the second finger, by the game's own test, for when it does not let go */
+    const tw = tap && window.s2w(tap.x, tap.y), mineAt = tw && window.nearestOwn(tw.x, tw.y, Math.max(26, Math.min(90, window.CAM.dist * .05)));
     if (tap) { window.__tev('touchstart', tap.x, tap.y); window.__tev('touchend', tap.x, tap.y); }
     const same = u.order === o0 && JSON.stringify(u.dest && [u.dest.x, u.dest.y]) === d0;
-    return { on, from, picked, tap: !!tap, let_: window.G.sel.length, same };
+    const kept = window.G.sel[0];
+    return { on, from, picked, tap: !!tap, let_: window.G.sel.length, same,
+             why: `${kept ? 'kept ' + kept.key + (kept === u ? ' (the same one)' : '') : ''}${mineAt ? ', his ' + mineAt.key + ' under the finger' : ''}` +
+                  `, running ${window.G.running}, pov ${window.POV.on}, place ${!!window.G.place}, mode ${window.G.mode}, cam ${Math.round(window.CAM.dist)}` };
   });
   ok('simple: LOOK looks from the nearest unit with nothing picked, a tap on a unit picks it and orders nothing, and a tap on the ground lets go',
      look.on && look.from && !look.none && look.picked && look.tap && look.let_ === 0 && look.same,
-     look.none ? 'no section to tap' : `look ${look.on} from his ${look.from}; picked ${look.picked}; ground tap left ${look.let_} selected with the order unchanged ${look.same}`);
+     look.none ? 'no section to tap' : `look ${look.on} from his ${look.from}; picked ${look.picked}; ground tap left ${look.let_} selected with the order unchanged ${look.same}` +
+                 `${look.let_ ? ' (' + look.why + ')' : ''}`);
 
   /* and the classic scheme is what it was: the bar back, the strip gone, a tap an order */
   const classic = await page.evaluate(() => {
@@ -1036,7 +1110,13 @@ for (const device of TARGETS) {
 
   /* --- the periscope: a look from a unit, turned by a drag, and back --- */
   const pov = await page.evaluate(() => {
-    const u = window.G.units.find(u => u.side === window.G.side && !u.dead && u.cat !== 'veh') || window.G.units.find(u => u.side === window.G.side && !u.dead);
+    let u = window.G.units.find(u => u.side === window.G.side && !u.dead && u.cat !== 'veh') || window.G.units.find(u => u.side === window.G.side && !u.dead);
+    /* a section of his own when the battle has left him nothing to look from, which on
+       Saint-Lô on a phone it can: nobody gives his side an order in the first battle */
+    if (!u) {
+      const hq = window.hqOf(window.G.own), F = window.frontOf(window.G.side), sp = window.nearestFree(hq.x + F.x * 160, hq.y + F.y * 160);
+      u = window.spawnUnit(window.G.own, window.G.side === 'us' ? 'am_rifle' : 'hr_gren', sp.x, sp.y, 0);
+    }
     if (!u) return { ok: false };
     window.select([u], false);
     document.getElementById('tPov').click();
@@ -1080,7 +1160,11 @@ for (const device of TARGETS) {
     if (!window.UNITS[key] || !window.UNITS[key].indirect) return { has: false };
     const keep = window.G.units.slice(), shots = window.G.shots.slice();
     const foe = window.G.side === 'us' ? 'ger' : 'us';
-    const b = window.G.blds[0], a = Math.PI / 2, R = 190;
+    /* across the player's own headquarters, along the row it stands in: square to the line
+       the two armies face each other on, so both ends are in the open ground of his base
+       area. Staged off the first building at a fixed bearing, on Saint-Lô the far end was
+       off the bottom of the map with the observer beyond it, and nobody saw anything. */
+    const b = window.hqOf(window.G.own), F0 = window.frontOf(window.G.side), a = Math.atan2(F0.y, F0.x) + Math.PI / 2, R = 190;
     function stage(withEyes) {
       window.G.units.length = 0; window.G.shots.length = 0;
       const u = window.spawnUnit(window.G.side, key, b.x - Math.cos(a) * R, b.y - Math.sin(a) * R, a);
@@ -1190,6 +1274,12 @@ for (const device of TARGETS) {
     const key = window.G.side === 'us' ? 'us_how' : 'ger_how';
     if (!window.UNITS[key] || !window.UNITS[key].barrageOnly) return { has: false };
     const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    /* where each of the eight shells lands is two rolls, a point in the circle and the gun's
+       own scatter on top, and three of eight just past the circle comes up about one run in a
+       hundred: the row is thrown with seeded rolls, as the burst rows are */
+    const rand = Math.random;
+    let seed = 2024;
+    Math.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const foe = window.G.side === 'us' ? 'ger' : 'us';
     function clear() { window.G.units.length = 0; window.G.shots.length = 0; }
     function run(u, secs) {
@@ -1208,10 +1298,17 @@ for (const device of TARGETS) {
        meant to refuse targets it can. Seeing is a rate now, so the flag is read after the
        minute rather than off one call to computeVisibility. */
     clear();
-    const g = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    /* on the open ground of his base area, a hundred and fifty in front of his headquarters
+       and along its row: at fixed coordinates, which were open on Ortona, the gun and the
+       section stood in a Saint-Lô street with houses between them and nobody saw anybody */
+    const U = window.UNITS[key], D = Math.round(Math.min(U.barrage.range / 2, U.sight - 60));
+    const hq0 = window.hqOf(window.G.own), F1 = window.frontOf(window.G.side);
+    const at1 = (al, fw) => window.nearestFree(hq0.x + F1.x * fw - F1.y * al, hq0.y + F1.y * fw + F1.x * al);
+    const p0 = at1(-D / 2, 150), p1 = at1(D / 2, 150), fa = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+    const g = window.spawnUnit(window.G.side, key, p0.x, p0.y, fa);
     g.setup = 0;
-    const B = g.def.barrage, D = Math.round(Math.min(B.range / 2, g.def.sight - 60));
-    const e = window.spawnUnit(foe, foe === 'ger' ? 'hr_gren' : 'am_rifle', 600 + D, 900, Math.PI);
+    const B = g.def.barrage;
+    const e = window.spawnUnit(foe, foe === 'ger' ? 'hr_gren' : 'am_rifle', p1.x, p1.y, fa + Math.PI);
     window.computeVisibility();
     const idle = run(g, 60);
     const seen = window.G.side === 'us' ? e.vUs : e.vGer;
@@ -1231,9 +1328,9 @@ for (const device of TARGETS) {
     }
     /* the crew have to get it into action first: a mission on a gun just put down waits */
     clear();
-    const h = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    const h = window.spawnUnit(window.G.side, key, p0.x, p0.y, fa);
     h.setup = h.def.setup;
-    window.orderBarrage(h, 600 + D, 900);
+    window.orderBarrage(h, p1.x, p1.y);
     let early = 0;
     for (let f = 0; f < 60 * Math.max(1, h.def.setup - 1); f++) {
       const n = window.G.shots.length;
@@ -1248,6 +1345,7 @@ for (const device of TARGETS) {
     }
     window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
     window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    Math.random = rand;
     const bound = B.r + 14;
     return { has: true, key, seen: !!seen, picked: !!picked, idle, laid, dist: D,
              rounds: out.length, want: B.rounds, r: B.r, bound,
@@ -2807,9 +2905,13 @@ for (const device of TARGETS) {
   const tooBig = ring.filter(r => r.r > r.far + 20);
   await fastForward(page, 90);
   const held = await page.evaluate(() => {
-    let men = 0, out = 0, worst = 0, worstKey = '';
+    let men = 0, out = 0, worst = 0, worstKey = '', gar = 0;
     window.G.units.forEach(u => {
       if (u.dead || !u.models) return;
+      /* a garrison's men stand at the openings of the building it holds and the clamp leaves
+         them there on purpose; Ortona's houses were small enough that they stood inside the
+         ring anyway, and a Saint-Lô town house is nine metres deep */
+      if (u.gar) { gar += u.models.filter(m => m.alive).length; return; }
       const R = window.selRadius(u);
       u.models.forEach(m => {
         if (!m.alive) return;
@@ -2819,7 +2921,7 @@ for (const device of TARGETS) {
         if (d - R > worst - 0) { worst = d - R; worstKey = u.key; }
       });
     });
-    return { men, out, over: Math.round(worst), worstKey };
+    return { men, out, over: Math.round(worst), worstKey, gar };
   });
   ok('the selection ring holds its unit and fits it',
      !tooSmall.length && !tooBig.length && held.men > 20 && held.out === 0,
@@ -2829,7 +2931,7 @@ for (const device of TARGETS) {
      (tooSmall.length ? tooSmall.map(r => r.k + ' ' + r.r + '<' + r.far).join(', ') + '; ' : '') +
      (tooBig.length ? tooBig.map(r => r.k + ' ' + r.r + '>>' + r.far).join(', ') + '; ' : '') +
      `after 90s of battle ${held.out} of ${held.men} men are outside their own ring ` +
-     `(furthest ${held.over} past it, ${held.worstKey})`);
+     `(furthest ${held.over} past it, ${held.worstKey}), ${held.gar} men holding buildings left out`);
 
   /* --- Two maps ship, which makes two things true that were vacuous with one: the
      picker has to build the one it names, and the second map has to be fair. Fairness on a
@@ -2843,7 +2945,10 @@ for (const device of TARGETS) {
   const maps = await page.evaluate(() => {
     const out = { keys: Object.keys(window.MAPS).sort().join(','), picked: '', brief: '' };
     /* the picker builds the map it names */
-    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'gothic') b.click(); });
+    /* the Gothic Line is hidden, so there is no button for it: what the title screen offers
+       is read, and the ground is set the way the harness sets a hidden one */
+    out.offered = [...document.querySelectorAll('.gmap')].map(b => b.dataset.map).join(',');
+    window.chosenMap = 'gothic'; window.objSync(); window.brandSync();
     out.picked = window.chosenMapData().name;
     out.brief = document.getElementById('objtext').textContent;
     /* and the page above the buttons names the ground it is going to be fought over */
@@ -2895,8 +3000,8 @@ for (const device of TARGETS) {
     made: window.G.slots.filter(s => s.ai).every(s => Object.keys(window.G.made[s.k]).length > 0),
     held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort()
   }));
-  ok('four maps ship, and the mirrored one is fair to the unit',
-     maps.keys === 'gothic,omaha,ortona,stlo' && maps.picked === 'The Gothic Line' &&
+  ok('two maps are offered and the hidden third is kept, and the mirrored one is fair to the unit',
+     maps.keys === 'gothic,omaha,stlo' && maps.offered === 'omaha,stlo' && maps.picked === 'The Gothic Line' &&
      maps.head === 'GOTHIC LINE' && maps.lede.indexOf('Foglia') >= 0 &&
      maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
      maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
@@ -3102,7 +3207,7 @@ for (const device of TARGETS) {
      sites his barracks, his motor pool and his tank yard where the brain's own routine puts
      them, inside his own side's area where it has one, or on a craft. --- */
   const bases = [];
-  for (const map of ['ortona', 'gothic', 'stlo', 'omaha']) {
+  for (const map of ['gothic', 'stlo', 'omaha']) {
     await reload(page);
     await page.evaluate(m => { window.G.mapData = window.MAPS[m].make(); window.startGame('us', 1, 'vp', true, 3); }, map);
     await page.waitForFunction(() => window.SCENE && window.SCENE.ready);
@@ -3148,7 +3253,7 @@ for (const device of TARGETS) {
   const bz = Object.fromEntries(bases.map(b => [b.map, b]));
   ok('the base areas: big, level and empty, and every player of a 3v3 sites his three buildings in his own',
      bases.every(b => b.off < 6 && b.tilt < .025 && b.grade < .2 && b.solid === 0 && b.sited === 18) &&
-     ['ortona', 'gothic', 'stlo'].every(m => bz[m].zones >= 2 && bz[m].outside === 0) &&
+     ['gothic', 'stlo'].every(m => bz[m].zones >= 2 && bz[m].outside === 0) &&
      bz.omaha.zones >= 1 && bz.omaha.craft >= 12,
      bases.map(b => `${b.map}: ${b.zones} areas over ${b.area}k square units, the ground ${b.off} at most off a plane whose grade ` +
        `is ${b.tilt}, and ${b.grade} at the steepest, ${b.solid} solid things in them` + (b.map === 'omaha' ? `, ${b.craft} craft aground and whole` : '') +
@@ -3568,7 +3673,7 @@ for (const device of TARGETS) {
     const W = window, G = W.G, made = G.made.us || {};
     const out = { am: made.am_rifle || 0,
                   live: G.units.filter(u => u.own === 'us' && u.key === 'am_rifle' && !u.dead).length };
-    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'ortona') b.click(); });
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'stlo') b.click(); });
     out.back = document.getElementById('pickus').querySelector('h3').textContent;
     out.backGer = document.getElementById('pickger').querySelector('h3').textContent;
     document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
@@ -3583,7 +3688,7 @@ for (const device of TARGETS) {
      `${natA.vars}${natA.fitted ? ' (fitted ' + natA.fitted + ')' : ''}; the headquarters makes ${natA.makes}, and asked for the squad ${natA.qAm ? 'queued it' : 'REFUSED it'}; a man killed ` +
      `${natA.fell ? 'went down' : 'DID NOT go down'} as ${natA.fellNat}, American bodies ${natA.bodies ? 'baked' : 'MISSING'}; ` +
      `a brain on the Allied side ordered ${natB.am} rifle squads in 45 s (${natB.live} standing); ` +
-     `Ortona's button reads ${natB.back}`);
+     `Saint-Lô's button reads ${natB.back}`);
   const ng = natA.ger;
   ok('Omaha: the German side is the 352nd Infantry Division, and its headquarters, its opening, its wall and its brain field the grenadier squad',
      /352/.test(ng.name) && /352/.test(ng.pick) && ng.hr >= 2 && ng.wallHr === 3 &&
@@ -3594,7 +3699,7 @@ for (const device of TARGETS) {
      `wall; its brain ordered ${ng.madeHr} grenadier squads in the wall row's minute; ${ng.men} men of ${ng.vars}; the ` +
      `headquarters makes ${ng.makes}, and the squad asked for queues ${ng.qHr}; a man killed ` +
      `${ng.fell ? 'went down' : 'DID NOT go down'} as ${ng.fellNat}, German bodies ${ng.bodies ? 'baked' : 'MISSING'}; ` +
-     `Ortona's German button reads ${natB.backGer}`);
+     `Saint-Lô's German button reads ${natB.backGer}`);
 
   /* --- The jeep. The Americans' light vehicle is the jeep: the motor pool turns it out and
      queues it, the count and the order book read it, the men riding in it are drawn with it
@@ -4951,6 +5056,12 @@ for (const device of TARGETS) {
        other, both walkable, nothing cover near either, and a clear line between them */
     const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
                             !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    /* and room round it for the crew's places, which a spot found beside something did not have:
+       the bearers' places were refused and they stood where they were */
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
     let st = null;
     for (let r = 0; r < 1600 && !st; r += 60)
       for (let k = 0; k < 16 && !st; k++) {
@@ -4996,8 +5107,19 @@ for (const device of TARGETS) {
       G.units.length = 0; saved.forEach(u => G.units.push(u));
       G.shots.length = 0;
     }
-    /* the five of them, set up and walking */
-    const at = W.nearestFree(hq.x + 120, hq.y - 320);
+    /* the five of them, set up and walking, on open sand: the row is about where each man
+       stands round the gun, and with cover in reach the loader keeps the slot beside his
+       gunner instead, which on one phone run was a shell hole the battle had left. The spot
+       is asked again after the drill, whose rounds dig holes of their own. */
+    let at = null;
+    for (let r = 0; r < 900 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x0 = st ? st.ax : hq.x + 120, y0 = st ? st.ay : hq.y - 320;
+        const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    out.openSand = !!at;
+    if (!at) at = W.nearestFree(hq.x + 120, hq.y - 320);
     const u = W.spawnUnit('us', 'am_at', at.x, at.y, 0);
     out.count = W.countOf('us', 'am_at') >= 1;
     out.men = u.models.length;
@@ -5005,8 +5127,15 @@ for (const device of TARGETS) {
                 !!W.MODELS.man.gi_atb[W.POSE_FIRE] && !!(W.MODELS.served.am_at && W.MODELS.served.am_at.mate) &&
                 !!(W.MODELS.gunRec.am_at && W.MODELS.gunPk.am_at);
     const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
-    u.setup = 0; u.packed = false; u.pack = 0;
+    /* set down on its own bearing, as a right-drag gives one: halted with nothing to shoot at, a piece
+       turns toward the nearest enemy its side can see, and since the brains could pay for their works a
+       pioneer out digging off to a flank kept the gun traversing and all five men walking to places
+       that would not stand still, on one run of the gate and not the one before it */
+    u.setup = 0; u.packed = false; u.pack = 0; u.faceA = u.facing;
     step(4);
+    /* and up to four seconds more while a bearer is still walking to his place: on one run of the Pak
+       38's row a bearer was a unit short of it, mid-stride, when the row looked */
+    for (let k = 0; k < 4 && u.models.some((m, i) => i > 1 && m.alive && m.pose === W.POSE_WALK); k++) step(1);
     out.set = W.gunSet(u);
     out.setVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
     out.poses = u.models.map(m => m.pose).join(',');
@@ -5017,6 +5146,8 @@ for (const device of TARGETS) {
     out.loaderRight = r1[1] > 2 && r1[0] < -6;
     out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
     out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4].every(i => rel(u.models[i])[0] < -14);
+    out.bpos = [2, 3, 4].map(i => rel(u.models[i]).map(q => Math.round(q)).join(',')).join(' ');
+    out.why = (out.openSand ? 'on open sand' : 'NO open sand found') + (u.coverSlots ? ', in cover' : '') + (u.target ? ', a target' : '');
     out.mesh = W.teamMesh(u) === W.MODELS.gun.am_at;
     const mz = W.muzzlePoint(u, u.models[0], 0);
     out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
@@ -5067,8 +5198,9 @@ for (const device of TARGETS) {
        `and the tank ${b57 ? 'answered at ' + b57.t + ' s from ' + b57.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
      `${at57.men} men, every variant, the served bodies and the three meshes ${at57.baked ? 'baked' : 'NOT baked'}; halted ` +
      `${at57.set ? 'set up' : 'NOT set up'} as ${at57.setVars} in poses ${at57.poses}, the loader at ${at57.loader} ` +
-     `${at57.loaderRight ? 'on the right' : 'NOT on the right'} and ${at57.loaderFaces ? 'facing the breech' : 'NOT facing it'}, the bearers ` +
-     `${at57.bearers === 'cover' ? 'in cover' : at57.bearers ? 'back behind the gun' : 'NOT in place'}, the piece ${at57.mesh ? 'open' : 'WRONG'}, ` +
+     `${at57.loaderRight ? 'on the right' : 'NOT on the right'} and ${at57.loaderFaces ? 'facing the breech' : 'NOT facing it'}` +
+     `${at57.loaderRight && at57.loaderFaces ? '' : ' (' + at57.why + ')'}, the bearers ` +
+     `${at57.bearers === 'cover' ? 'in cover' : at57.bearers ? 'back behind the gun' : 'NOT in place (' + at57.bpos + ')'}, the piece ${at57.mesh ? 'open' : 'WRONG'}, ` +
      `the flash ${at57.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's box ${at57.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
      `${at57.packMesh ? 'closed' : 'NOT closed'} and the piece ${at57.runs} from the gunner; killed went down as ${at57.bodyNat}, bodies ` +
      `${at57.fall ? 'baked' : 'MISSING'}; the bunker's anti-tank fitting is ${at57.bunkKey} and put in ${at57.bunkGun}`);
@@ -5105,6 +5237,12 @@ for (const device of TARGETS) {
        headquarters is hedgerow and lane and has nowhere 520 across with nothing on it */
     const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
                             !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    /* and room round it for the crew's places, which a spot found beside something did not have:
+       the bearers' places were refused and they stood where they were */
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
     let st = null;
     for (let r = 0; r < 1600 && !st; r += 60)
       for (let k = 0; k < 16 && !st; k++) {
@@ -5150,8 +5288,17 @@ for (const device of TARGETS) {
       G.units.length = 0; saved.forEach(u => G.units.push(u));
       G.shots.length = 0;
     }
-    /* the five of them, set up and walking, on the same open sand */
-    const at = st ? { x: st.ax, y: st.ay } : W.nearestFree(uhq.x + 120, uhq.y - 320);
+    /* the five of them, set up and walking, on open sand asked again after the drill, as the
+       57's are, because with cover in reach the loader keeps the slot beside his gunner */
+    let at = null;
+    for (let r = 0; r < 900 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x0 = st ? st.ax : uhq.x + 120, y0 = st ? st.ay : uhq.y - 320;
+        const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    out.openSand = !!at;
+    if (!at) at = W.nearestFree(uhq.x + 120, uhq.y - 320);
     const u = W.spawnUnit('ger', 'hr_pak', at.x, at.y, 0);
     out.count = W.countOf('ger', 'hr_pak') >= 1;
     out.men = u.models.length;
@@ -5159,8 +5306,15 @@ for (const device of TARGETS) {
                 !!W.MODELS.man.hr_atb[W.POSE_FIRE] && !!(W.MODELS.served.hr_pak && W.MODELS.served.hr_pak.mate) &&
                 !!(W.MODELS.gunRec.hr_pak && W.MODELS.gunPk.hr_pak);
     const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
-    u.setup = 0; u.packed = false; u.pack = 0;
+    /* set down on its own bearing, as a right-drag gives one: halted with nothing to shoot at, a piece
+       turns toward the nearest enemy its side can see, and since the brains could pay for their works a
+       pioneer out digging off to a flank kept the gun traversing and all five men walking to places
+       that would not stand still, on one run of the gate and not the one before it */
+    u.setup = 0; u.packed = false; u.pack = 0; u.faceA = u.facing;
     step(4);
+    /* and up to four seconds more while a bearer is still walking to his place: on one run of the Pak
+       38's row a bearer was a unit short of it, mid-stride, when the row looked */
+    for (let k = 0; k < 4 && u.models.some((m, i) => i > 1 && m.alive && m.pose === W.POSE_WALK); k++) step(1);
     out.set = W.gunSet(u);
     out.setVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
     out.poses = u.models.map(m => m.pose).join(',');
@@ -5171,6 +5325,8 @@ for (const device of TARGETS) {
     out.loaderRight = r1[1] > 2 && r1[0] < -6;
     out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
     out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4].every(i => rel(u.models[i])[0] < -12);
+    out.bpos = [2, 3, 4].map(i => rel(u.models[i]).map(q => Math.round(q)).join(',')).join(' ');
+    out.why = (out.openSand ? 'on open sand' : 'NO open sand found') + (u.coverSlots ? ', in cover' : '') + (u.target ? ', a target' : '');
     out.mesh = W.teamMesh(u) === W.MODELS.gun.hr_pak;
     const mz = W.muzzlePoint(u, u.models[0], 0);
     out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
@@ -5221,8 +5377,9 @@ for (const device of TARGETS) {
        `and the tank ${bpk ? 'answered at ' + bpk.t + ' s from ' + bpk.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
      `${pk38.men} men, every variant, the served bodies and the three meshes ${pk38.baked ? 'baked' : 'NOT baked'}; halted ` +
      `${pk38.set ? 'set up' : 'NOT set up'} as ${pk38.setVars} in poses ${pk38.poses}, the loader at ${pk38.loader} ` +
-     `${pk38.loaderRight ? 'on the right' : 'NOT on the right'} and ${pk38.loaderFaces ? 'facing the breech' : 'NOT facing it'}, the bearers ` +
-     `${pk38.bearers === 'cover' ? 'in cover' : pk38.bearers ? 'back behind the gun' : 'NOT in place'}, the piece ${pk38.mesh ? 'open' : 'WRONG'}, ` +
+     `${pk38.loaderRight ? 'on the right' : 'NOT on the right'} and ${pk38.loaderFaces ? 'facing the breech' : 'NOT facing it'}` +
+     `${pk38.loaderRight && pk38.loaderFaces ? '' : ' (' + pk38.why + ')'}, the bearers ` +
+     `${pk38.bearers === 'cover' ? 'in cover' : pk38.bearers ? 'back behind the gun' : 'NOT in place (' + pk38.bpos + ')'}, the piece ${pk38.mesh ? 'open' : 'WRONG'}, ` +
      `the flash ${pk38.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's case ${pk38.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
      `${pk38.packMesh ? 'closed' : 'NOT closed'} and the piece ${pk38.runs} from the gunner; killed went down as ${pk38.bodyNat}, bodies ` +
      `${pk38.fall ? 'baked' : 'MISSING'}; the bunker's anti-tank fitting is ${pk38.bunkKey} and put in ${pk38.bunkGun}`);
@@ -5859,11 +6016,12 @@ for (const device of TARGETS) {
      stand in. Before any of that one field-gun round goes against the face, because a
      building that comes down on the first hole in it is as wrong as one that never does. --- */
   const wreck = await (async () => {
-    /* on Ortona, because a terrace is what this is about and the Gothic Line is a valley
-       floor with two farms on it */
+    /* on Saint-Lô, because a terrace is what this is about and Omaha is a beach with a
+       bocage behind it. It was Ortona until Ortona was taken out of the game; the town houses
+       here are Norman, and thirteen of them stand far enough from anything else to shell */
     await reload(page);
     await page.evaluate(() => {
-      window.G.mapData = window.defaultMapData();
+      window.G.mapData = window.stloMapData();
       window.startGame('us', 1, 'vp', true, true);
     });
     await page.waitForFunction(() => window.SCENE && window.SCENE.ready, null, { timeout: 180000 });
@@ -5919,7 +6077,23 @@ for (const device of TARGETS) {
       }, s));
       await fastForward(page, 2.5);
     }
+    /* and the fire put out before it settles: a 240 through the roof sets a house alight, and a
+       burning house goes on letting charred cells go for minutes, so on Saint-Lô's three-storey
+       houses a piece was still in the air at the end of the twelve seconds. The fire has its own
+       row below; this one counts the stone. */
+    await page.evaluate(() => {
+      const Q = window.__wreckH.fr;
+      if (Q) { for (const c of Q.fire) Q.heat[c] = 0; Q.fire.length = 0; Q.sumH = 0; }
+    });
     await fastForward(page, 12);
+    /* and then a moment when nothing is in the air: a shelled house goes on shedding stone from
+       its cracked cells once a second (`frCrumble`), so on Saint-Lô's big houses a pair of stones
+       was still falling at the twelfth second with the fire out. Up to ten seconds more, and the
+       row says how long it waited. */
+    let waited = 0;
+    while (waited < 10 && await page.evaluate(() => window.G.debris.length + window.G.fall.length > 0)) {
+      await fastForward(page, .5); waited += .5;
+    }
     /* and one drawn frame, because the house's own buffer is uploaded in the draw: fast
        forward stubs render() out */
     await frames(page, 2);
@@ -5947,7 +6121,7 @@ for (const device of TARGETS) {
       window.rebuildGrid();
       return st;
     });
-    return { ...put, hole, air, down };
+    return { ...put, hole, air, down, waited };
   })();
   ok('a field-gun round against a house opens a hole in it and leaves it a house',
      !!wreck && wreck.up.can && wreck.hole.cut && wreck.hole.gone >= 1 && wreck.hole.left > 90 &&
@@ -5974,7 +6148,9 @@ for (const device of TARGETS) {
      wreck.down.settled > 40 && wreck.down.vol + wreck.down.lost >= wreck.down.made * .97 &&
      wreck.down.mound > 3 && wreck.down.stand > 1 && wreck.down.heap > 0,
      wreck ? `${wreck.air} stones in the air at once and ${wreck.down.bodies} pieces fell whole; ` +
-             `${wreck.down.settled} stones settled, ${wreck.down.vol} units of stone lying and ${wreck.down.lost} ` +
+             `${wreck.down.settled} stones settled (${wreck.down.air} still in the air, ${wreck.down.fall} pieces still falling, ` +
+             `${wreck.waited ? 'after ' + wreck.waited + ' s more' : 'at the twelfth second'}), ` +
+             `${wreck.down.vol} units of stone lying and ${wreck.down.lost} ` +
              `let go by the ring against ${wreck.down.made} thrown; heap ${wreck.down.mound} deep, ` +
              `a man in the middle of it stands ${wreck.down.stand} over the floor, the heap drawn in ${wreck.down.heap} vertices`
            : '');
@@ -6116,9 +6292,17 @@ for (const device of TARGETS) {
          room it bursts in. Lit at the corner of the roof instead, the fire on Ortona's
          biggest house took most of a minute to find its feet, which is a fire on a roof edge
          and not the one the row is about. */
-      const room = [];
-      for (let k = 1; k < R.nz && !room.length; k++)
-        for (let c = k * NC; c < (k + 1) * NC; c++) if (R.alive[c] && R.fuel[c] >= .3) room.push(c);
+      /* the layer is the one with the most in it to burn, which is a floor. It was the first
+         layer above the ground with anything to burn, which in a Norman stone house is three
+         cells of a door frame among the masonry of the ground storey: on Saint-Lô the fire went
+         out in both stone houses it was lit in that way and took in all four lit on a floor */
+      let room = [], bk = 1, bn = 0;
+      for (let k = 1; k < R.nz; k++) {
+        let n = 0;
+        for (let c = k * NC; c < (k + 1) * NC; c++) if (R.alive[c] && R.fuel[c] >= .3) n++;
+        if (n > bn) { bn = n; bk = k; }
+      }
+      for (let c = bk * NC; c < (bk + 1) * NC; c++) if (R.alive[c] && R.fuel[c] >= .3) room.push(c);
       /* and the room is the one with something round it to burn, the middle of the house only
          breaking a tie: the four cells nearest the middle of Ortona's biggest house sit among
          empty cells and stone, and from them the fire took or died out about as often as a
@@ -6254,6 +6438,11 @@ for (const device of TARGETS) {
           for (let b = -60; b <= 60 && ok; b += 20)
             if (window.onRubble(tx + a, ty + b) || window.inWire(tx + a, ty + b) ||
                 window.inHogs(tx + a, ty + b)) ok = false;
+        /* and clear of every building by a good way, because the rows that photograph a hull
+           here look along the ground at it: on Saint-Lô the first corridor was 215 units in
+           front of a German headquarters, and the tracks row's camera saw the bunker and not
+           one pixel of the tank */
+        if (ok && window.G.blds.some(q => Math.hypot(q.x - tx, q.y - ty) < 420)) ok = false;
         if (ok) { sx = tx; sy = ty; found = true; }
       }
     if (!found) { sx = window.WORLD.w / 2; sy = window.WORLD.h / 2; }
@@ -6791,7 +6980,8 @@ for (const device of TARGETS) {
        sprocket and the idler, and on a wheeled car its wheels and no spare */
     const want = { am_sher: 22, am_t34: 22, am_e8: 26, am_m26: 26, am_m18: 22, am_m7: 22, am_m12: 22, hr_wespe: 20, hr_marder: 16,
                    am_weasel: 26, am_stuart: 18, ger_kt: 22, ger_maus: 28, ger_tig: 20, ger_stug: 22, am_jeep: 4,
-                   am_m3: 16, am_m16: 16, am_m8: 6, hr_ks750: 3, hr_251: 18, hr_p4: 28, hr_234: 8, hr_panther: 20, hr_wirb: 28 };
+                   am_m3: 16, am_m16: 16, am_m8: 6, hr_ks750: 3, hr_251: 18, hr_p4: 28, hr_234: 8, hr_panther: 20, hr_wirb: 28,
+                   sv_t20: 16, sv_ba64: 4, sv_su76: 22, sv_zsu37: 22 };
     const bad = [];
     let belts = 0;
     Object.keys(want).forEach(k => {
@@ -6821,12 +7011,19 @@ for (const device of TARGETS) {
     Wn.G.units.length = 0;
     const v = Wn.spawnUnit('us', 'am_sher', sx, sy, 0);
     v.facing = 0; v.turret = 0; v.rollL = 0; v.rollR = 0; v.path = null;
-    Wn.CAM.tx = sx; Wn.CAM.ty = sy; Wn.CAM.dist = 230; Wn.CAM.yaw = Math.PI / 2; Wn.CAM.pitch = .45;
+    /* close and low along the side, past the limits a player has: under Saint-Lô's grey sky the
+       belt carries less contrast than it did in Ortona's low sun, and from the player's 230 at
+       .45 half a link moved 921 pixels with the control at nought; from here it moves about three
+       times that. The limits go back before anything else reads them. */
+    const lim0 = { d: Wn.CAMLIM.distMin, p: Wn.CAMLIM.pitchMin };
+    Wn.CAMLIM.distMin = 100; Wn.CAMLIM.pitchMin = .2;
+    Wn.CAM.tx = sx; Wn.CAM.ty = sy; Wn.CAM.dist = 150; Wn.CAM.yaw = Math.PI / 2; Wn.CAM.pitch = .3;
     for (let i = 0; i < 14; i++) Wn.render();
     Wn.G.units.forEach(q => { q.vUs = q.vGer = true; });
     const a1 = grab(), a2 = grab(), ctrl = lift(a1, a2);
     v.rollL = v.rollR = .9; v._matT = -1;
     const b = grab(), moved = lift(a1, b);
+    Wn.CAMLIM.distMin = lim0.d; Wn.CAMLIM.pitchMin = lim0.p;
     Wn.G.units.length = 0;
     keep.forEach(e => Wn.G.units.push(e));
     Wn.rebuildGrid();
@@ -6834,7 +7031,7 @@ for (const device of TARGETS) {
              w: +(u.bodyW * .85 * .5).toFixed(2), ctrl, moved };
   }, { sx: bodies.sx, sy: bodies.sy });
   ok('tracks and wheels move with the vehicle',
-     !rolling.bad.length && rolling.belts === 21 && rolling.drove > 60 &&
+     !rolling.bad.length && rolling.belts === 24 && rolling.drove > 60 &&
      Math.abs(rolling.L1 - rolling.drove) < rolling.drove * .12 && Math.abs(rolling.R1 - rolling.drove) < rolling.drove * .12 &&
      Math.abs(rolling.pl - rolling.w) < .05 && Math.abs(rolling.pr + rolling.w) < .05 &&
      rolling.moved > 1500 && rolling.moved > rolling.ctrl * 20,
@@ -6939,8 +7136,25 @@ for (const device of TARGETS) {
       /* TRACER: the same round laid across the same patch of screen, once on the far
          side of a house and once on the near side. On the overlay both read the same. */
       G.units.length = 0; G.fx.length = 0; G.shots.length = 0; G.paused = true;
-      const house = G.props.filter(q => q.kind === 'ruin' && q.w > 110 && q.h > 60)
-                           .sort((a, b) => b.w * b.h - a.w * a.h)[0];
+      /* a house that is still whole, with nothing else standing in the strip the camera looks
+         down and the two lanes lie in. On Ortona the biggest house would do; on Saint-Lô the
+         biggest is the one the destruction rows above have just shelled flat, and a terrace has
+         its neighbours in both lanes, so the round in front went behind the house next door */
+      const lanes = q => {
+        const x0 = q.x - q.w / 2 - 330, x1 = q.x + q.w / 2 + 90, y0 = q.y - 170, y1 = q.y + 170;
+        let n = 0;
+        for (const o of G.props) {
+          if (o === q || !o.solid || o.kind === 'sea') continue;
+          const ow = (o.w || 2 * (o.r || 10)) / 2, oh = (o.h || 2 * (o.r || 10)) / 2;
+          if (o.x + ow > x0 && o.x - ow < x1 && o.y + oh > y0 && o.y - oh < y1) n++;
+        }
+        for (const b of G.blds) if (Math.abs(b.x - (x0 + x1) / 2) < (x1 - x0) / 2 + 80 && Math.abs(b.y - q.y) < 250) n++;
+        return n;
+      };
+      const pick = G.props.filter(q => q.kind === 'ruin' && q.w > 90 && q.h > 60 && !q.hurt && !q.gut && !q.fr)
+        .map(q => ({ q, n: lanes(q) }))
+        .sort((a, b) => a.n - b.n || (b.q.storeys || 2) - (a.q.storeys || 2) || b.q.w * b.q.h - a.q.w * a.q.h)[0];
+      const house = pick ? pick.q : null;
       let front = 0, behind = 0;
       if (house) {
         window.__o.camera({ x: house.x, y: house.y, dist: 300, yaw: Math.PI, pitch: .45 });
@@ -7048,6 +7262,16 @@ for (const device of TARGETS) {
          widens the old one about its own centre, and the row then measures a hole dug
          somewhere else */
       if (G.craters.some(e => Math.hypot(e.x - x, e.y - y) < Math.max(e.r, 50) * .75 + 50)) continue;
+      /* and nothing in the cut layer either. A row above that dug a hole and then emptied the
+         crater list leaves the hole in `G.cut`, which keeps the deeper of two cuts, so on
+         Saint-Lô the row found 2.5 units already gone under its spot and read the carve short */
+      let dug = 0;
+      for (let a = 0; a < 9; a++) {
+        const qx = x + (a ? Math.cos(a) * 60 : 0), qy = y + (a ? Math.sin(a) * 60 : 0);
+        const k = window.hidx(Math.round(qx / window.HG), Math.round(qy / window.HG));
+        dug = Math.max(dug, Math.abs(G.cut[k]) + Math.abs(G.fill[k]));
+      }
+      if (dug > .1) continue;
       const sc = Math.min(near, 600) - worst * 20;
       if (sc > bs) { bs = sc; P = { x, y }; }
     }
@@ -7724,7 +7948,8 @@ for (const device of TARGETS) {
      being that the block those rules live in was reached at all. Without the control a
      misspelt counter name passes the whole row by never moving. --- */
   await reload(page);
-  await page.click('.arty[data-arty="0"]');
+  /* under the standing orders, which fold up, so it is pressed rather than clicked at */
+  await page.evaluate(() => document.querySelector('.arty[data-arty="0"]').click());
   await deploy(page, { side: args.side || 'us', diff: args.diff === undefined ? 1 : Number(args.diff) });
   await fastForward(page, 480);
   const noArty = await page.evaluate(() => {
@@ -7772,6 +7997,2417 @@ for (const device of TARGETS) {
      `at the door their ${noArty.door.fk} is ${noArty.door.off ? 'QUEUED' : 'refused'} (${noArty.door.on ? 'queued' : 'REFUSED'} with the switch on), ` +
      `the player's ${noArty.door.mk} ${noArty.door.mine ? 'queued' : 'REFUSED'}, and their Priest ${noArty.door.m12off ? 'REBUILT' : 'not rebuilt'} as the M12 ` +
      `(${noArty.door.m12on ? 'rebuilt' : 'NOT REBUILT'} with the switch on)`);
+
+  /* --- The Red Army, the third army, which fights on the Allied side. The title screen
+     offers it as a card of its own; picked, the player's slot fields it and every brain
+     still fields the 29th or the 352nd. Its headquarters is the Shtab and makes the Sapery and
+     the Strelki, the side opens with a squad of Sapery and two of Strelki, the Shtab refuses the
+     29th's rifle squad, the
+     sapper's card offers his own army's works (the minefield among them) and no other's,
+     and a bunker's fitting is no fitting of his where his army has no team for it. Then the
+     squad: four men of the four sapper variants with the PPS-43, the SN-42 plates on the
+     second, the greatcoat in its ring on the first and the SSh-40 on all of them. --- */
+  await reload(page);
+  await deploy(page, { side: 'sov', diff: 1 });
+  const sov = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    W.vpSet('us', 9000); W.vpSet('ger', 9000);
+    out.card = (document.querySelector('#picksov h3') || {}).textContent || '-';
+    out.nat = W.natOfSlot(own); out.army = W.armyOf('us').name; out.foeNat = W.natOfSlot('ger');
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    out.hq = hq ? hq.key : '-'; out.hqName = hq ? hq.def.name : '-';
+    out.makes = hq ? W.makesOf(hq).join(',') : '-';
+    out.open = G.units.filter(u => u.own === own && !u.dead).map(u => u.key).sort().join(',');
+    G.res[own].mp += 2000; G.res[own].fu += 200;
+    const q0 = hq.queue.length;
+    out.q = W.queueUnit(hq, 'sv_sap') ? hq.queue.slice(-1)[0] : 'refused';
+    out.qUs = W.queueUnit(hq, 'am_rifle') ? 'QUEUED' : 'refused';
+    hq.queue.length = q0;
+    const u = W.spawnUnit(own, 'sv_sap', hq.x + 140, hq.y - 160, 0);
+    out.men = u.models.length; out.builder = !!u.def.builder; out.hpPer = u.models[0].hp;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.sov, cnt = (fs, cols) => fs.filter(f => cols.indexOf(f.c) >= 0).length;
+    const ra = W.manFaces('sv_sap', W.FIGPOSE.stand), rb = W.manFaces('sv_sap_b', W.FIGPOSE.stand);
+    const plate = [W.lit(K.armour, 1.1), K.armourD, W.lit(K.armour, .95), W.lit(K.armour, 1.06), W.lit(K.armour, .93)];
+    out.sn42 = cnt(rb.faces, plate); out.sn42a = cnt(ra.faces, plate);
+    out.roll = cnt(ra.faces, [K.roll, W.lit(K.roll, .95)]);
+    out.helm = cnt(rb.parts.helmet, [K.helm, W.lit(K.helm, 1.1), W.lit(K.helm, .9)]);
+    W.select([u], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false);
+    out.bunk = W.bunkUnit(W.BUNKUP.mg, own); out.bunkGer = W.bunkUnit(W.BUNKUP.mg, 'ger');
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fell = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.sov_sap && W.MODELS.dead.sov_sap && W.MODELS.fall.sov_sap.length === 3 && W.MODELS.dead.sov_sap.length === 2);
+    W.killUnit(u);
+    return out;
+  });
+  const sovWorks = ['SANDBAGS', 'WEAPON PIT', 'WIRE', 'MINES'].filter(t => sov.cards.indexOf(t) >= 0);
+  const sovStray = sov.cards.filter(t => /240 MM|MRS 18|FLAK 88|BARRACKS|MOTOR POOL|TANK YARD|KASERNE/.test(t));
+  ok('the Red Army: a card of its own, the Shtab, and the Sapery in a kit of their own with bodies of their own',
+     sov.card === 'RED ARMY' && sov.nat === 'sov' && sov.army === 'Red Army' && sov.foeNat === 'heer' &&
+     sov.hq === 'sov_hq' && sov.hqName === 'Shtab' && sov.makes === 'sv_sap,sv_strel' && sov.open === 'sv_sap,sv_strel,sv_strel' &&
+     sov.q === 'sv_sap' && sov.qUs === 'refused' && sov.men === 4 && sov.hpPer === 64 && sov.builder &&
+     sov.vars === 'sv_sap,sv_sap_b,sv_sap_c,sv_sap_d' && sov.weap === 'pps' && sov.sn42 > 0 && sov.sn42a === 0 &&
+     sov.roll > 0 && sov.helm > 0 && sovWorks.length === 4 && sov.cards.indexOf('ROKS-3') >= 0 && !sovStray.length &&
+     sov.bunk === null && sov.bunkGer === 'hr_mg' && sov.fell === 'sov_sap' && sov.bodies,
+     `the card reads ${sov.card}; his slot fields ${sov.nat} (${sov.army}) against ${sov.foeNat}; his headquarters is the ` +
+     `${sov.hq} (${sov.hqName}) making ${sov.makes}; he opened with ${sov.open}; the Shtab queues ${sov.q} and ` +
+     `${sov.qUs} the 29th's rifle squad; ${sov.men} men of ${sov.hpPer} hp of ${sov.vars} carrying ${sov.weap}, ` +
+     `${sov.builder ? 'a builder' : 'NOT A BUILDER'}; ${sov.sn42} faces of SN-42 on the second man and ${sov.sn42a} on the first, ` +
+     `${sov.roll} of greatcoat ring, ${sov.helm} of SSh-40; the card offers ${sovWorks.join(', ')} and ` +
+     `${sov.cards.indexOf('ROKS-3') >= 0 ? 'the ROKS-3' : 'NO ROKS-3'}${sovStray.length ? ' and ' + sovStray.join(', ') : ''}; ` +
+     `a machine gun fitting raises ${sov.bunk} for him and ${sov.bunkGer} for the 352nd; a man killed went down as ` +
+     `${sov.fell}, sapper bodies ${sov.bodies ? 'baked' : 'MISSING'}`);
+
+  /* --- A brain on the Red Army's slot, which is what SIMPLE puts there. Its line is the
+     Strelki now, so its Sapery dig the way every army's builders do: it keeps its one squad of
+     them as its engineer, deals the rifle squads jobs, and buys nothing that is not of its own
+     army. --- */
+  await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.__sbq = []; W.__sqU = W.queueUnit; W.__sal = W.aiLook; W.__seng = -1;
+    W.queueUnit = function (b) { const r = W.__sqU.apply(this, arguments); if (r && b.own === own) W.__sbq.push(arguments[1]); return r; };
+    W.aiLook = function (sl) { const r = W.__sal.apply(this, arguments); if (sl === own) W.__seng = r.engs.length; return r; };
+  });
+  await fastForward(page, 45);
+  const sovAi = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.queueUnit = W.__sqU; W.aiLook = W.__sal; W.slotOf(own).ai = 0;
+    const mine = G.units.filter(u => u.own === own && !u.dead);
+    return { q: W.__sbq.join(',') || 'nothing', stray: W.__sbq.filter(k => W.UNITS[k].nat !== 'sov').length,
+             n: mine.length, jobs: mine.filter(u => u.job).length, engs: W.__seng,
+             kinds: [...new Set(mine.map(u => u.job || 'dig'))].join(',') };
+  });
+  ok('a brain on the Red Army\'s slot keeps its sappers to dig and fights with the Strelki',
+     sovAi.q !== 'nothing' && sovAi.stray === 0 && sovAi.engs === 1 && sovAi.jobs >= sovAi.n - 1 && sovAi.jobs >= 2,
+     `in 45 s it queued ${sovAi.q} (${sovAi.stray} of another army); of its ${sovAi.n} squads ${sovAi.jobs} had a job ` +
+     `(${sovAi.kinds}) and ${sovAi.engs} was kept as its engineer`);
+
+  /* --- The ROKS-3 and the minefield. The flamethrowers go to the third and fourth men for
+     their price, and against a grenadier squad holding a house the jet is thrown from inside
+     its 80 units of the wall, the jet is drawn, the garrison is burnt and the house catches.
+     Then a minefield laid in front of the headquarters is shown to its own side and not to
+     the enemy's, takes men walking across it and a half-track driven across it, and once it
+     has gone off is shown to the side it went off under. The German brain is switched off for
+     the drill, or it gives its own units their orders and drives the half-track elsewhere. --- */
+  const fl0 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.slotOf('ger').ai = 0;
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const p = G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && q.w > 60 && !q.hurt &&
+      !G.blds.some(b => Math.hypot(b.x - q.x, b.y - q.y) < 300)).sort((a, b) => b.w * b.h - a.w * a.h)[0];
+    if (!p) return { none: 1 };
+    const e = W.spawnUnit('ger', 'hr_gren', p.x, p.y + p.h / 2 + 40);
+    W.enterBuilding(e, p);
+    const u = W.spawnUnit(own, 'sv_sap', p.x, p.y + p.h / 2 + 70, -Math.PI / 2);
+    G.res[own].mp += 500; G.res[own].fu += 100;
+    const mp0 = G.res[own].mp, fu0 = G.res[own].fu;
+    W.pay(own, W.UPGRADES.roks.cost); W.fitUp(u, 'roks');
+    const F = W.__fl = { u, e, p, jets: 0, fl: 0, far: 0 };
+    F.sf = W.spawnFx; F.fa = W.fireAt;
+    W.spawnFx = function (k) { if (k === 'jet') F.jets++; return F.sf.apply(this, arguments); };
+    W.fireAt = function (a, t, dt, o) {
+      const c0 = a.glcd || 0, jd = a === F.u && o && o.gl ? W.jetDist(a, t) : 0;
+      const r = F.fa.apply(this, arguments);
+      if (a === F.u && o && o.gl && (a.glcd || 0) > c0) { F.fl++; F.far = Math.max(F.far, jd); }
+      return r;
+    };
+    W.centreOn(u.x, u.y); W.CAM.dist = 320;
+    u.target = e; u.forced = e; u.order = 'attack';
+    F.hp0 = e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0);
+    return { vars: [0, 1, 2, 3].map(i => W.variantForModel(u, i)).join(','), reach: W.glOf(u) ? W.glOf(u).range : 0,
+             spent: (mp0 - G.res[own].mp) + '/' + (fu0 - G.res[own].fu), gar: !!e.gar };
+  });
+  await frames(page, 2);
+  await fastForward(page, 12);
+  const fl1 = await page.evaluate(() => {
+    const W = window, F = W.__fl, e = F.e, fr = F.p.fr;
+    W.spawnFx = F.sf; W.fireAt = F.fa;
+    return { jets: F.jets, fl: F.fl, far: Math.round(F.far), hp0: F.hp0,
+             hp: Math.round(e.dead ? 0 : e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0)),
+             gar: !!e.gar && !e.dead, fire: fr ? fr.fire.length : 0 };
+  });
+  const mf0 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, s = W.__o.flatSpot(150);
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const u = W.spawnUnit(own, 'sv_sap', s.x - 60, s.y, 0);
+    const site = W.placeWork(own, 'mines', s.x, s.y, 0, [u]);
+    if (!site) return { none: 1 };
+    site.prog = 1; W.updateSites(0);
+    W.killUnit(u); G.units.length = 0;
+    const f = G.mines[G.mines.length - 1], wk = G.works.find(w => w.mf === f);
+    const e = W.spawnUnit('ger', 'hr_gren', s.x + 110, s.y, Math.PI);
+    W.orderMove(e, s.x - 160, s.y);
+    W.__mf = { f, e, s, n0: f.n, hp0: e.models.reduce((a, m) => a + m.hp, 0) };
+    return { n: f.n, us: W.mineShown(wk, 'us'), ger: W.mineShown(wk, 'ger') };
+  });
+  for (let i = 0; i < 4 && !mf0.none; i++) {
+    await fastForward(page, 4);
+    if (await page.evaluate(() => {
+      const W = window, F = W.__mf, e = F.e;
+      if (F.f.n < F.n0) return true;
+      if (!e.moving && !e.dead) W.orderMove(e, e.x < F.s.x ? F.s.x + 110 : F.s.x - 160, F.s.y);
+      return false;
+    })) break;
+  }
+  const mf1 = mf0.none ? {} : await page.evaluate(() => {
+    const W = window, F = W.__mf, wk = W.G.works.find(w => w.mf === F.f);
+    const r = { n: F.f.n, n0: F.n0, shown: wk ? W.mineShown(wk, 'ger') : true, hp0: F.hp0,
+                hp: Math.round(F.e.dead ? 0 : F.e.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0)) };
+    /* six men crossing a strip forty-four deep are on it for about fifteen of the mine ticks, so
+       they set off four of the five on average, and on one phone run all five: the half-track
+       then had nothing to drive into. It gets a field of its own where the first one was, with
+       the squad off the ground it drives over */
+    if (!F.e.dead) W.killUnit(F.e);
+    if (F.f.n <= 0) {
+      W.G.res[W.G.own].mp = Math.max(W.G.res[W.G.own].mp, 400);
+      const u2 = W.spawnUnit(W.G.own, 'sv_sap', F.s.x - 60, F.s.y, 0);
+      const site2 = W.placeWork(W.G.own, 'mines', F.s.x, F.s.y, 0, [u2]);
+      if (site2) { site2.prog = 1; W.updateSites(0); F.f = W.G.mines[W.G.mines.length - 1]; r.fresh = 1; }
+      W.killUnit(u2);
+    }
+    if (F.f.n > 0) {
+      /* the half-track goes along the strip and not across it: across its 44 units at speed
+         it is inside for about four of the mine ticks and gets through two times in five,
+         which is a minefield's arithmetic and a drill's coin toss; along it, five or six ticks
+         a pass and three times in ten, so it is given ten passes and stops at the first mine */
+      const ax = Math.cos(F.f.a), ay = Math.sin(F.f.a);
+      const v = W.spawnUnit('ger', 'hr_251', F.f.x + ax * 140, F.f.y + ay * 140, Math.atan2(-ay, -ax));
+      W.orderMove(v, F.f.x - ax * 150, F.f.y - ay * 150);
+      F.v = v; F.vhp = v.hp; F.vn = F.f.n; F.ax = ax; F.ay = ay;
+    }
+    return r;
+  });
+  for (let i = 0; i < 10 && !mf0.none; i++) {
+    await fastForward(page, 4);
+    if (await page.evaluate(() => {
+      const W = window, F = W.__mf, v = F.v;
+      if (!v || F.f.n < F.vn || v.dead) return true;
+      if (!v.moving) {
+        const k = (v.x - F.f.x) * F.ax + (v.y - F.f.y) * F.ay < 0 ? 140 : -150;
+        W.orderMove(v, F.f.x + F.ax * k, F.f.y + F.ay * k);
+      }
+      return false;
+    })) break;
+  }
+  const mf2 = mf0.none ? {} : await page.evaluate(() => {
+    const W = window, F = W.__mf;
+    return F.v ? { lost: Math.round(F.vhp - (F.v.dead ? 0 : F.v.hp)), immob: +(F.v.immob || 0).toFixed(1), dead: !!F.v.dead } : { lost: -1, immob: 0 };
+  });
+  ok('the Sapery\'s ROKS-3 burns a garrison out from inside its reach, and their minefield takes men and a half-track',
+     !fl0.none && fl0.vars === 'sv_sap,sv_sap_b,sv_flame,sv_flame' && fl0.reach === 80 && fl0.spent === '70/15' && fl0.gar &&
+     fl1.fl > 0 && fl1.jets > 0 && fl1.far <= 82 && fl1.hp < fl1.hp0 * .6 && (fl1.fire > 0 || !fl1.gar) &&
+     !mf0.none && mf0.us && !mf0.ger && mf1.n < mf1.n0 && mf1.hp < mf1.hp0 && mf1.shown &&
+     (mf2.lost >= 150 || mf2.dead) && (mf2.immob > 0 || mf2.dead),
+     `fitted for ${fl0.spent}, the men are ${fl0.vars} with a reach of ${fl0.reach}; against a garrison of ${fl1.hp0} hp ` +
+     `${fl1.fl} jets left the tubes, the furthest from ${fl1.far} units of the wall, ${fl1.jets} gouts drawn, the garrison ` +
+     `left at ${fl1.hp} and ${fl1.gar ? 'STILL IN' : 'out'}, ${fl1.fire} cells alight; the minefield ` +
+     `${mf0.none ? 'REFUSED' : `shown to us ${mf0.us} and to them ${mf0.ger}`}; walked across, ${mf1.n0 - mf1.n} mines went off ` +
+     `and the squad went from ${mf1.hp0} to ${mf1.hp} hp, the field then ${mf1.shown ? 'shown' : 'STILL HIDDEN'} to them${mf1.fresh ? ', and a fresh one laid' : ''}; ` +
+     `a 251 driven across lost ${mf2.lost}${mf2.dead ? ' and died' : ''} and was held for ${mf2.immob} s`);
+
+  /* --- The Kazarma and the T-20. The sapper's card offers the Kazarma, which makes the T-20,
+     and the Shtab refuses the tractor. The T-20 has every buffer it needs and its own name, its
+     DT asked to lay 1.2 radians off the nose stops at the edge of twenty degrees, it takes one
+     squad, refuses a second and tows, the commander head out of its door wears the padded
+     helmet and is the eye, a rifle round never goes through its front and a Pak 38's always
+     goes through its side, forty wrecks throw nothing, and killed it leaves two of the army's
+     crewmen. Then a brain on the Soviet slot with a Kazarma standing buys a T-20 there. --- */
+  const kz = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 300;
+    const u0 = W.spawnUnit(own, 'sv_sap', hq.x + 140, hq.y - 160, 0);
+    W.select([u0], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false); W.killUnit(u0); G.units.length = 0;
+    const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260);
+    const kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true);
+    out.makes = W.makesOf(kb).join(','); out.bname = kb.def.name;
+    out.bld = W.buildingModel(kb.def, 'sov_bar').length;
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(kb, 'sv_t20'); out.qHq = q(hq, 'sv_t20');
+    const B = W.MODELS.veh.sv_t20;
+    out.bufs = !!(B && B.hull && B.tur && B.crew);
+    const sp = W.nearestFree(hq.x + 200, hq.y + 120), t = W.spawnUnit(own, 'sv_t20', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = +W.arcOf(t).toFixed(2);
+    t.facing = 0; t.turret = 0; t.want = 1.2;
+    for (let i = 0; i < 30; i++) W.updateModels(t, .2);
+    out.tur = +t.turret.toFixed(3);
+    const s1 = W.spawnUnit(own, 'sv_sap', t.x + 30, t.y + 40, 0), s2 = W.spawnUnit(own, 'sv_sap', t.x - 30, t.y + 40, 0);
+    W.boardVehicle(s1, t); out.t1 = t.cargo === s1; out.t2 = W.canBoard(s2, t); out.tows = !!t.def.tows;
+    /* and the squad aboard is drawn on the seats: every living man on a cushion, his hip at
+       its height, facing outward with his feet out at the rail, read in the hull's own frame */
+    const I4 = W.m4model(0, 0, 0, 0, 1), H = W.TZH, sm = W.seatMen(t, I4);
+    out.aboard = s1.models.filter(m => m.alive).length; out.seated = sm.length;
+    out.seats = sm.map(e => {
+      const J = W.MODELS.rideJ[e.v], h = W.m4apply(e.mat, J.hip[0], J.hip[1], J.hip[2]),
+            a = W.m4apply(e.mat, J.ankleR[0], J.ankleR[1], J.ankleR[2]);
+      return [+h.z.toFixed(1), +Math.abs(h.y).toFixed(1), +Math.abs(a.y).toFixed(1), +a.z.toFixed(1)];
+    });
+    out.seatOk = sm.length > 0 && out.seats.every(r => Math.abs(r[0] - H.zCush - 1.2) < .3 && r[1] > H.yCush[0] && r[1] < H.yCush[1] &&
+                                                       r[2] > H.half && r[2] < H.half + 2 && r[3] > 12.2 && r[3] < 14.6);
+    W.unloadVehicle(t); out.unseated = W.seatMen(t, I4).length; W.boardVehicle(s1, t);
+    const K = W.KIT.sov, V = W.VMODEL.sv_t20;
+    out.shlem = V.crew.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.ssh = V.crew.filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.VIN.sv_t20(V);
+    out.eye = +E.eyeUp.z.toFixed(1); out.roof = W.TZH.zRoof;
+    t.facing = 0;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.pak = +W.penVs(W.UNITS.hr_pak.w, 300, t, t.x, t.y + 300).toFixed(2);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    out.baked = !!(W.MODELS.fall.sov && W.MODELS.dead.sov && W.MODELS.fall.sov.length === 3);
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    /* and the brain on his slot, with the Kazarma standing and money in the till */
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_sap', hq.x + 160, hq.y, 0);
+    W.__kzq = []; W.__kzU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__kzU.apply(this, arguments); if (r && b.own === own) W.__kzq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const kzAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__kzU; W.slotOf(own).ai = 0;
+    return { q: W.__kzq.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Kazarma raises the Komsomolets T-20: a tractor with a DT in its ball, six seats and a hook',
+     kz.cards.indexOf('KAZARMA') >= 0 && kz.makes === 'sv_shturm,sv_mor,sv_t20,sv_zis3' && kz.bname === 'Kazarma' && kz.bld > 100 &&
+     kz.q === 'sv_t20' && kz.qHq === 'refused' && kz.bufs && kz.name === 'Komsomolets T-20' &&
+     kz.arc === .7 && Math.abs(Math.abs(kz.tur) - kz.arc / 2) < .03 && kz.t1 && !kz.t2 && kz.tows &&
+     kz.aboard === 4 && kz.seated === kz.aboard && kz.seatOk && kz.unseated === 0 &&
+     kz.shlem > 0 && kz.ssh === 0 && kz.paint > 0 && kz.eye > kz.roof + 2 && kz.eye < kz.roof + 6 &&
+     kz.rifle === 0 && kz.pak === 1 && kz.blown === 0 && kz.sink > 0 && kz.bodies === 2 && kz.bodyNat === 'sov' && kz.baked &&
+     /sov_bar:sv_t20/.test(kzAi.q),
+     `the card ${kz.cards.indexOf('KAZARMA') >= 0 ? 'offers' : 'does NOT offer'} the Kazarma; the ${kz.bname} makes ${kz.makes} ` +
+     `(${kz.bld} faces) and queues ${kz.q}, the Shtab ${kz.qHq} it; buffers ${kz.bufs ? 'built' : 'MISSING'}; named ${kz.name}; ` +
+     `asked for 1.2 the DT laid ${kz.tur} on an arc of ${kz.arc}; it ${kz.t1 ? 'took' : 'REFUSED'} a squad and ` +
+     `${kz.t2 ? 'TOOK' : 'refused'} a second, ${kz.tows ? 'tows' : 'DOES NOT TOW'}; ${kz.seated} of the ${kz.aboard} aboard on the ` +
+     `seats (hip z, hip y, ankle y, ankle z: ${JSON.stringify(kz.seats)})${kz.seatOk ? '' : ' OFF THEIR SEATS'}, ${kz.unseated} after ` +
+     `they got down; the commander has ${kz.shlem} faces of the padded ` +
+     `helmet and ${kz.ssh} of the SSh-40, the hull ${kz.paint} of its green; the eye at ${kz.eye} over a roof at ${kz.roof}; ` +
+     `a Kar98k through the front ${kz.rifle} and a Pak 38 through the side ${kz.pak}; forty wrecks threw ${kz.blown} and sat ` +
+     `down ${kz.sink}; killed it left ${kz.bodies} bodies of ${kz.bodyNat}, ${kz.baked ? 'baked' : 'NOT BAKED'}; a brain with ` +
+     `the Kazarma standing queued ${kzAi.q}`);
+
+  /* --- The Strelki. The Shtab makes them and queues them and the Kazarma refuses them: seven men
+     of 64 hp in five variants carrying the Mosin with its bayonet fixed, the leader in the pilotka
+     and a rifleman under the SSh-40, filled at three fifths of another army's price a man. The two
+     fittings are one or the other, and the DP-28s are fired by the two men they were issued to and
+     nobody else. A Molotov at a squad in the open burns the ground it breaks on and hurts the men
+     on it, and one in through the window of a held house sets the house alight. The shout sends
+     the squad forward at four tenths again its pace. A man killed goes down as `sov_str`, and a
+     brain on his slot buys them as its line. --- */
+  const st = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    W.slotOf('ger').ai = 0;
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0; G.fires.length = 0;
+    G.res[own].mp += 3000; G.res[own].fu += 300;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0], kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar')[0];
+    function q(b, k) { if (!b) return 'no building'; const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(hq, 'sv_strel'); out.qKz = q(kb, 'sv_strel');
+    const P = W.__o.flatSpot(360);
+    const u = W.spawnUnit(own, 'sv_strel', P.x - 100, P.y, 0);
+    out.men = u.models.length; out.hpPer = u.models[0].hp;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.sov, ext = fs => { let a = 1e9, b = -1e9; fs.forEach(f => f.v.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); })); return b - a; };
+    out.mosin = +ext(W.weaponModel(K, 'mosin')).toFixed(2);
+    const pil = [K.pil, K.pilD, W.lit(K.pil, .94), W.lit(K.pil, .96)], helm = [K.helm, W.lit(K.helm, 1.1), W.lit(K.helm, .9)];
+    out.pil = W.manFaces('sv_str_lead', W.FIGPOSE.stand).parts.helmet.filter(f => pil.indexOf(f.c) >= 0).length;
+    out.ssh = W.manFaces('sv_str', W.FIGPOSE.stand).parts.helmet.filter(f => helm.indexOf(f.c) >= 0).length;
+    out.price = W.reinfCost(u); out.full = Math.round(230 * .22 / 7 * 4);
+    W.select([u], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.pay(own, W.UPGRADES.dp28.cost); W.fitUp(u, 'dp28');
+    W.select([u], false); W.buildCmds();
+    out.cards2 = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false);
+    out.dpMen = u.models.map((m, i) => W.variantForModel(u, i)).filter(v => v === 'sv_str_dp').length;
+    out.excl = W.hasExclusive(u, W.UPGRADES.ppsh.excl);
+    /* the pair: fired by the two men it was issued to and by nobody else */
+    const e = W.spawnUnit('ger', 'hr_gren', P.x + 100, P.y, Math.PI);
+    u.vGer = u.vUs = e.vUs = e.vGer = true; u.moving = false; u.glcd = 0; u.facing = 0;
+    u.models.forEach(m => { m.fire = 0; m.fireQ = 0; });
+    W.fireAt(u, e, .05, { gl: 1 });
+    out.pairCd = u.glcd > 0;
+    out.pairMen = u.models.map((m, i) => m.fire > 0 || m.fireQ > 0 ? i : -1).filter(i => i >= 0).join(',');
+    W.killUnit(e);
+    /* the Molotov at a squad in the open, 110 off */
+    const g = W.spawnUnit('ger', 'hr_gren', P.x + 10, P.y, Math.PI);
+    g.vUs = g.vGer = true;
+    W.__st = { u, g, P, hp0: g.models.reduce((a, m) => a + m.hp, 0) };
+    out.molo = W.abGren(u, g, 'molo') || 'thrown';
+    return out;
+  });
+  await fastForward(page, 2.5);
+  const st2 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__st, out = {};
+    out.fires = G.fires.length;
+    out.fireAt = G.fires.length ? Math.round(Math.hypot(G.fires[0].x - S.g.x, G.fires[0].y - S.g.y)) : -1;
+    out.hurt = Math.round(S.hp0 - S.g.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0));
+    W.killUnit(S.g); G.fires.length = 0;
+    /* the shout: how far the squad walks in two seconds, without it and then with it */
+    const u = S.u;
+    u.x = S.P.x - 100; u.y = S.P.y; u.models.forEach(m => { m.x = u.x + (m.ox || 0); m.y = u.y + (m.oy || 0); });
+    W.orderMove(u, S.P.x + 300, S.P.y);
+    S.x0 = u.x;
+    return out;
+  });
+  await fastForward(page, 2);
+  const st3 = await page.evaluate(() => {
+    const W = window, S = W.__st, u = S.u, out = {};
+    out.walk = Math.round(u.x - S.x0);
+    u.x = S.P.x - 100; u.y = S.P.y; u.models.forEach(m => { m.x = u.x + (m.ox || 0); m.y = u.y + (m.oy || 0); });
+    W.orderMove(u, S.P.x + 300, S.P.y);
+    out.ura = W.abUra(u) || 'shouted';
+    S.x0 = u.x;
+    return out;
+  });
+  await fastForward(page, 2);
+  const st4 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__st, u = S.u, out = {};
+    out.run = Math.round(u.x - S.x0);
+    /* the Molotov in through the window of a held house */
+    const p = G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && q.w > 60 && !q.hurt && !q.fr &&
+      !G.blds.some(b => Math.hypot(b.x - q.x, b.y - q.y) < 300)).sort((a, b) => b.w * b.h - a.w * a.h)[0];
+    if (!p) { out.none = 1; return out; }
+    const e = W.spawnUnit('ger', 'hr_gren', p.x, p.y + p.h / 2 + 40);
+    W.enterBuilding(e, p);
+    u.x = p.x; u.y = p.y + p.h / 2 + 100; u.models.forEach(m => { m.x = u.x + (m.ox || 0); m.y = u.y + (m.oy || 0); });
+    u.path = null; u.dest = null; u.order = null; u.abCd = {};
+    e.vUs = e.vGer = true;
+    out.garWhy = W.abGren(u, e, 'molo') || 'thrown';
+    S.p = p; S.e = e;
+    return out;
+  });
+  await fastForward(page, 5);
+  const st5 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__st, u = S.u, out = {};
+    const R = S.p && S.p.fr;
+    out.alight = R ? R.heat.filter(h => h > 0).length + R.burn.filter(b => b > 0).length : 0;
+    if (S.e && !S.e.dead) W.killUnit(S.e);
+    /* every fire put out, as the fire rows do, before anything else is staged in the town */
+    if (R) { for (let c = 0; c < R.heat.length; c++) R.heat[c] = 0; if (R.burning) R.burning.length = 0; }
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fell = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.sov_str && W.MODELS.dead.sov_str && W.MODELS.fall.sov_str.length === 3);
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    /* and the brain on his slot buys them as its line, with its queues empty and money in the till. It
+       ran on what the rows above had left: once the Kazarma made a mortar, the row above queued one there,
+       it came out during this row with the Shturmoviki behind it, and the brain counted two sections of
+       its own and bought no Strelki. A row that leans on what the rows above it bought is a row about
+       those rows */
+    G.blds.forEach(b => { if (b.own === own) { b.queue.length = 0; b.qt = 0; } });
+    G.res[own].mp += 2000; G.res[own].fu += 200;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.__stq = []; W.__stU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__stU.apply(this, arguments); if (r && b.own === own) W.__stq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 25);
+  const stAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__stU; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    return { q: W.__stq.join(',') || 'nothing' };
+  });
+  Object.assign(st, st2, st3, st4, st5);
+  ok('the Red Army\'s Strelki: seven riflemen with the Mosin, the DP-28 or the PPSh-41, the Molotov and the shout',
+     st.q === 'sv_strel' && st.qKz === 'refused' && st.men === 7 && st.hpPer === 64 &&
+     st.vars === 'sv_str,sv_str_b,sv_str_c,sv_str_lead,sv_str_m' && st.weap === 'mosin' && Math.abs(st.mosin - 19.53) < .2 &&
+     st.pil > 10 && st.ssh > 10 && st.price === 17 && st.full === 29 &&
+     ['TWO DP-28', 'TWO PPSH', 'Molotov', 'Ura!'].every(t => st.cards.indexOf(t) >= 0) &&
+     st.cards2.indexOf('TWO PPSH') < 0 && st.dpMen === 2 && st.excl && st.pairCd && st.pairMen === '4,5' &&
+     st.molo === 'thrown' && st.fires === 1 && st.fireAt < 60 && st.hurt > 10 &&
+     st.ura === 'shouted' && st.walk > 60 && st.run > st.walk * 1.25 && !st.none && st.garWhy === 'thrown' && st.alight > 0 &&
+     st.fell === 'sov_str' && st.bodies && /sov_hq:sv_strel/.test(stAi.q),
+     `the Shtab queues ${st.q} and the Kazarma ${st.qKz} it; ${st.men} men of ${st.hpPer} hp of ${st.vars} carrying ${st.weap}, ` +
+     `the Mosin ${st.mosin} units with its bayonet; ${st.pil} faces of pilotka on the leader and ${st.ssh} of SSh-40 on a rifleman; ` +
+     `a man refilled at ${st.price} where the full price is ${st.full}; the card offers ${st.cards.filter(t => /DP|PPSH|Molotov|Ura/.test(t)).join(', ')}` +
+     ` and with the DP-28s ${st.cards2.indexOf('TWO PPSH') < 0 ? 'no PPSh' : 'STILL THE PPSH'}; ${st.dpMen} men carry the DP-28 and ` +
+     `men ${st.pairMen} fired it${st.pairCd ? '' : ' (NO CLOCK SET)'}; the bottle ${st.molo}, ${st.fires} fire on the ground ${st.fireAt} ` +
+     `off the squad, which lost ${st.hurt}; walked ${st.walk} in two seconds and ${st.run} after the shout (${st.ura}); a bottle into a ` +
+     `held house ${st.garWhy}${st.none ? ' (NO HOUSE)' : ''} and ${st.alight} cells of it caught; a man killed went down as ${st.fell}, ` +
+     `bodies ${st.bodies ? 'baked' : 'MISSING'}; a brain on his slot queued ${stAi.q}`);
+
+  /* --- The Shturmoviki. The Kazarma makes them and queues them and the Shtab refuses them: six men
+     of 96 hp with the PPSh-41, every one in the SN-42. From in front the plate takes a fifth off
+     what a rifle squad does to them, thrown with the same rolls as from behind, and nothing off a
+     shell. A volley of RGD-33s goes from every man and hurts the squad it was thrown at; the
+     satchel charge is carried up to a half-track and to a building of theirs and does its weight to
+     each; and the smoke grenade puts a cloud on the ground it was thrown at. A man killed goes down
+     as `sov_sht`, and a brain on his slot buys them out of the Kazarma. --- */
+  const sh = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    W.slotOf('ger').ai = 0;
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    G.res[own].mp += 3000; G.res[own].fu += 300;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0], kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar')[0];
+    function q(b, k) { if (!b) return 'no building'; const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(kb, 'sv_shturm'); out.qHq = q(hq, 'sv_shturm');
+    const P = W.__o.flatSpot(360);
+    const u = W.spawnUnit(own, 'sv_shturm', P.x - 100, P.y, 0);
+    out.men = u.models.length; out.hpPer = u.models[0].hp;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.sov, plate = [W.lit(K.armour, 1.1), K.armourD, W.lit(K.armour, .95), W.lit(K.armour, 1.06), W.lit(K.armour, .93)];
+    out.sn42 = out.vars.split(',').map(v => W.manFaces(v, W.FIGPOSE.stand).faces.filter(f => plate.indexOf(f.c) >= 0).length);
+    W.select([u], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false);
+    /* the plate: a rifle squad's volleys from in front and from behind, with the same rolls */
+    const e = W.spawnUnit('ger', 'hr_gren', P.x + 100, P.y, Math.PI);
+    u.vUs = u.vGer = e.vUs = e.vGer = true; u.target = e; e.target = u; e.moving = false; u.moving = false;
+    function volleys(face) {
+      const rand = Math.random; let seed = 7;
+      Math.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      u.facing = face; u.sup = 0;
+      u.models.forEach(m => { m.alive = true; m.hp = 1e5; });
+      let took = 0;
+      for (let i = 0; i < 40; i++) {
+        const h0 = u.models.reduce((a, m) => a + m.hp, 0);
+        e.cd = 0; e.sup = 0; W.fireAt(e, u, .05);
+        took += h0 - u.models.reduce((a, m) => a + m.hp, 0);
+      }
+      Math.random = rand;
+      return took;
+    }
+    out.front = Math.round(volleys(0)); out.back = Math.round(volleys(Math.PI));
+    out.shell = W.plateOf(u, e, W.UNITS.hr_p4.w);
+    u.models.forEach(m => { m.hp = 96; }); u.sup = 0;
+    W.killUnit(e);
+    /* the volley of RGD-33s at a squad 120 off */
+    const g = W.spawnUnit('ger', 'hr_gren', P.x + 20, P.y, Math.PI);
+    g.vUs = g.vGer = true;
+    out.gren = W.abGren(u, g, 'gren') || 'thrown';
+    W.__sh = { u, g, P, hp0: g.models.reduce((a, m) => a + m.hp, 0), n0: G.shots.length };
+    return out;
+  });
+  await fastForward(page, 3);
+  const sh2 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__sh, u = S.u, out = {};
+    out.hurt = Math.round(S.hp0 - S.g.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0));
+    W.killUnit(S.g);
+    /* the satchel at a half-track and at a building of theirs */
+    u.abCd = {}; u.sup = 0;
+    const v = W.spawnUnit('ger', 'hr_251', S.P.x + 60, S.P.y, Math.PI);
+    v.vUs = v.vGer = true; v.order = null; v.path = null;
+    S.v = v; S.vh0 = v.hp;
+    out.satch = W.abBundle(u, v, 'satch') || 'sent';
+    out.order = u.order;
+    return out;
+  });
+  await fastForward(page, 8);
+  const sh3 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__sh, u = S.u, out = {};
+    out.veh = Math.round(S.vh0 - (S.v.dead ? 0 : S.v.hp));
+    if (!S.v.dead) W.killUnit(S.v);
+    u.abCd = {}; u.sup = 0; u.order = null; u.path = null;
+    const at = W.nearestFree(S.P.x + 180, S.P.y);
+    const b = W.spawnBuilding('ger', 'ger_qtr', at.x, at.y, true);
+    b.vUs = b.vGer = true;
+    S.b = b; S.bh0 = b.hp;
+    out.bld = W.abBundle(u, b, 'satch') || 'sent';
+    return out;
+  });
+  await fastForward(page, 10);
+  const sh4 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__sh, u = S.u, out = {};
+    out.bldHurt = Math.round(S.bh0 - (S.b.dead ? 0 : S.b.hp));
+    if (G.blds.indexOf(S.b) >= 0) { G.blds.splice(G.blds.indexOf(S.b), 1); W.rebuildGrid(); }
+    /* the smoke grenade on a piece of ground 90 off */
+    u.abCd = {}; u.sup = 0; u.order = null; u.path = null;
+    S.sx = u.x + 90; S.sy = u.y + 20; S.s0 = G.smoke.length;
+    out.smk = W.abBundle(u, { x: S.sx, y: S.sy }, 'smk') || 'thrown';
+    return out;
+  });
+  await fastForward(page, 2.5);
+  const sh5 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__sh, u = S.u, out = {};
+    const cl = G.smoke.slice(S.s0).filter(c => Math.hypot(c.x - S.sx, c.y - S.sy) < 40);
+    out.cloud = cl.length ? cl[0].r : 0;
+    G.smoke.length = S.s0;
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fell = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.sov_sht && W.MODELS.dead.sov_sht && W.MODELS.fall.sov_sht.length === 3);
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.__shq = []; W.__shU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__shU.apply(this, arguments); if (r && b.own === own) W.__shq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 25);
+  const shAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__shU; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__shq.join(',') || 'nothing' };
+  });
+  Object.assign(sh, sh2, sh3, sh4, sh5);
+  ok('the Red Army\'s Shturmoviki: six men in the SN-42 with the PPSh-41, grenades, a satchel charge and smoke',
+     sh.q === 'sv_shturm' && sh.qHq === 'refused' && sh.men === 6 && sh.hpPer === 96 &&
+     sh.vars === 'sv_sht,sv_sht_b,sv_sht_lead,sv_sht_s' && sh.weap === 'ppsh' && sh.sn42.every(n => n > 0) &&
+     ['Grenades', 'Satchel charge', 'Smoke grenade'].every(t => sh.cards.indexOf(t) >= 0) &&
+     sh.back > 0 && Math.abs(sh.front / sh.back - .8) < .02 && sh.shell === 1 &&
+     sh.gren === 'thrown' && sh.hurt > 40 && sh.satch === 'sent' && sh.order === 'bundle' && sh.veh >= 150 &&
+     sh.bld === 'sent' && sh.bldHurt >= 200 && sh.smk === 'thrown' && sh.cloud > 40 &&
+     sh.fell === 'sov_sht' && sh.bodies && /sov_bar:sv_shturm/.test(shAi.q),
+     `the Kazarma queues ${sh.q} and the Shtab ${sh.qHq} it; ${sh.men} men of ${sh.hpPer} hp of ${sh.vars} carrying ${sh.weap}, ` +
+     `SN-42 faces ${sh.sn42.join('/')}; the card offers ${sh.cards.filter(t => /Grenades|Satchel|Smoke/.test(t)).join(', ')}; forty ` +
+     `volleys from in front took ${sh.front} and from behind ${sh.back} (${sh.back ? (sh.front / sh.back).toFixed(3) : '-'}), a shell ` +
+     `${sh.shell}; the RGD-33s ${sh.gren} and the squad lost ${sh.hurt}; the satchel ${sh.satch} (${sh.order}) took ${sh.veh} off a ` +
+     `251 and ${sh.bld} took ${sh.bldHurt} off a Kaserne; the smoke grenade ${sh.smk} and made a cloud of ${sh.cloud}; a man killed ` +
+     `went down as ${sh.fell}, bodies ${sh.bodies ? 'baked' : 'MISSING'}; a brain on his slot queued ${shAi.q}`);
+
+  /* --- The Avtopark and the BA-64B. The Avtopark needs the Kazarma and makes the BA-64B, which the
+     Kazarma refuses. The car has every buffer it needs and its own name, its turret asked to lay
+     over the tail comes all the way round, the DT's flash leaves its own muzzle off the middle of
+     the turret, the commander standing in the turret wears the padded helmet and is the eye, a
+     rifle round never goes through its front and a Pak 38's always does, eighty wrecks throw the
+     turret some of the time, and killed it leaves two of the army's crewmen. Then a brain on the
+     Soviet slot with the Kazarma standing pegs out an Avtopark, and with one standing buys the car
+     out of it. --- */
+  const ba = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 300;
+    const u0 = W.spawnUnit(own, 'sv_sap', hq.x + 140, hq.y - 160, 0);
+    W.select([u0], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false); W.killUnit(u0); G.units.length = 0;
+    out.need = W.BUILDINGS.sov_mot.need; out.ready = W.bldReady(own, 'sov_mot');
+    const at = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260);
+    const ab = W.spawnBuilding(own, 'sov_mot', at.x, at.y, true);
+    out.makes = W.makesOf(ab).join(','); out.bname = ab.def.name;
+    out.bld = W.buildingModel(ab.def, 'sov_mot').length;
+    const kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar')[0];
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(ab, 'sv_ba64'); out.qBar = kb ? q(kb, 'sv_ba64') : 'no Kazarma';
+    const B = W.MODELS.veh.sv_ba64;
+    out.bufs = !!(B && B.hull && B.tur && B.turCrew);
+    const sp = W.nearestFree(hq.x + 200, hq.y + 120), t = W.spawnUnit(own, 'sv_ba64', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = W.arcOf(t) || 0;
+    t.facing = 0; t.turret = 0; t.want = 3.1;
+    for (let i = 0; i < 60; i++) W.updateModels(t, .2);
+    out.tur = +Math.abs(t.turret).toFixed(2);
+    t.turret = 0; t._matT = -1;
+    const mz = W.gunMuzzle(t);
+    out.muzY = +(mz.y - t.y).toFixed(2); out.barY = W.BAT.gy;
+    const K = W.KIT.sov, V = W.VMODEL.sv_ba64;
+    out.shlem = V.turCrew.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.VIN.sv_ba64(V);
+    out.eye = +E.eyeUp.z.toFixed(1); out.rim = W.BAT.h; out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.pak = +W.penVs(W.UNITS.hr_pak.w, 300, t, t.x + 300, t.y).toFixed(2);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 80; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Kazarma standing and the Avtopark taken away again, and the
+       clock past the hour the ladder opens the car's rung, so the row does not depend on how long
+       the rows before it ran */
+    G.blds.splice(G.blds.indexOf(ab), 1); W.rebuildGrid();
+    G.t = Math.max(G.t, 600);
+    /* and the ZiS-2 written into what the side has ordered, because it comes out of the same
+       building a rung later and is one of the things that kill a heavy, which the brain brings
+       forward whenever the enemy has one on the field */
+    G.made[own].sv_zis2 = Math.max(2, G.made[own].sv_zis2 || 0);
+    /* and the rest of the Avtopark and the park beside it, so that the car is the one rung left:
+       on one desktop run the brain had a Tankovyy park by now and bought a T-34 first */
+    ['sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    /* and the car itself taken off it: the row queued one above to ask the Avtopark, which the
+       list counts as ordered, and a rung ordered once is only bought again as a replacement,
+       dearest first, behind the ZiS-2 and whatever the park makes */
+    G.made[own].sv_ba64 = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_sap', hq.x + 160, hq.y, 0);
+    W.__baA = at;
+    W.__baq = []; W.__baU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__baU.apply(this, arguments); if (r && b.own === own) W.__baq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 30);
+  const baAi = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    out.site = G.blds.filter(b => b.own === own && b.key === 'sov_mot').length;
+    /* and with an Avtopark standing, what it buys out of it: the one it pegged out may be up
+       already and have bought the car, which the hook has heard */
+    if (!G.blds.some(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)) {
+      W.spawnBuilding(own, 'sov_mot', W.__baA.x, W.__baA.y, true); W.rebuildGrid();
+    }
+    G.res[own].mp += 2000; G.res[own].fu += 200;
+    return out;
+  });
+  await fastForward(page, 30);
+  Object.assign(baAi, await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__baU; W.slotOf(own).ai = 0;
+    return { q: W.__baq.join(',') || 'nothing' };
+  }));
+  ok('the Red Army\'s Avtopark raises the BA-64B: an armoured car with a DT in an open turret that goes all the way round',
+     ba.cards.indexOf('AVTOPARK') >= 0 && ba.need === 'sov_bar' && ba.ready && ba.makes === 'sv_ba64,sv_zis2,sv_bs3,sv_bm13,sv_su76,sv_zsu37' && ba.bname === 'Avtopark' &&
+     ba.bld > 100 && ba.q === 'sv_ba64' && ba.qBar === 'refused' && ba.bufs && ba.name === 'BA-64B' && !ba.arc && ba.tur > 3.0 &&
+     Math.abs(ba.muzY - ba.barY) < .2 && ba.shlem > 0 && ba.paint > 0 && ba.frame === 'tur' &&
+     ba.eye > ba.rim + 2 && ba.eye < ba.rim + 6 && ba.rifle === 0 && ba.pak === 1 && ba.blown > 0 && ba.blown < 80 && ba.sink > 0 &&
+     ba.bodies === 2 && ba.bodyNat === 'sov' && baAi.site > 0 && /sov_mot:sv_ba64/.test(baAi.q),
+     `the card ${ba.cards.indexOf('AVTOPARK') >= 0 ? 'offers' : 'does NOT offer'} the Avtopark, which needs ${ba.need} ` +
+     `(${ba.ready ? 'standing' : 'NOT STANDING'}); the ${ba.bname} makes ${ba.makes} (${ba.bld} faces) and queues ${ba.q}, ` +
+     `the Kazarma ${ba.qBar} it; buffers ${ba.bufs ? 'built' : 'MISSING'}; named ${ba.name}; asked to lay over the tail the ` +
+     `turret came to ${ba.tur}${ba.arc ? ' on an ARC of ' + ba.arc : ''}; the flash ${ba.muzY} off the middle against the DT's ` +
+     `${ba.barY}; the commander has ${ba.shlem} faces of the padded helmet, the hull ${ba.paint} of its green; the eye in the ` +
+     `${ba.frame} at ${ba.eye} over a rim at ${ba.rim}; a Kar98k through the front ${ba.rifle} and a Pak 38 ${ba.pak}; eighty ` +
+     `wrecks threw ${ba.blown} and sat down ${ba.sink}; killed it left ${ba.bodies} bodies of ${ba.bodyNat}; a brain with the ` +
+     `Kazarma standing pegged out ${baAi.site} Avtopark and with one standing queued ${baAi.q}`);
+
+  /* --- The Tankovyy park, the T-34/76 and its riders. The park needs the Avtopark and makes the
+     T-34, which the Avtopark refuses. The tank has every buffer it needs and its name, a coaxial
+     DT, a turret asked to lay over the tail comes all the way round, the commander up in the hatch
+     wears the padded helmet and his eye is over the roof and drops when the lid shuts, a rifle
+     round never goes through its front and a Panzer IV's always does, forty wrecks throw the
+     turret some of the time and sit down, and killed it leaves the army's crewmen. Then a squad of
+     Sapery climbs onto its deck: the men kneel on the deck in the hull's frame and go where the
+     tank goes, a second squad is refused, the squad has no cover, shoots a grenadier squad put in
+     front of it, is hurt by a burst beside the tank, stays on for a move order the tank is in and
+     gets down for one it is not, and is thrown off when the tank is killed. Then a brain on the
+     Soviet slot with the Avtopark standing pegs out a Tankovyy park and buys a T-34 out of it. --- */
+  const tp = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    if (!G.blds.some(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)) {
+      const am = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260); W.spawnBuilding(own, 'sov_mot', am.x, am.y, true);
+    }
+    const u0 = W.spawnUnit(own, 'sv_sap', hq.x + 140, hq.y - 160, 0);
+    W.select([u0], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false); W.killUnit(u0); G.units.length = 0;
+    out.need = W.BUILDINGS.sov_tank.need; out.ready = W.bldReady(own, 'sov_tank');
+    const at = W.baseSite(own, 'sov_tank') || W.nearestFree(hq.x - 200, hq.y + 260);
+    const tb = W.spawnBuilding(own, 'sov_tank', at.x, at.y, true);
+    out.makes = W.makesOf(tb).join(','); out.bname = tb.def.name;
+    out.bld = W.buildingModel(tb.def, 'sov_tank').length;
+    const ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot')[0];
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(tb, 'sv_t34'); out.qMot = ab ? q(ab, 'sv_t34') : 'no Avtopark';
+    const B = W.MODELS.veh.sv_t34;
+    out.bufs = !!(B && B.hull && B.tur && B.hatch && B.cmdr && B.leaf);
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_t34', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = W.arcOf(t) || 0; out.coax = W.secondaryKeys(t).join(',');
+    out.tows = !!t.def.tows;
+    t.facing = 0; t.turret = 0; t.want = 3.1;
+    for (let i = 0; i < 80; i++) W.updateModels(t, .2);
+    out.tur = +Math.abs(t.turret).toFixed(2);
+    t.turret = 0; t._matT = -1;
+    const K = W.KIT.sov, V = W.VMODEL.sv_t34;
+    out.shlem = W.HATCHES.sv_t34.open.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.VIN.sv_t34(V);
+    out.eyeUp = +E.eyeUp.z.toFixed(1); out.eyeIn = +E.eyeIn.z.toFixed(1); out.roof = W.TTT.zr; out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.p4 = +W.penVs(W.UNITS.hr_p4.w, 300, t, t.x + 300, t.y).toFixed(2);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    /* the riders: a squad stood beside the tank boards it, and a second is refused */
+    const r = W.spawnUnit(own, 'sv_sap', t.x - 40, t.y + 30, 0), r2 = W.spawnUnit(own, 'sv_sap', t.x - 40, t.y - 50, 0);
+    W.boardVehicle(r, t);
+    out.ride = r.ride === t && t.cargo === r && !r.inside;
+    out.second = W.canBoard(r2, t);
+    W.killUnit(r2);
+    for (let i = 0; i < 4; i++) { W.updateUnit(r, .05); W.updateModels(r, .05); }
+    t._matT = -1;
+    /* each man against the ground under himself: on ground that slopes across the hull the men
+       on the low side are on the deck and lower than the ground under the tank's middle */
+    const deck = r.models.filter(m => m.alive && m.rz !== undefined && m.rz > W.groundZ(m.x, m.y) + 12 &&
+      Math.abs((m.x - t.x) * Math.cos(t.facing) + (m.y - t.y) * Math.sin(t.facing)) < 30);
+    out.deckZ = r.models.filter(m => m.alive).map(m => +((m.rz === undefined ? NaN : m.rz) - W.groundZ(m.x, m.y)).toFixed(1)).join(',');
+    out.onDeck = deck.length + '/' + r.models.filter(m => m.alive).length;
+    out.cover = W.coverOf(r);
+    W.__tp = { t, r, x0: t.x, y0: t.y };
+    t.manual = true;
+    W.orderMove(t, t.x + 160, t.y);
+    return out;
+  });
+  await fastForward(page, 5);
+  Object.assign(tp, await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, T = W.__tp, t = T.t, r = T.r, out = {};
+    out.drove = +Math.hypot(t.x - T.x0, t.y - T.y0).toFixed(1);
+    out.with = +Math.hypot(r.x - t.x, r.y - t.y).toFixed(1) + '/' + (r.ride === t ? 'riding' : 'OFF');
+    /* a grenadier squad in front of them, which the tank, under command, leaves to the riders */
+    W.clearOrder(t);
+    const e = W.spawnUnit('ger', 'hr_gren', t.x + 120, t.y, Math.PI);
+    T.e = e; T.rounds0 = (W.recOf(r) || {}).rounds || 0;
+    T.ehp0 = e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0);
+    return out;
+  }));
+  await fastForward(page, 8);
+  Object.assign(tp, await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, T = W.__tp, t = T.t, r = T.r, e = T.e, out = {};
+    out.fired = ((W.recOf(r) || {}).rounds || 0) - T.rounds0;
+    out.hitE = +(T.ehp0 - e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0)).toFixed(0);
+    W.killUnit(e);
+    const hp0 = r.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0);
+    W.explode(t.x + 6, t.y, 30, 140, null, null);
+    out.burst = +(hp0 - r.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0)).toFixed(0);
+    out.stillOn = r.dead ? 'dead' : r.ride === t ? 'riding' : 'OFF';
+    if (r.dead || r.ride !== t) { const r3 = W.spawnUnit(own, 'sv_sap', t.x - 40, t.y + 30, 0); W.boardVehicle(r3, t); T.r = r3; }
+    const rr = T.r;
+    W.select([t, rr], false); W.orderMove(rr, t.x + 300, t.y);
+    out.stay = rr.ride === t;
+    W.select([], false); W.orderMove(rr, t.x - 200, t.y + 100);
+    out.down = !rr.ride && !t.cargo && rr.models.every(m => m.rz === undefined);
+    const r4 = W.spawnUnit(own, 'sv_sap', t.x - 40, t.y + 30, 0); W.boardVehicle(r4, t);
+    W.killUnit(t); W.updateUnit(r4, .05);
+    out.thrown = !r4.ride && r4.models.every(m => m.rz === undefined) ? 'off' : 'STILL ON';
+    const nc = G.corpses.length;
+    const t2 = W.spawnUnit(own, 'sv_t34', t.x, t.y + 150, 0); W.killUnit(t2);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Avtopark standing and the park taken away again */
+    const tb = G.blds.filter(b => b.own === own && b.key === 'sov_tank')[0];
+    T.at = { x: tb.x, y: tb.y };
+    G.blds.splice(G.blds.indexOf(tb), 1); W.rebuildGrid();
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 2000; G.res[own].fu += 400;
+    /* and everything else the park and the Avtopark make written into what the side has ordered:
+       with a heavy of the enemy's on the field the brain brings the guns that kill one forward and
+       sends the T-34, which cannot, to the back */
+    ['sv_su76', 'sv_zsu37', 'sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t3485', 'sv_zis2'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_sap', hq.x + 160, hq.y, 0);
+    W.__tpq = []; W.__tpU = W.queueUnit;
+    W.queueUnit = function (b) { const q = W.__tpU.apply(this, arguments); if (q && b.own === own) W.__tpq.push(b.key + ':' + arguments[1]); return q; };
+    return out;
+  }));
+  await fastForward(page, 30);
+  const tpAi = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    out.site = G.blds.filter(b => b.own === own && b.key === 'sov_tank').length;
+    if (!G.blds.some(b => b.own === own && b.key === 'sov_tank' && b.built >= 1)) {
+      W.spawnBuilding(own, 'sov_tank', W.__tp.at.x, W.__tp.at.y, true); W.rebuildGrid();
+    }
+    G.res[own].mp += 2000; G.res[own].fu += 400;
+    return out;
+  });
+  await fastForward(page, 30);
+  Object.assign(tpAi, await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__tpU; W.slotOf(own).ai = 0;
+    return { q: W.__tpq.join(',') || 'nothing' };
+  }));
+  ok('the Red Army\'s Tankovyy park raises the T-34/76, and a squad rides on its deck, shooting and in the open',
+     tp.cards.indexOf('TANK PARK') >= 0 && tp.need === 'sov_mot' && tp.ready && tp.makes === 'sv_t34,sv_t3485,sv_su85,sv_su122,sv_is2' && tp.bname === 'Tankovyy park' &&
+     tp.bld > 100 && tp.q === 'sv_t34' && tp.qMot === 'refused' && tp.bufs && tp.name === 'T-34/76' && !tp.arc && tp.tur > 3.0 &&
+     tp.coax === 'coax' && tp.tows && tp.shlem > 0 && tp.paint > 0 && tp.frame === 'tur' && tp.eyeUp > tp.roof + 2 &&
+     tp.eyeUp < tp.roof + 9 && tp.eyeIn < tp.eyeUp && tp.rifle === 0 && tp.p4 === 1 && tp.blown > 0 && tp.blown < 40 && tp.sink > 0 &&
+     tp.ride && !tp.second && /^(\d)\/\1$/.test(tp.onDeck) && tp.cover === 0 && tp.drove > 60 && /^0(\.\d)?\/riding$/.test(tp.with) &&
+     tp.fired > 0 && tp.hitE > 0 && tp.burst > 0 && tp.stay && tp.down && tp.thrown === 'off' && tp.bodies >= 2 &&
+     tp.bodyNat === 'sov' && tpAi.site > 0 && /sov_tank:sv_t34/.test(tpAi.q),
+     `the card ${tp.cards.indexOf('TANK PARK') >= 0 ? 'offers' : 'does NOT offer'} the Tankovyy park, which needs ${tp.need} ` +
+     `(${tp.ready ? 'standing' : 'NOT STANDING'}); the ${tp.bname} makes ${tp.makes} (${tp.bld} faces) and queues ${tp.q}, the ` +
+     `Avtopark ${tp.qMot} it; buffers ${tp.bufs ? 'built' : 'MISSING'}; named ${tp.name}, secondary ${tp.coax}, ` +
+     `${tp.tows ? 'tows' : 'does NOT tow'}; asked to lay over the tail the turret came to ${tp.tur}${tp.arc ? ' on an ARC of ' + tp.arc : ''}; ` +
+     `the commander has ${tp.shlem} faces of the padded helmet, the hull ${tp.paint} of its green; the eye in the ${tp.frame} at ` +
+     `${tp.eyeUp} head out and ${tp.eyeIn} head in, over a roof at ${tp.roof}; a Kar98k through the front ${tp.rifle} and a ` +
+     `Panzer IV ${tp.p4}; forty wrecks threw ${tp.blown} and sat down ${tp.sink}; a squad ${tp.ride ? 'rides' : 'does NOT ride'} ` +
+     `it with a second ${tp.second ? 'ALLOWED' : 'refused'}, ${tp.onDeck} men on the deck (${tp.deckZ} over the ground under them), cover ${tp.cover}; the tank drove ` +
+     `${tp.drove} with the squad ${tp.with} off it; the riders fired ${tp.fired} rounds and took ${tp.hitE} off the grenadiers; ` +
+     `a burst beside the tank took ${tp.burst} off them (${tp.stillOn}); in the tank's order they ${tp.stay ? 'stayed on' : 'GOT OFF'}, ` +
+     `in their own they ${tp.down ? 'got down' : 'DID NOT'}; the tank killed under riders threw them ${tp.thrown}; killed it ` +
+     `left ${tp.bodies} bodies of ${tp.bodyNat}; a brain with the Avtopark standing pegged out ${tpAi.site} Tankovyy park and ` +
+     `with one standing queued ${tpAi.q}`);
+
+  /* --- The SU-85. The Tankovyy park makes it beside the T-34 and queues it, and the Avtopark
+     refuses it. Every buffer it needs is built, the hatch's three among them, it is a casemate
+     named the SU-85 with no machine gun, and its gun asked to lay 1.2 radians off the nose stops
+     at the edge of its ten degrees. The commander up in the hatch wears the padded helmet, and the
+     eye is over the roof head out and drops when the lid shuts. A Kar98k never goes through its
+     front and a Panzer IV always does; its own 85 mm goes through a Panzer IV's front every time
+     at three hundred and a Panther's front less often than its side. Forty wrecks throw nothing
+     and sit down, killed it leaves the army's crewmen, and a brain on his slot with the Tankovyy
+     park standing and two T-34s bought buys one. --- */
+  const su = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let tb = G.blds.filter(b => b.own === own && b.key === 'sov_tank' && b.built >= 1)[0];
+    if (!tb) { const at = W.baseSite(own, 'sov_tank') || W.nearestFree(hq.x - 200, hq.y + 260); tb = W.spawnBuilding(own, 'sov_tank', at.x, at.y, true); }
+    out.makes = W.makesOf(tb).join(',');
+    const ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot')[0];
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(tb, 'sv_su85'); out.qMot = ab ? q(ab, 'sv_su85') : 'no Avtopark';
+    const B = W.MODELS.veh.sv_su85, V = W.VMODEL.sv_su85;
+    out.bufs = !!(B && B.hull && B.tur && B.hatch && B.cmdr && B.leaf);
+    out.fixed = !!V.fixed;
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_su85', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = +(W.arcOf(t) || 0).toFixed(2); out.sec = W.secondaryKeys(t).join(',') || 'none';
+    t.facing = 0; t.turret = 0; t.want = 1.2;
+    for (let i = 0; i < 30; i++) W.updateModels(t, .2);
+    out.tur = +t.turret.toFixed(3);
+    t.turret = 0; t._matT = -1;
+    const K = W.KIT.sov;
+    out.shlem = W.HATCHES.sv_su85.open.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.insideOf('sv_su85', V);
+    out.eyeUp = +E.eyeUp.z.toFixed(1); out.eyeIn = +E.eyeIn.z.toFixed(1); out.roof = W.S85.zRoof; out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.p4 = +W.penVs(W.UNITS.hr_p4.w, 300, t, t.x + 300, t.y).toFixed(2);
+    /* its own gun against the two German tanks, a Panzer IV and a Panther met head on and the
+       Panther met broadside, three hundred out */
+    const p4 = W.spawnUnit('ger', 'hr_p4', t.x + 300, t.y, Math.PI), pa = W.spawnUnit('ger', 'hr_panther', t.x + 300, t.y + 200, Math.PI);
+    out.onP4 = +W.penVs(t.def.w, 300, p4, t.x, t.y).toFixed(2);
+    pa.x = t.x + 300; pa.y = t.y; out.paF = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    pa.facing = Math.PI / 2; pa._matT = -1; out.paS = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    [p4, pa].forEach(e => G.units.splice(G.units.indexOf(e), 1));
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    /* the brain on his slot, with the park standing, the rungs under the SU-85 on the ladder
+       already bought and none of it bought yet, so that what it does next is the SU-85's rung
+       and not the rows above: the T-34 row's brain buys one when it has the money */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_zis3', 'sv_zis2', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_t34 = Math.max(2, G.made[own].sv_t34 || 0); out.madeSu = G.made[own].sv_su85 || 0; G.made[own].sv_su85 = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__suq = []; W.__suU = W.queueUnit;
+    W.queueUnit = function (b) { const q = W.__suU.apply(this, arguments); if (q && b.own === own) W.__suq.push(b.key + ':' + arguments[1]); return q; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const suAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__suU; W.slotOf(own).ai = 0;
+    return { q: W.__suq.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Tankovyy park raises the SU-85, a casemate with the 85 mm in its front plate',
+     /sv_su85/.test(su.makes) && su.q === 'sv_su85' && su.qMot === 'refused' && su.bufs && su.fixed && su.name === 'SU-85' &&
+     su.sec === 'none' && su.arc === .35 && Math.abs(Math.abs(su.tur) - su.arc / 2) < .03 && su.shlem > 0 && su.paint > 0 &&
+     su.frame === 'hull' && su.eyeUp > su.roof + 2 && su.eyeUp < su.roof + 9 && su.eyeIn < su.eyeUp && su.rifle === 0 && su.p4 === 1 &&
+     su.onP4 === 1 && su.paF < .5 && su.paS > .8 && su.blown === 0 && su.sink > 0 && su.bodies >= 2 && su.bodyNat === 'sov' &&
+     /sov_tank:sv_su85/.test(suAi.q),
+     `the Tankovyy park makes ${su.makes} and queues ${su.q}, the Avtopark ${su.qMot} it; buffers ${su.bufs ? 'built' : 'MISSING'}, ` +
+     `${su.fixed ? 'a casemate' : 'NOT A CASEMATE'}; named ${su.name}, secondary ${su.sec}; asked for 1.2 the gun laid ${su.tur} on an ` +
+     `arc of ${su.arc}; the commander has ${su.shlem} faces of the padded helmet, the hull ${su.paint} of its green; the eye in the ` +
+     `${su.frame} at ${su.eyeUp} head out and ${su.eyeIn} head in, over a roof at ${su.roof}; a Kar98k through the front ${su.rifle} ` +
+     `and a Panzer IV ${su.p4}; its 85 mm through a Panzer IV's front ${su.onP4}, a Panther's front ${su.paF} and its side ${su.paS}; ` +
+     `forty wrecks threw ${su.blown} and sat down ${su.sink}; killed it left ${su.bodies} bodies of ${su.bodyNat}; a brain with the ` +
+     `park standing (and ${su.madeSu} SU-85 on the tally already, which the row takes off it) queued ${suAi.q}`);
+
+  /* --- The T-34-85. The Tankovyy park makes it beside the T-34/76 and queues it, and the
+     Avtopark refuses it. Every buffer it needs is built, the cupola's three among them, it is
+     named the T-34-85 with a coaxial DT and tows, its gun is right of the middle and the turret
+     asked to lay over the tail comes all the way round. The commander up in the cupola wears the
+     padded helmet and the eye is over the roof head out and drops when the lid shuts. A Kar98k
+     never goes through its front and a Panzer IV always does, and its 85 mm goes through a Panzer
+     IV's front every time at three hundred and a Panther's front less often than its side. A
+     squad rides it, every man of it kneeling on the deck behind the turret and clear of it.
+     Forty wrecks throw the turret some of the time, killed it leaves the army's crewmen, and a
+     brain on his slot with the park standing, the T-34s and the SU-85 bought, buys one. --- */
+  const t85 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let tb = G.blds.filter(b => b.own === own && b.key === 'sov_tank' && b.built >= 1)[0];
+    if (!tb) { const at = W.baseSite(own, 'sov_tank') || W.nearestFree(hq.x - 200, hq.y + 260); tb = W.spawnBuilding(own, 'sov_tank', at.x, at.y, true); }
+    out.makes = W.makesOf(tb).join(',');
+    const ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot')[0];
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(tb, 'sv_t3485'); out.qMot = ab ? q(ab, 'sv_t3485') : 'no Avtopark';
+    const B = W.MODELS.veh.sv_t3485, V = W.VMODEL.sv_t3485;
+    out.bufs = !!(B && B.hull && B.tur && B.hatch && B.cmdr && B.leaf);
+    out.barY = V.barY || 0;
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_t3485', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = W.arcOf(t) || 0; out.coax = W.secondaryKeys(t).join(','); out.tows = !!t.def.tows;
+    t.facing = 0; t.turret = 0; t.want = 3.1;
+    for (let i = 0; i < 80; i++) W.updateModels(t, .2);
+    out.tur = +Math.abs(t.turret).toFixed(2);
+    t.turret = 0; t._matT = -1;
+    const K = W.KIT.sov;
+    out.shlem = W.HATCHES.sv_t3485.open.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.VIN.sv_t3485(V);
+    out.eyeUp = +E.eyeUp.z.toFixed(1); out.eyeIn = +E.eyeIn.z.toFixed(1); out.roof = W.T85.zr; out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.p4 = +W.penVs(W.UNITS.hr_p4.w, 300, t, t.x + 300, t.y).toFixed(2);
+    const p4 = W.spawnUnit('ger', 'hr_p4', t.x + 300, t.y, Math.PI), pa = W.spawnUnit('ger', 'hr_panther', t.x + 300, t.y + 200, Math.PI);
+    out.onP4 = +W.penVs(t.def.w, 300, p4, t.x, t.y).toFixed(2);
+    pa.x = t.x + 300; pa.y = t.y; out.paF = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    pa.facing = Math.PI / 2; pa._matT = -1; out.paS = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    [p4, pa].forEach(e => G.units.splice(G.units.indexOf(e), 1));
+    /* the riders: every man on the deck, and each a hand clear of the back of the turret */
+    const r = W.spawnUnit(own, 'sv_strel', t.x - 40, t.y + 30, 0);
+    W.boardVehicle(r, t);
+    out.ride = r.ride === t && t.cargo === r && !r.inside;
+    for (let i = 0; i < 4; i++) { W.updateUnit(r, .05); W.updateModels(r, .05); }
+    const live = r.models.filter(m => m.alive), c = Math.cos(t.facing), sn = Math.sin(t.facing);
+    out.onDeck = live.filter(m => m.rz !== undefined && m.rz > W.groundZ(m.x, m.y) + 12).length + '/' + live.length;
+    out.clear = +Math.min.apply(null, live.map(m => {
+      const lx = (m.x - t.x) * c + (m.y - t.y) * sn, ly = -(m.x - t.x) * sn + (m.y - t.y) * c;
+      return W.t85At(-16, ly, .7, 0).x + W.TTH.turX - lx;
+    })).toFixed(1);
+    W.killUnit(r);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    /* the brain on his slot with every rung under the T-34-85's written into what the side has
+       ordered and none of it, so that what it buys next is the T-34-85 */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t34', 'sv_zis3', 'sv_zis2'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_t3485 = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__t85q = []; W.__t85U = W.queueUnit;
+    W.queueUnit = function (b) { const q = W.__t85U.apply(this, arguments); if (q && b.own === own) W.__t85q.push(b.key + ':' + arguments[1]); return q; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const t85Ai = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__t85U; W.slotOf(own).ai = 0;
+    return { q: W.__t85q.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Tankovyy park raises the T-34-85, with the 85 mm in a cast turret and a squad behind it on the deck',
+     /sv_t3485/.test(t85.makes) && t85.q === 'sv_t3485' && t85.qMot === 'refused' && t85.bufs && t85.name === 'T-34-85' &&
+     t85.coax === 'coax' && t85.tows && !t85.arc && t85.tur > 3.0 && t85.barY > 0 && t85.shlem > 0 && t85.paint > 0 &&
+     t85.frame === 'tur' && t85.eyeUp > t85.roof + 2 && t85.eyeUp < t85.roof + 9 && t85.eyeIn < t85.eyeUp && t85.rifle === 0 &&
+     t85.p4 === 1 && t85.onP4 === 1 && t85.paF < t85.paS && t85.paS > .8 && t85.ride && /^(\d)\/\1$/.test(t85.onDeck) &&
+     t85.clear > 1 && t85.blown > 0 && t85.blown < 40 && t85.sink > 0 && t85.bodies >= 2 && t85.bodyNat === 'sov' &&
+     /sov_tank:sv_t3485/.test(t85Ai.q),
+     `the Tankovyy park makes ${t85.makes} and queues ${t85.q}, the Avtopark ${t85.qMot} it; buffers ${t85.bufs ? 'built' : 'MISSING'}; ` +
+     `named ${t85.name}, secondary ${t85.coax}, ${t85.tows ? 'tows' : 'does NOT tow'}, the gun ${t85.barY} right of the middle; ` +
+     `asked to lay over the tail the turret came to ${t85.tur}${t85.arc ? ' on an ARC of ' + t85.arc : ''}; the commander has ` +
+     `${t85.shlem} faces of the padded helmet, the hull ${t85.paint} of its green; the eye in the ${t85.frame} at ${t85.eyeUp} head ` +
+     `out and ${t85.eyeIn} head in, over a roof at ${t85.roof}; a Kar98k through the front ${t85.rifle} and a Panzer IV ${t85.p4}; its ` +
+     `85 mm through a Panzer IV's front ${t85.onP4}, a Panther's front ${t85.paF} and its side ${t85.paS}; a squad ` +
+     `${t85.ride ? 'rides' : 'does NOT ride'} it with ${t85.onDeck} men on the deck, the nearest ${t85.clear} behind the turret; ` +
+     `forty wrecks threw ${t85.blown} and sat down ${t85.sink}; killed it left ${t85.bodies} bodies of ${t85.bodyNat}; a brain with ` +
+     `the park standing queued ${t85Ai.q}`);
+
+  /* --- The SU-122. The Tankovyy park makes it and queues it, and the Avtopark refuses it. Every
+     buffer it needs is built, the hatch's three among them, it is a casemate named the SU-122 with
+     no machine gun, and its mount asked to lay 1.2 radians off the nose stops at the edge of its
+     ten degrees. The commander up in the hatch wears the padded helmet, and the eye is over the
+     roof head out and drops when the lid shuts. A Kar98k never goes through its front and a Panzer
+     IV always does; its hollow charge goes through a Panzer IV's front more often than not at three
+     hundred and a Panther's front less often than its side. Forty wrecks throw nothing and sit
+     down, killed it leaves the army's crewmen, and a brain on his slot with the park standing and
+     the rungs under it bought buys one. --- */
+  const s122 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let tb = G.blds.filter(b => b.own === own && b.key === 'sov_tank' && b.built >= 1)[0];
+    if (!tb) { const at = W.baseSite(own, 'sov_tank') || W.nearestFree(hq.x - 200, hq.y + 260); tb = W.spawnBuilding(own, 'sov_tank', at.x, at.y, true); }
+    out.makes = W.makesOf(tb).join(',');
+    const ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot')[0];
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(tb, 'sv_su122'); out.qMot = ab ? q(ab, 'sv_su122') : 'no Avtopark';
+    const B = W.MODELS.veh.sv_su122, V = W.VMODEL.sv_su122;
+    out.bufs = !!(B && B.hull && B.tur && B.hatch && B.cmdr && B.leaf);
+    out.fixed = !!V.fixed;
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_su122', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = +(W.arcOf(t) || 0).toFixed(2); out.sec = W.secondaryKeys(t).join(',') || 'none';
+    t.facing = 0; t.turret = 0; t.want = 1.2;
+    for (let i = 0; i < 30; i++) W.updateModels(t, .2);
+    out.tur = +t.turret.toFixed(3);
+    t.turret = 0; t._matT = -1;
+    const K = W.KIT.sov;
+    out.shlem = W.HATCHES.sv_su122.open.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.insideOf('sv_su122', V);
+    out.eyeUp = +E.eyeUp.z.toFixed(1); out.eyeIn = +E.eyeIn.z.toFixed(1); out.roof = W.S85.zRoof; out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.p4 = +W.penVs(W.UNITS.hr_p4.w, 300, t, t.x + 300, t.y).toFixed(2);
+    const p4 = W.spawnUnit('ger', 'hr_p4', t.x + 300, t.y, Math.PI), pa = W.spawnUnit('ger', 'hr_panther', t.x + 300, t.y + 200, Math.PI);
+    out.onP4 = +W.penVs(t.def.w, 300, p4, t.x, t.y).toFixed(2);
+    pa.x = t.x + 300; pa.y = t.y; out.paF = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    pa.facing = Math.PI / 2; pa._matT = -1; out.paS = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    [p4, pa].forEach(e => G.units.splice(G.units.indexOf(e), 1));
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su85', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t34', 'sv_zis3', 'sv_zis2', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_su122 = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__s122q = []; W.__s122U = W.queueUnit;
+    W.queueUnit = function (b) { const q = W.__s122U.apply(this, arguments); if (q && b.own === own) W.__s122q.push(b.key + ':' + arguments[1]); return q; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const s122Ai = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__s122U; W.slotOf(own).ai = 0;
+    return { q: W.__s122q.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Tankovyy park raises the SU-122, a casemate with the 122 mm howitzer behind its mantlet',
+     /sv_su122/.test(s122.makes) && s122.q === 'sv_su122' && s122.qMot === 'refused' && s122.bufs && s122.fixed &&
+     s122.name === 'SU-122' && s122.sec === 'none' && s122.arc === .35 && Math.abs(Math.abs(s122.tur) - s122.arc / 2) < .03 &&
+     s122.shlem > 0 && s122.paint > 0 && s122.frame === 'hull' && s122.eyeUp > s122.roof + 2 && s122.eyeUp < s122.roof + 9 &&
+     s122.eyeIn < s122.eyeUp && s122.rifle === 0 && s122.p4 === 1 && s122.onP4 > .5 && s122.paF < s122.paS && s122.blown === 0 &&
+     s122.sink > 0 && s122.bodies >= 2 && s122.bodyNat === 'sov' && /sov_tank:sv_su122/.test(s122Ai.q),
+     `the Tankovyy park makes ${s122.makes} and queues ${s122.q}, the Avtopark ${s122.qMot} it; buffers ${s122.bufs ? 'built' : 'MISSING'}, ` +
+     `${s122.fixed ? 'a casemate' : 'NOT A CASEMATE'}; named ${s122.name}, secondary ${s122.sec}; asked for 1.2 the mount laid ` +
+     `${s122.tur} on an arc of ${s122.arc}; the commander has ${s122.shlem} faces of the padded helmet, the hull ${s122.paint} of its ` +
+     `green; the eye in the ${s122.frame} at ${s122.eyeUp} head out and ${s122.eyeIn} head in, over a roof at ${s122.roof}; a Kar98k ` +
+     `through the front ${s122.rifle} and a Panzer IV ${s122.p4}; its hollow charge through a Panzer IV's front ${s122.onP4}, a ` +
+     `Panther's front ${s122.paF} and its side ${s122.paS}; forty wrecks threw ${s122.blown} and sat down ${s122.sink}; killed it ` +
+     `left ${s122.bodies} bodies of ${s122.bodyNat}; a brain with the park standing queued ${s122Ai.q}`);
+
+  /* --- The IS-2. The Tankovyy park makes it and queues it, the Avtopark refuses it, and with one
+     on the field a second is refused. Every buffer it needs is built, the cupola's three and the
+     DShK's among them, it is named the IS-2 with a coaxial DT and tows, its gun is left of the
+     middle and the turret asked to lay over the tail comes all the way round. The commander up in
+     the cupola wears the padded helmet and the eye is over the roof head out and drops when the
+     lid shuts. A Kar98k never goes through its front and a Panzer IV's round goes through its side
+     more often than its front; its 122 mm goes through a Panzer IV's front every time at three
+     hundred and a Panther's front less often than its side. The DShK fitted is a secondary of its
+     own. Forty wrecks throw the turret some of the time, killed it leaves the army's crewmen, and
+     a brain on his slot with the park standing and the rungs under it bought buys one. --- */
+  const is2 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let tb = G.blds.filter(b => b.own === own && b.key === 'sov_tank' && b.built >= 1)[0];
+    if (!tb) { const at = W.baseSite(own, 'sov_tank') || W.nearestFree(hq.x - 200, hq.y + 260); tb = W.spawnBuilding(own, 'sov_tank', at.x, at.y, true); }
+    out.makes = W.makesOf(tb).join(',');
+    const ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot')[0];
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(tb, 'sv_is2'); out.qMot = ab ? q(ab, 'sv_is2') : 'no Avtopark';
+    const B = W.MODELS.veh.sv_is2, V = W.VMODEL.sv_is2;
+    out.bufs = !!(B && B.hull && B.tur && B.hatch && B.cmdr && B.leaf && B.mgUp && B.mgUp.dshk);
+    out.barY = V.barY || 0;
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_is2', sp.x, sp.y, 0);
+    out.q2 = q(tb, 'sv_is2');
+    out.name = W.nameOf(t); out.arc = W.arcOf(t) || 0; out.coax = W.secondaryKeys(t).join(','); out.tows = !!t.def.tows;
+    W.fitUp(t, 'dshk'); out.dshk = W.secondaryKeys(t).join(',');
+    t.facing = 0; t.turret = 0; t.want = 3.1;
+    for (let i = 0; i < 100; i++) W.updateModels(t, .2);
+    out.tur = +Math.abs(t.turret).toFixed(2);
+    t.turret = 0; t._matT = -1;
+    const K = W.KIT.sov;
+    out.shlem = W.HATCHES.sv_is2.open.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.VIN.sv_is2(V);
+    out.eyeUp = +E.eyeUp.z.toFixed(1); out.eyeIn = +E.eyeIn.z.toFixed(1); out.roof = W.IST.zr; out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.p4F = +W.penVs(W.UNITS.hr_p4.w, 300, t, t.x + 300, t.y).toFixed(2);
+    out.p4S = +W.penVs(W.UNITS.hr_p4.w, 300, t, t.x, t.y + 300).toFixed(2);
+    const p4 = W.spawnUnit('ger', 'hr_p4', t.x + 300, t.y, Math.PI), pa = W.spawnUnit('ger', 'hr_panther', t.x + 300, t.y + 200, Math.PI);
+    out.onP4 = +W.penVs(t.def.w, 300, p4, t.x, t.y).toFixed(2);
+    pa.x = t.x + 300; pa.y = t.y; out.paF = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    pa.facing = Math.PI / 2; pa._matT = -1; out.paS = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    [p4, pa].forEach(e => G.units.splice(G.units.indexOf(e), 1));
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    /* the brain on his slot with every rung under the IS-2's written into what the side has
+       ordered and none of it, so that what it buys next is the IS-2 */
+    G.t = Math.max(G.t, 800);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t34', 'sv_zis3', 'sv_zis2', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_is2 = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__is2q = []; W.__is2U = W.queueUnit;
+    W.queueUnit = function (b) { const q = W.__is2U.apply(this, arguments); if (q && b.own === own) W.__is2q.push(b.key + ':' + arguments[1]); return q; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const is2Ai = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__is2U; W.slotOf(own).ai = 0;
+    return { q: W.__is2q.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Tankovyy park raises the IS-2, one at a time, with the 122 mm in its cast turret',
+     /sv_is2/.test(is2.makes) && is2.q === 'sv_is2' && is2.qMot === 'refused' && is2.q2 === 'refused' && is2.bufs &&
+     is2.name === 'IS-2' && is2.coax === 'coax' && is2.dshk === 'coax,dshk' && is2.tows && !is2.arc && is2.tur > 3.0 &&
+     is2.barY < 0 && is2.shlem > 0 && is2.paint > 0 && is2.frame === 'tur' && is2.eyeUp > is2.roof + 2 &&
+     is2.eyeUp < is2.roof + 9 && is2.eyeIn < is2.eyeUp && is2.rifle === 0 && is2.p4F < is2.p4S && is2.onP4 === 1 &&
+     is2.paF < is2.paS && is2.blown > 0 && is2.blown < 40 && is2.sink > 0 && is2.bodies >= 2 && is2.bodyNat === 'sov' &&
+     /sov_tank:sv_is2/.test(is2Ai.q),
+     `the Tankovyy park makes ${is2.makes} and queues ${is2.q}, the Avtopark ${is2.qMot} it, a second with one on the field ` +
+     `${is2.q2}; buffers ${is2.bufs ? 'built' : 'MISSING'}; named ${is2.name}, secondary ${is2.coax} and with the fitting ` +
+     `${is2.dshk}, ${is2.tows ? 'tows' : 'does NOT tow'}, the gun ${is2.barY} off the middle; asked to lay over the tail the turret ` +
+     `came to ${is2.tur}${is2.arc ? ' on an ARC of ' + is2.arc : ''}; the commander has ${is2.shlem} faces of the padded helmet, ` +
+     `the hull ${is2.paint} of its green; the eye in the ${is2.frame} at ${is2.eyeUp} head out and ${is2.eyeIn} head in, over a ` +
+     `roof at ${is2.roof}; a Kar98k through the front ${is2.rifle}, a Panzer IV through the front ${is2.p4F} and the side ` +
+     `${is2.p4S}; its 122 mm through a Panzer IV's front ${is2.onP4}, a Panther's front ${is2.paF} and its side ${is2.paS}; ` +
+     `forty wrecks threw ${is2.blown} and sat down ${is2.sink}; killed it left ${is2.bodies} bodies of ${is2.bodyNat}; a brain ` +
+     `with the park standing queued ${is2Ai.q}`);
+
+  /* --- The ZiS-3, the Red Army's divisional gun, out of the Kazarma: the Kazarma makes it and
+     queues it and the Shtab refuses it, and it is six men, the gunner and the loader at the gun
+     and four bringing the rounds up a case each. Sited on open ground with a Panzer IV coming at
+     it from 520 it has the first round off. Halted, the trails open and the gunner kneels at the
+     sight on the left with the loader at the breech on the right, facing it; on the move the
+     trails close and the piece rides beside the gunner. With the AP round up it picks the tank
+     out of a grenadier squad beside it and nothing at all with the squad alone; with the HE round
+     up it reaches further and fires at the squad; and a brain on his slot puts HE up with only
+     men in front of it and AP up when a tank comes into reach. A man of it killed goes down as
+     one of the crew, and the Red Army's bunker takes it as its anti-tank fitting. --- */
+  const zs = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    out.makes = W.makesOf(kb).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(kb, 'sv_zis3'); out.qHq = q(hq, 'sv_zis3');
+    const D = W.UNITS.sv_zis3;
+    out.name = D.name; out.bunk = W.bunkUnit(W.BUNKUP.at, own);
+    /* open ground for the drill, found the way the Pak 38's is */
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    /* and room round it for the crew's places: beside the headquarters the loader's place at the
+       breech was inside the building and he stood where he was */
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
+    let st = null;
+    for (let r = 200; r < 1600 && !st; r += 60)
+      for (let k = 0; k < 16 && !st; k++) {
+        const ax = hq.x + r * Math.cos(k * Math.PI / 8), ay = hq.y + r * Math.sin(k * Math.PI / 8);
+        if (!clear(ax, ay) || !roomy(ax, ay)) continue;
+        for (let j = 0; j < 8 && !st; j++) {
+          const th = j * Math.PI / 4, bx = ax + 520 * Math.cos(th), by = ay + 520 * Math.sin(th);
+          if (!clear(bx, by)) continue;
+          let okL = true;
+          for (let s = 1; s < 13 && okL; s++) okL = W.walkable(ax + (bx - ax) * s / 13, ay + (by - ay) * s / 13);
+          if (okL && W.traceClear(ax, ay, W.groundZ(ax, ay) + 12, bx, by, W.groundZ(bx, by) + 20, W.sblk) &&
+              W.traceClear(bx, by, W.groundZ(bx, by) + 20, ax, ay, W.groundZ(ax, ay) + 12, W.sblk)) st = { ax, ay, bx, by, th };
+        }
+      }
+    out.staged = !!st;
+    if (st) {
+      const a = W.spawnUnit(own, 'sv_zis3', st.ax, st.ay, st.th);
+      a.setup = 0; a.packed = false; a.pack = 0; a.order = null; a.dest = null; a.path = null;
+      const b = W.spawnUnit('ger', 'hr_p4', st.bx, st.by, st.th + Math.PI);
+      b.order = 'attackmove'; b.dest = { x: a.x, y: a.y };
+      const seen = new Set(G.shots);
+      let t = 0, first = null, bFirst = null;
+      const dt = 1 / 20;
+      while (t < 40 && !(first && bFirst)) {
+        G.t += dt; t += dt;
+        W.computeVisibility(dt);
+        W.updateUnit(a, dt); W.updateUnit(b, dt); W.updateModels(a, dt);
+        W.updateShots(dt);
+        for (const s of G.shots) {
+          if (seen.has(s)) continue;
+          seen.add(s);
+          const d = Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+          if (s.owner === a && !first) first = { t: +t.toFixed(1), d, found: +(a.detGer || 0).toFixed(2) };
+          if (s.owner === b && !bFirst) bFirst = { t: +t.toFixed(1), d };
+        }
+        if (a.dead || b.dead) break;
+      }
+      out.first = first; out.bFirst = bFirst;
+      G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+      G.units.length = 0; G.shots.length = 0;
+    }
+    /* the six of them, set up and walking, on open ground away from cover */
+    let at = null;
+    for (let r = 0; r < 900 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x0 = st ? st.ax : hq.x, y0 = st ? st.ay : hq.y;
+        const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    out.open = !!at;
+    if (!at) at = W.nearestFree(hq.x + 200, hq.y);
+    const u = W.spawnUnit(own, 'sv_zis3', at.x, at.y, 0);
+    out.men = u.models.length;
+    out.baked = ['sv_atg', 'sv_atb', 'sv_atb_b'].every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_STAND] && W.MODELS.man[v][W.POSE_WALK]) &&
+                !!(W.MODELS.served.sv_zis3 && W.MODELS.served.sv_zis3.mate) && !!(W.MODELS.gunRec.sv_zis3 && W.MODELS.gunPk.sv_zis3);
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.setup = 0; u.packed = false; u.pack = 0;
+    step(4);
+    out.set = W.gunSet(u);
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.poses = u.models.map(m => m.pose).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [(dx * cs + dy * sn) / W.FIG_SCALE, (-dx * sn + dy * cs) / W.FIG_SCALE]; };
+    const r1 = rel(u.models[1]);
+    out.loader = r1.map(v => +v.toFixed(1)).join(',');
+    out.loaderRight = r1[1] > 2 && r1[0] < -6;
+    out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
+    out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4, 5].every(i => rel(u.models[i])[0] < -10);
+    out.bpos = [2, 3, 4, 5].map(i => rel(u.models[i]).map(q => Math.round(q)).join(',')).join(' ');
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.sv_zis3;
+    const mz = W.muzzlePoint(u, u.models[0], 0);
+    out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
+    out.box = (W.mgCarryAt(u, u.models[2], 2, 'sv_atb') ? W._mgc.buf : null) === W.MODELS.carry.box76;
+    u.packed = true;
+    out.packMesh = W.teamMesh(u) === W.MODELS.gunPk.sv_zis3;
+    const gq = W.gunPost(u), g0 = u.models[0];
+    out.runs = +(Math.hypot(gq.x - g0.x, gq.y - g0.y) / W.FIG_SCALE).toFixed(1);
+    u.packed = false;
+    /* a man of it goes down as one of the crew */
+    const mk = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, mk, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    out.fall = !!(W.MODELS.fall.sov_at && W.MODELS.dead.sov_at);
+    W.killUnit(u);
+    G.units.length = 0;
+    /* the two rounds, on the drill's own line, which was traced clear both ways: a grenadier squad
+       280 out alone and then with a Panzer IV behind it, under the AP round and then the HE. Put
+       down three hundred out on whatever bearing the gun faced, a house or a rise was in the way
+       on one run and the gun picked nothing at all */
+    const ln = st || { ax: at.x, ay: at.y, th: 0 };
+    const v = W.spawnUnit(own, 'sv_zis3', ln.ax, ln.ay, ln.th);
+    v.setup = 0; v.packed = false; v.pack = 0; v.facing = ln.th; v.order = null; v.path = null;
+    const along = d => ({ x: ln.ax + Math.cos(ln.th) * d, y: ln.ay + Math.sin(ln.th) * d });
+    const gp0 = along(280), tp0 = along(340);
+    const g = W.spawnUnit('ger', 'hr_gren', gp0.x, gp0.y, ln.th + Math.PI);
+    const see = e => { e.vUs = true; e.detUs = 1; };
+    see(g);
+    v.up = {}; v.forced = null; v.target = null;
+    out.apMen = (W.acquire(v) || { key: 'nothing' }).key;
+    const tk = W.spawnUnit('ger', 'hr_p4', tp0.x, tp0.y, ln.th + Math.PI); see(tk);
+    out.apBoth = (W.acquire(v) || { key: 'nothing' }).key;
+    W.setRound([v], true);
+    const hw = W.mainW(v);
+    out.he = hw.dmg + '/' + hw.aoe + '/' + hw.range;
+    out.heBoth = (W.acquire(v) || { key: 'nothing' }).key;
+    W.setRound([v], false);
+    out.apRange = W.mainW(v).range;
+    G.units.splice(G.units.indexOf(tk), 1);
+    /* the brain on his slot picks the round off what is in front of the gun */
+    v.up = {}; v.setup = 0; v.packed = false;
+    W.__zsU = v; W.__zsT0 = tp0; W.__zsAi = W.slotOf('ger').ai; W.slotOf('ger').ai = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    return out;
+  });
+  await fastForward(page, 4);
+  const zsAi = await page.evaluate(() => {
+    const W = window, G = W.G, u = W.__zsU, out = {};
+    out.menOnly = !!(u.up && u.up.he);
+    const tk = W.spawnUnit('ger', 'hr_p4', W.__zsT0.x, W.__zsT0.y, u.facing + Math.PI);
+    tk.vUs = true; tk.detUs = 1; tk.hp = tk.maxHp = 1e6; W.__zsT = tk;
+    return out;
+  });
+  await fastForward(page, 4);
+  const zsAi2 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, u = W.__zsU, out = {};
+    out.withTank = !(u.up && u.up.he);
+    W.slotOf(own).ai = 0; W.slotOf('ger').ai = W.__zsAi;
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    return out;
+  });
+  const fzs = zs.first, bzs = zs.bFirst;
+  ok('the Red Army\'s Kazarma raises the ZiS-3, with six men, an AP round for armour and an HE round for anything',
+     /sv_zis3/.test(zs.makes) && zs.q === 'sv_zis3' && zs.qHq === 'refused' && zs.name === '76 mm ZiS-3' && zs.bunk === 'sv_zis3' &&
+     zs.staged && !!fzs && (!bzs || bzs.t >= fzs.t + 1) && fzs.found < 1 &&
+     zs.men === 6 && zs.baked && zs.set && zs.vars === 'sv_atg,sv_atg,sv_atb,sv_atb_b,sv_atb,sv_atb_b' && /^11,11,/.test(zs.poses) &&
+     zs.loaderRight && zs.loaderFaces && zs.bearers && zs.mesh && zs.muz && zs.box && zs.packMesh && zs.runs > 8 && zs.runs < 12 &&
+     zs.apMen === 'nothing' && zs.apBoth === 'hr_p4' && zs.he === '90/45/600' && zs.heBoth === 'hr_gren' && zs.apRange === 540 &&
+     zsAi.menOnly && zsAi2.withTank && zs.bodyNat === 'sov_at' && zs.fall,
+     `the Kazarma makes ${zs.makes} and queues ${zs.q}, the Shtab ${zs.qHq} it; named ${zs.name}, the bunker's anti-tank fitting ` +
+     `${zs.bunk}; ` + (zs.staged ? `sited against a Panzer IV at 520 it fired ${fzs ? 'at ' + fzs.t + ' s from ' + fzs.d + ' with the tank ' + (fzs.found < 1 ? 'yet to find it (' + fzs.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
+       `and the tank ${bzs ? 'answered at ' + bzs.t + ' s from ' + bzs.d : 'never fired'}; ` : 'NO open ground to stage the drill on; ') +
+     `${zs.men} men, the variants, the served bodies and the three meshes ${zs.baked ? 'baked' : 'NOT baked'}; halted ` +
+     `${zs.set ? 'set up' : 'NOT set up'} as ${zs.vars} in poses ${zs.poses}, the loader at ${zs.loader} ${zs.loaderRight ? 'on the right' : 'NOT on the right'} ` +
+     `and ${zs.loaderFaces ? 'facing the breech' : 'NOT facing it'}${zs.open ? '' : ' (no open ground)'}, the bearers ` +
+     `${zs.bearers === 'cover' ? 'in cover' : zs.bearers ? 'back behind the gun' : 'NOT in place (' + zs.bpos + ')'}, the piece ${zs.mesh ? 'open' : 'WRONG'}, ` +
+     `the flash ${zs.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's case ${zs.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
+     `${zs.packMesh ? 'closed' : 'NOT closed'} and the piece ${zs.runs} from the gunner; with AP up it picked ${zs.apMen} with the squad alone ` +
+     `and ${zs.apBoth} with the tank beside it, with HE up (${zs.he}) ${zs.heBoth}, and AP reaches ${zs.apRange}; the brain put HE up ` +
+     `${zsAi.menOnly ? 'with men in front' : 'NOT with men in front'} and AP ${zsAi2.withTank ? 'with the tank in reach' : 'NOT with the tank in reach'}; ` +
+     `killed went down as ${zs.bodyNat}, bodies ${zs.fall ? 'baked' : 'MISSING'}`);
+
+  /* --- The ZiS-2, the Red Army's anti-tank gun, out of the Avtopark: the Avtopark makes it and
+     queues it and the Kazarma refuses it, and it is the ZiS-3's six men on the ZiS-3's carriage
+     with its own long tube. Sited on open ground with a Panzer IV coming at it from 520 it has the
+     first round off, before the tank has found it. Halted, the loader kneels at the right of the
+     breech facing it and the bearers are back behind the gun, the flash comes off the muzzle and a
+     bearer has his case in his hand; packed, the trails close. It has the AP round alone: it picks
+     nothing out of a grenadier squad and the Panzer IV out of the two, out to 620. A T-20 hitches
+     it. A man killed goes down as one of the crew, and a brain on his slot with the Avtopark
+     standing buys one. --- */
+  const z2 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    let ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)[0];
+    if (!ab) { const at = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260); ab = W.spawnBuilding(own, 'sov_mot', at.x, at.y, true); }
+    out.makes = W.makesOf(ab).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(ab, 'sv_zis2'); out.qKaz = q(kb, 'sv_zis2');
+    const D = W.UNITS.sv_zis2;
+    out.name = D.name;
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
+    let st = null;
+    for (let r = 200; r < 1600 && !st; r += 60)
+      for (let k = 0; k < 16 && !st; k++) {
+        const ax = hq.x + r * Math.cos(k * Math.PI / 8), ay = hq.y + r * Math.sin(k * Math.PI / 8);
+        if (!clear(ax, ay) || !roomy(ax, ay)) continue;
+        for (let j = 0; j < 8 && !st; j++) {
+          const th = j * Math.PI / 4, bx = ax + 520 * Math.cos(th), by = ay + 520 * Math.sin(th);
+          if (!clear(bx, by)) continue;
+          let okL = true;
+          for (let s = 1; s < 13 && okL; s++) okL = W.walkable(ax + (bx - ax) * s / 13, ay + (by - ay) * s / 13);
+          if (okL && W.traceClear(ax, ay, W.groundZ(ax, ay) + 12, bx, by, W.groundZ(bx, by) + 20, W.sblk) &&
+              W.traceClear(bx, by, W.groundZ(bx, by) + 20, ax, ay, W.groundZ(ax, ay) + 12, W.sblk)) st = { ax, ay, bx, by, th };
+        }
+      }
+    out.staged = !!st;
+    if (st) {
+      const a = W.spawnUnit(own, 'sv_zis2', st.ax, st.ay, st.th);
+      a.setup = 0; a.packed = false; a.pack = 0; a.order = null; a.dest = null; a.path = null;
+      const b = W.spawnUnit('ger', 'hr_p4', st.bx, st.by, st.th + Math.PI);
+      b.order = 'attackmove'; b.dest = { x: a.x, y: a.y };
+      const seen = new Set(G.shots);
+      let t = 0, first = null, bFirst = null;
+      const dt = 1 / 20;
+      while (t < 40 && !(first && bFirst)) {
+        G.t += dt; t += dt;
+        W.computeVisibility(dt);
+        W.updateUnit(a, dt); W.updateUnit(b, dt); W.updateModels(a, dt);
+        W.updateShots(dt);
+        for (const s of G.shots) {
+          if (seen.has(s)) continue;
+          seen.add(s);
+          const d = Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+          if (s.owner === a && !first) first = { t: +t.toFixed(1), d, found: +(a.detGer || 0).toFixed(2) };
+          if (s.owner === b && !bFirst) bFirst = { t: +t.toFixed(1), d };
+        }
+        if (a.dead || b.dead) break;
+      }
+      out.first = first; out.bFirst = bFirst;
+      G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+      G.units.length = 0; G.shots.length = 0;
+    }
+    let at = null;
+    for (let r = 0; r < 900 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x0 = st ? st.ax : hq.x, y0 = st ? st.ay : hq.y;
+        const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    if (!at) at = W.nearestFree(hq.x + 200, hq.y);
+    const u = W.spawnUnit(own, 'sv_zis2', at.x, at.y, 0);
+    out.men = u.models.length;
+    out.baked = !!(W.MODELS.served.sv_zis2 && W.MODELS.served.sv_zis2.mate) && !!(W.MODELS.gunRec.sv_zis2 && W.MODELS.gunPk.sv_zis2);
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.setup = 0; u.packed = false; u.pack = 0;
+    step(4);
+    out.set = W.gunSet(u);
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [(dx * cs + dy * sn) / W.FIG_SCALE, (-dx * sn + dy * cs) / W.FIG_SCALE]; };
+    const r1 = rel(u.models[1]);
+    out.loader = r1.map(v => +v.toFixed(1)).join(',');
+    out.loaderRight = r1[1] > 2 && r1[0] < -6;
+    out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
+    out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4, 5].every(i => rel(u.models[i])[0] < -10);
+    out.bpos = [2, 3, 4, 5].map(i => rel(u.models[i]).map(q => Math.round(q)).join(',')).join(' ');
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.sv_zis2;
+    const mz = W.muzzlePoint(u, u.models[0], 0);
+    out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
+    out.box = (W.mgCarryAt(u, u.models[2], 2, 'sv_atb') ? W._mgc.buf : null) === W.MODELS.carry.box76;
+    u.packed = true;
+    out.packMesh = W.teamMesh(u) === W.MODELS.gunPk.sv_zis2;
+    u.packed = false;
+    /* a T-20 hitches it */
+    const tw = W.spawnUnit(own, 'sv_t20', u.x + 90, u.y, 0);
+    out.canHitch = W.canHitch(tw, u);
+    W.hitchGun(tw, u);
+    out.towed = u.towedBy === tw;
+    W.unhitchGun(tw); W.killUnit(tw);
+    const mk = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, mk, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    W.killUnit(u);
+    G.units.length = 0;
+    const ln = st || { ax: at.x, ay: at.y, th: 0 };
+    const v = W.spawnUnit(own, 'sv_zis2', ln.ax, ln.ay, ln.th);
+    v.setup = 0; v.packed = false; v.pack = 0; v.facing = ln.th; v.order = null; v.path = null;
+    const along = d => ({ x: ln.ax + Math.cos(ln.th) * d, y: ln.ay + Math.sin(ln.th) * d });
+    const gp0 = along(280), tp0 = along(340);
+    const g = W.spawnUnit('ger', 'hr_gren', gp0.x, gp0.y, ln.th + Math.PI);
+    const see = e => { e.vUs = true; e.detUs = 1; };
+    see(g);
+    v.up = {}; v.forced = null; v.target = null;
+    out.apMen = (W.acquire(v) || { key: 'nothing' }).key;
+    const tk = W.spawnUnit('ger', 'hr_p4', tp0.x, tp0.y, ln.th + Math.PI); see(tk);
+    out.apBoth = (W.acquire(v) || { key: 'nothing' }).key;
+    out.range = W.mainW(v).range;
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Avtopark standing and the rungs under the ZiS-2's bought */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    G.made[own].sv_zis3 = Math.max(2, G.made[own].sv_zis3 || 0); G.made[own].sv_zis2 = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__z2q = []; W.__z2U = W.queueUnit;
+    W.queueUnit = function (b) { const q = W.__z2U.apply(this, arguments); if (q && b.own === own) W.__z2q.push(b.key + ':' + arguments[1]); return q; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const z2Ai = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__z2U; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__z2q.join(',') || 'nothing' };
+  });
+  const fz2 = z2.first, bz2 = z2.bFirst;
+  ok('the Red Army\'s Avtopark raises the ZiS-2, the ZiS-3\'s carriage and crew with a long 57 mm tube',
+     /sv_zis2/.test(z2.makes) && z2.q === 'sv_zis2' && z2.qKaz === 'refused' && z2.name === '57 mm ZiS-2' &&
+     z2.staged && !!fz2 && (!bz2 || bz2.t >= fz2.t + 1) && fz2.found < 1 &&
+     z2.men === 6 && z2.baked && z2.set && z2.vars === 'sv_atg,sv_atg,sv_atb,sv_atb_b,sv_atb,sv_atb_b' &&
+     z2.loaderRight && z2.loaderFaces && z2.bearers && z2.mesh && z2.muz && z2.box && z2.packMesh && z2.canHitch && z2.towed &&
+     z2.apMen === 'nothing' && z2.apBoth === 'hr_p4' && z2.range === 620 && z2.bodyNat === 'sov_at' && /sov_mot:sv_zis2/.test(z2Ai.q),
+     `the Avtopark makes ${z2.makes} and queues ${z2.q}, the Kazarma ${z2.qKaz} it; named ${z2.name}; ` +
+     (z2.staged ? `sited against a Panzer IV at 520 it fired ${fz2 ? 'at ' + fz2.t + ' s from ' + fz2.d + ' with the tank ' + (fz2.found < 1 ? 'yet to find it (' + fz2.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
+       `and the tank ${bz2 ? 'answered at ' + bz2.t + ' s from ' + bz2.d : 'never fired'}; ` : 'NO open ground to stage the drill on; ') +
+     `${z2.men} men, the served bodies and the three meshes ${z2.baked ? 'baked' : 'NOT baked'}; halted ${z2.set ? 'set up' : 'NOT set up'} ` +
+     `as ${z2.vars}, the loader at ${z2.loader} ${z2.loaderRight ? 'on the right' : 'NOT on the right'} and ${z2.loaderFaces ? 'facing the breech' : 'NOT facing it'}, ` +
+     `the bearers ${z2.bearers === 'cover' ? 'in cover' : z2.bearers ? 'back behind the gun' : 'NOT in place (' + z2.bpos + ')'}, the piece ` +
+     `${z2.mesh ? 'open' : 'WRONG'}, the flash ${z2.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's case ${z2.box ? 'in his hand' : 'MISSING'}; ` +
+     `packed the trails ${z2.packMesh ? 'closed' : 'NOT closed'}; a T-20 ${z2.canHitch ? 'may' : 'may NOT'} hitch it and ${z2.towed ? 'did' : 'DID NOT'}; ` +
+     `it picked ${z2.apMen} with the squad alone and ${z2.apBoth} with the tank beside it, out to ${z2.range}; killed went down as ` +
+     `${z2.bodyNat}; a brain with the Avtopark standing queued ${z2Ai.q}`);
+
+  /* --- The BM-13N Katyusha, out of the Avtopark. The Avtopark makes it and queues it and the
+     Kazarma refuses it; every buffer it needs is built, the rack, the two screws, the rockets lying
+     on the rails and the M-13 in the air; it is a soft lorry named the BM-13N Katyusha with a
+     traverse of ten degrees either way. Laid on a point six hundred off and square to it, it brings
+     the truck round, lays the rack up to the elevation the range asks for before the first rocket
+     leaves, and fires all sixteen, every one bent onto its mark and leaving its rail along the rail;
+     the rails are empty after it with the reload begun, and smoke is refused. Forty wrecks throw
+     nothing, killed it leaves the army's crewmen, and a brain on his slot with the Avtopark standing
+     and the rungs under it bought buys one. The bursts are switched off, for the reason the
+     Calliope's are. --- */
+  const bm = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {}, dt = 1 / 30;
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)[0];
+    if (!ab) { const at = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x - 200, hq.y - 260); ab = W.spawnBuilding(own, 'sov_mot', at.x, at.y, true); }
+    out.makes = W.makesOf(ab).join(',');
+    const kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar')[0];
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(ab, 'sv_bm13'); out.qKaz = kb ? q(kb, 'sv_bm13') : 'no Kazarma';
+    const B = W.MODELS.veh.sv_bm13, V = W.VMODEL.sv_bm13;
+    out.bufs = !!(B && B.hull && B.tur && B.elv && B.elv.rack && B.lk && B.lk.length === 2 && B.rkLoad && W.MODELS.rkt && W.MODELS.rkt.m13);
+    out.soft = !!V.soft && !!(W.ARM.sv_bm13 && W.ARM.sv_bm13.soft);
+    out.load = V.rkLoad.p.length;
+    const boom = W.explode;
+    W.explode = function () {};
+    const sp = W.nearestFree(hq.x + 260, hq.y), u = W.spawnUnit(own, 'sv_bm13', sp.x, sp.y, 0);
+    u.setup = 0;
+    out.name = W.nameOf(u); out.arc = +(W.arcOf(u) || 0).toFixed(2);
+    let a = u.facing + Math.PI / 2, tx = u.x + Math.cos(a) * 600, ty = u.y + Math.sin(a) * 600;
+    if (ty < 80 || ty > W.WORLD.h - 80) { a = u.facing - Math.PI / 2; tx = u.x + Math.cos(a) * 600; ty = u.y + Math.sin(a) * 600; }
+    const f0 = u.facing;
+    out.ok = !!W.orderBarrage(u, tx, ty); out.n = u.barrage ? u.barrage.left : 0;
+    let elAt = -1, rk = 0, bent = 0, off = 0, z0 = 1e9;
+    const seen = new Set(), tubes = [], rl = W.rkLaunch;
+    W.rkLaunch = function (v) { const L = rl(v); if (L && v === u) tubes.push(L); return L; };
+    for (let i = 0; i < 30 * 50 && u.barrage; i++) {
+      W.updateUnit(u, dt); W.updateModels(u, dt);
+      G.shots.forEach(s => {
+        if (s.rk !== 'm13' || s.owner !== u || seen.has(s)) return;
+        seen.add(s); rk++; if (s.cx !== undefined) bent++; z0 = Math.min(z0, s.z0);
+        if (elAt < 0) elAt = +(u.el || 0).toFixed(3);
+        const A = W.rocketAt(s), L = Math.atan2(A.dz, Math.hypot(A.dx, A.dy)), T = tubes.shift();
+        off = T ? Math.max(off, Math.abs(L - T.el), Math.abs(W.angDiff(Math.atan2(A.dy, A.dx), T.a))) : 9;
+      });
+      W.updateShots(dt); G.t += dt;
+    }
+    W.rkLaunch = rl;
+    out.rk = rk; out.bent = bent; out.el = elAt; out.want = +(u.elWant || 0).toFixed(3); out.off = +off.toFixed(3); out.z0 = +z0.toFixed(1);
+    out.turn = +Math.abs(W.angDiff(u.facing, f0)).toFixed(2); out.rack = u.rack; out.reload = +(u.reload || 0).toFixed(0);
+    out.smoke = W.orderBarrage(u, tx, ty, true) ? 'TAKEN' : 'refused';
+    W.explode = boom;
+    G.shots.length = 0;
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(u); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(u);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(q2 => { if (!q2.dead) W.killUnit(q2); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Avtopark standing and the rungs ahead of the lorry's and the park's
+       written into what the side has ordered: a park standing from the rows above would otherwise sell it
+       whatever the brain brings forward against a heavy */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_is2', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_bm13 = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__bmq = []; W.__bmU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__bmU.apply(this, arguments); if (r && b.own === own) W.__bmq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const bmAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__bmU; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__bmq.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Avtopark raises the BM-13N Katyusha, and it fires its sixteen rockets off the rails on a mission',
+     /sv_bm13/.test(bm.makes) && bm.q === 'sv_bm13' && bm.qKaz === 'refused' && bm.bufs && bm.soft && bm.load === 16 &&
+     bm.name === 'BM-13N Katyusha' && bm.arc === .35 && bm.ok && bm.n === 16 && bm.rk === 16 && bm.bent === 16 &&
+     bm.el > .15 && Math.abs(bm.el - bm.want) < .025 && bm.off < .08 && bm.z0 > 20 && bm.turn > .9 && bm.rack === 0 &&
+     bm.reload > 50 && bm.smoke === 'refused' && bm.blown === 0 && bm.bodies >= 1 && bm.bodyNat === 'sov' &&
+     /sov_mot:sv_bm13/.test(bmAi.q),
+     `the Avtopark makes ${bm.makes} and queues ${bm.q}, the Kazarma ${bm.qKaz} it; buffers ${bm.bufs ? 'built' : 'MISSING'}, ` +
+     `${bm.soft ? 'soft' : 'NOT SOFT'}, ${bm.load} rockets on the rails; named ${bm.name} on an arc of ${bm.arc}; it laid ` +
+     `${bm.ok ? '' : 'NOT '}a mission of ${bm.n}, turning ${bm.turn}, the first rocket away at ${bm.el} of elevation against ` +
+     `${bm.want} wanted, ${bm.rk} rockets of which ${bm.bent} bent onto their marks, the worst leaving ${bm.off} off its rail, from ` +
+     `${bm.z0} up; ${bm.rack} left on the rails, reloading for ${bm.reload} s, smoke ${bm.smoke}; forty wrecks threw ${bm.blown}; ` +
+     `killed it left ${bm.bodies} bodies of ${bm.bodyNat}; a brain with the Avtopark standing queued ${bmAi.q}`);
+
+  /* --- The BS-3, the Red Army's heavy anti-tank gun, out of the Avtopark: the Avtopark makes it
+     and queues it and the Kazarma refuses it, and it is seven men on its own carriage with the tube
+     at two thirds of a metre over the ZiS-3's. Sited on open ground with a Panther coming at it from
+     560 it has the first round off, before the tank has found it. Halted, the gunner stands bent at
+     the sight and the loader stands at the right of the breech facing it, the bearers are back
+     behind the gun, the flash comes off the muzzle and a bearer has his case in his hand; packed,
+     the trails close. It has the AP round alone and picks nothing out of a grenadier squad and the
+     Panzer IV out of the two, out to 680. A T-20 hitches it. A man killed goes down as one of the
+     crew, and a brain on his slot with the Avtopark standing and the rungs under it bought buys
+     one. --- */
+  const b3 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    let ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)[0];
+    if (!ab) { const at = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260); ab = W.spawnBuilding(own, 'sov_mot', at.x, at.y, true); }
+    out.makes = W.makesOf(ab).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(ab, 'sv_bs3'); out.qKaz = q(kb, 'sv_bs3');
+    const D = W.UNITS.sv_bs3;
+    out.name = D.name;
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
+    let st = null;
+    for (let r = 200; r < 1600 && !st; r += 60)
+      for (let k = 0; k < 16 && !st; k++) {
+        const ax = hq.x + r * Math.cos(k * Math.PI / 8), ay = hq.y + r * Math.sin(k * Math.PI / 8);
+        if (!clear(ax, ay) || !roomy(ax, ay)) continue;
+        for (let j = 0; j < 8 && !st; j++) {
+          const th = j * Math.PI / 4, bx = ax + 560 * Math.cos(th), by = ay + 560 * Math.sin(th);
+          if (!clear(bx, by)) continue;
+          let okL = true;
+          for (let s = 1; s < 14 && okL; s++) okL = W.walkable(ax + (bx - ax) * s / 14, ay + (by - ay) * s / 14);
+          if (okL && W.traceClear(ax, ay, W.groundZ(ax, ay) + 16, bx, by, W.groundZ(bx, by) + 20, W.sblk) &&
+              W.traceClear(bx, by, W.groundZ(bx, by) + 20, ax, ay, W.groundZ(ax, ay) + 16, W.sblk)) st = { ax, ay, bx, by, th };
+        }
+      }
+    out.staged = !!st;
+    if (st) {
+      const a = W.spawnUnit(own, 'sv_bs3', st.ax, st.ay, st.th);
+      a.setup = 0; a.packed = false; a.pack = 0; a.order = null; a.dest = null; a.path = null;
+      const b = W.spawnUnit('ger', 'hr_panther', st.bx, st.by, st.th + Math.PI);
+      b.order = 'attackmove'; b.dest = { x: a.x, y: a.y };
+      const seen = new Set(G.shots);
+      let t = 0, first = null, bFirst = null;
+      const dt = 1 / 20;
+      while (t < 40 && !(first && bFirst)) {
+        G.t += dt; t += dt;
+        W.computeVisibility(dt);
+        W.updateUnit(a, dt); W.updateUnit(b, dt); W.updateModels(a, dt);
+        W.updateShots(dt);
+        for (const s of G.shots) {
+          if (seen.has(s)) continue;
+          seen.add(s);
+          const d = Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+          if (s.owner === a && !first) first = { t: +t.toFixed(1), d, found: +(a.detGer || 0).toFixed(2) };
+          if (s.owner === b && !bFirst) bFirst = { t: +t.toFixed(1), d };
+        }
+        if (a.dead || b.dead) break;
+      }
+      out.first = first; out.bFirst = bFirst;
+      G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+      G.units.length = 0; G.shots.length = 0;
+    }
+    let at = null;
+    for (let r = 0; r < 900 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x0 = st ? st.ax : hq.x, y0 = st ? st.ay : hq.y;
+        const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    if (!at) at = W.nearestFree(hq.x + 200, hq.y);
+    const u = W.spawnUnit(own, 'sv_bs3', at.x, at.y, 0);
+    out.men = u.models.length;
+    out.baked = !!(W.MODELS.served.sv_bs3 && W.MODELS.served.sv_bs3.mate) && !!(W.MODELS.gunRec.sv_bs3 && W.MODELS.gunPk.sv_bs3);
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.setup = 0; u.packed = false; u.pack = 0;
+    step(4);
+    out.set = W.gunSet(u);
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [(dx * cs + dy * sn) / W.FIG_SCALE, (-dx * sn + dy * cs) / W.FIG_SCALE]; };
+    const r1 = rel(u.models[1]);
+    out.loader = r1.map(v => +v.toFixed(1)).join(',');
+    out.loaderRight = r1[1] > 2 && r1[0] < -2;
+    out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
+    out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4, 5, 6].every(i => rel(u.models[i])[0] < -10);
+    out.bpos = [2, 3, 4, 5, 6].map(i => rel(u.models[i]).map(q => Math.round(q)).join(',')).join(' ');
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.sv_bs3;
+    const mz = W.muzzlePoint(u, u.models[0], 0);
+    out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
+    out.box = (W.mgCarryAt(u, u.models[2], 2, 'sv_atb') ? W._mgc.buf : null) === W.MODELS.carry.box76;
+    u.packed = true;
+    out.packMesh = W.teamMesh(u) === W.MODELS.gunPk.sv_bs3;
+    u.packed = false;
+    const tw = W.spawnUnit(own, 'sv_t20', u.x + 90, u.y, 0);
+    out.canHitch = W.canHitch(tw, u);
+    W.hitchGun(tw, u);
+    out.towed = u.towedBy === tw;
+    W.unhitchGun(tw); W.killUnit(tw);
+    const mk = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, mk, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    W.killUnit(u);
+    G.units.length = 0;
+    const ln = st || { ax: at.x, ay: at.y, th: 0 };
+    const v = W.spawnUnit(own, 'sv_bs3', ln.ax, ln.ay, ln.th);
+    v.setup = 0; v.packed = false; v.pack = 0; v.facing = ln.th; v.order = null; v.path = null;
+    const along = d => ({ x: ln.ax + Math.cos(ln.th) * d, y: ln.ay + Math.sin(ln.th) * d });
+    const gp0 = along(280), tp0 = along(340);
+    const g = W.spawnUnit('ger', 'hr_gren', gp0.x, gp0.y, ln.th + Math.PI);
+    const see = e => { e.vUs = true; e.detUs = 1; };
+    see(g);
+    v.up = {}; v.forced = null; v.target = null;
+    out.apMen = (W.acquire(v) || { key: 'nothing' }).key;
+    const tk = W.spawnUnit('ger', 'hr_p4', tp0.x, tp0.y, ln.th + Math.PI); see(tk);
+    out.apBoth = (W.acquire(v) || { key: 'nothing' }).key;
+    out.range = W.mainW(v).range;
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Avtopark standing and every rung under the BS-3's bought */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_bm13', 'sv_su85', 'sv_su122', 'sv_is2'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_bs3 = 0;
+    /* and the queues emptied, because the brain runs of the rows above leave what they queued
+       standing in them, and a population that is nearly full has room for a fifteen-point tank
+       and none for a sixteen-point gun */
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__b3q = []; W.__b3U = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__b3U.apply(this, arguments); if (r && b.own === own) W.__b3q.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const b3Ai = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__b3U; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__b3q.join(',') || 'nothing' };
+  });
+  const fb3 = b3.first, bb3 = b3.bFirst;
+  ok('the Red Army\'s Avtopark raises the BS-3, seven men on a carriage of its own with a 100 mm tube',
+     /sv_bs3/.test(b3.makes) && b3.q === 'sv_bs3' && b3.qKaz === 'refused' && b3.name === '100 mm BS-3' &&
+     b3.staged && !!fb3 && (!bb3 || bb3.t >= fb3.t + 1) && fb3.found < 1 &&
+     b3.men === 7 && b3.baked && b3.set && b3.vars === 'sv_atg,sv_atg,sv_atb,sv_atb_b,sv_atb,sv_atb_b,sv_atb' &&
+     b3.loaderRight && b3.loaderFaces && b3.bearers && b3.mesh && b3.muz && b3.box && b3.packMesh && b3.canHitch && b3.towed &&
+     b3.apMen === 'nothing' && b3.apBoth === 'hr_p4' && b3.range === 680 && b3.bodyNat === 'sov_at' && /sov_mot:sv_bs3/.test(b3Ai.q),
+     `the Avtopark makes ${b3.makes} and queues ${b3.q}, the Kazarma ${b3.qKaz} it; named ${b3.name}; ` +
+     (b3.staged ? `sited against a Panther at 560 it fired ${fb3 ? 'at ' + fb3.t + ' s from ' + fb3.d + ' with the tank ' + (fb3.found < 1 ? 'yet to find it (' + fb3.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
+       `and the tank ${bb3 ? 'answered at ' + bb3.t + ' s from ' + bb3.d : 'never fired'}; ` : 'NO open ground to stage the drill on; ') +
+     `${b3.men} men, the served bodies and the three meshes ${b3.baked ? 'baked' : 'NOT baked'}; halted ${b3.set ? 'set up' : 'NOT set up'} ` +
+     `as ${b3.vars}, the loader at ${b3.loader} ${b3.loaderRight ? 'on the right' : 'NOT on the right'} and ${b3.loaderFaces ? 'facing the breech' : 'NOT facing it'}, ` +
+     `the bearers ${b3.bearers === 'cover' ? 'in cover' : b3.bearers ? 'back behind the gun' : 'NOT in place (' + b3.bpos + ')'}, the piece ` +
+     `${b3.mesh ? 'open' : 'WRONG'}, the flash ${b3.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's case ${b3.box ? 'in his hand' : 'MISSING'}; ` +
+     `packed the trails ${b3.packMesh ? 'closed' : 'NOT closed'}; a T-20 ${b3.canHitch ? 'may' : 'may NOT'} hitch it and ${b3.towed ? 'did' : 'DID NOT'}; ` +
+     `it picked ${b3.apMen} with the squad alone and ${b3.apBoth} with the tank beside it, out to ${b3.range}; killed went down as ` +
+     `${b3.bodyNat}; a brain with the Avtopark standing queued ${b3Ai.q}`);
+
+  /* --- The SU-76M, out of the Avtopark: the Avtopark makes it and queues it and the Kazarma refuses
+     it. Every buffer it needs is built, the gunner who turns with the gun and the loader and the
+     commander on the hull among them; it is a casemate named the SU-76M, and its gun asked to lay
+     1.2 radians off the nose stops at the edge of its fifteen degrees. The commander standing in the
+     open compartment wears the padded helmet and is the eye, with his head over the walls. A Kar98k
+     never goes through its front and a Pak 38 always does, and its own AP round goes through a
+     Panzer IV's side every time and its front less often. With the AP round up it picks nothing out
+     of a grenadier squad and the Panzer IV out of the two; with the HE round up it picks the squad,
+     out to 480; and a brain on his slot puts HE up with only men in front of it and AP when a tank
+     comes into reach. Forty wrecks throw nothing, killed it leaves the army's crewmen, and a brain
+     on his slot with the Avtopark standing and the rungs under it bought buys one. The rounds are
+     asked along a line of open ground traced clear both ways, for the ZiS-3's reason. --- */
+  const sm = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    let ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)[0];
+    if (!ab) { const at = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260); ab = W.spawnBuilding(own, 'sov_mot', at.x, at.y, true); }
+    out.makes = W.makesOf(ab).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(ab, 'sv_su76'); out.qKaz = q(kb, 'sv_su76');
+    const B = W.MODELS.veh.sv_su76, V = W.VMODEL.sv_su76;
+    out.bufs = !!(B && B.hull && B.tur && B.crew && B.turCrew);
+    out.fixed = !!V.fixed;
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 40);
+    let st = null;
+    for (let r = 200; r < 1600 && !st; r += 60)
+      for (let k = 0; k < 16 && !st; k++) {
+        const ax = hq.x + r * Math.cos(k * Math.PI / 8), ay = hq.y + r * Math.sin(k * Math.PI / 8);
+        if (!clear(ax, ay)) continue;
+        for (let j = 0; j < 8 && !st; j++) {
+          const th = j * Math.PI / 4, bx = ax + 380 * Math.cos(th), by = ay + 380 * Math.sin(th);
+          if (!clear(bx, by)) continue;
+          if (W.traceClear(ax, ay, W.groundZ(ax, ay) + 18, bx, by, W.groundZ(bx, by) + 14, W.sblk) &&
+              W.traceClear(bx, by, W.groundZ(bx, by) + 14, ax, ay, W.groundZ(ax, ay) + 18, W.sblk) &&
+              W.fireLine({ x: ax, y: ay, side: 'us' }, { x: bx, y: by })) st = { ax, ay, th };
+        }
+      }
+    out.staged = !!st;
+    const ln = st || { ax: hq.x + 220, ay: hq.y + 140, th: 0 };
+    const t = W.spawnUnit(own, 'sv_su76', ln.ax, ln.ay, ln.th);
+    out.name = W.nameOf(t); out.arc = +(W.arcOf(t) || 0).toFixed(2);
+    t.facing = ln.th; t.turret = ln.th; t.want = ln.th + 1.2;
+    for (let i = 0; i < 30; i++) W.updateModels(t, .2);
+    out.tur = +W.angDiff(t.facing, t.turret).toFixed(3);
+    t.turret = t.facing; t.want = t.facing; t._matT = -1;
+    const K = W.KIT.sov;
+    out.shlem = V.crew.concat(V.turCrew).filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.VIN.sv_su76(V);
+    out.eye = +E.eyeUp.z.toFixed(1); out.top = +W.smTopZ(E.eyeUp.x).toFixed(1); out.frame = E.frame;
+    const ahead = d => ({ x: t.x + d * Math.cos(ln.th), y: t.y + d * Math.sin(ln.th) });
+    let p = ahead(150); out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, p.x, p.y).toFixed(2);
+    p = ahead(300); out.pak = +W.penVs(W.UNITS.hr_pak.w, 300, t, p.x, p.y).toFixed(2);
+    const see = e => { e.vUs = true; e.detUs = 1; };
+    const gp = ahead(280), tp = ahead(340);
+    const g = W.spawnUnit('ger', 'hr_gren', gp.x, gp.y, ln.th + Math.PI); see(g);
+    t.up = {}; t.forced = null; t.target = null;
+    out.apMen = (W.acquire(t) || { key: 'nothing' }).key;
+    const tk = W.spawnUnit('ger', 'hr_p4', tp.x, tp.y, ln.th + Math.PI); see(tk);
+    out.apBoth = (W.acquire(t) || { key: 'nothing' }).key;
+    out.onP4F = +W.penVs(t.def.w, 340, tk, t.x, t.y).toFixed(2);
+    tk.facing = ln.th + Math.PI / 2; tk._matT = -1;
+    out.onP4S = +W.penVs(t.def.w, 340, tk, t.x, t.y).toFixed(2);
+    G.units.splice(G.units.indexOf(tk), 1);
+    W.setRound([t], true);
+    const hw = W.mainW(t);
+    out.he = hw.dmg + '/' + hw.aoe + '/' + hw.range;
+    t.target = null; t.forced = null;
+    out.heMen = (W.acquire(t) || { key: 'nothing' }).key;
+    W.setRound([t], false);
+    /* the brain on his slot picks the round off what is in front of the gun */
+    t.up = {};
+    W.__smU = t; W.__smT0 = tp; W.__smAi = W.slotOf('ger').ai; W.slotOf('ger').ai = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    return out;
+  });
+  await fastForward(page, 4);
+  const smR = await page.evaluate(() => {
+    const W = window, u = W.__smU, out = {};
+    out.menOnly = !!(u.up && u.up.he);
+    const tk = W.spawnUnit('ger', 'hr_p4', W.__smT0.x, W.__smT0.y, u.facing + Math.PI);
+    tk.vUs = true; tk.detUs = 1; tk.hp = tk.maxHp = 1e6;
+    return out;
+  });
+  await fastForward(page, 4);
+  Object.assign(smR, await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, u = W.__smU, out = {};
+    out.withTank = !(u.up && u.up.he);
+    W.slotOf(own).ai = 0; W.slotOf('ger').ai = W.__smAi;
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_su76', sp.x, sp.y, 0);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Avtopark standing, every rung under the SU-76M's and beside
+       it bought and the queues emptied, for the BS-3's reason */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_bm13', 'sv_bs3', 'sv_su85', 'sv_su122', 'sv_is2'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_su76 = 0;
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__smq = []; W.__smQ = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__smQ.apply(this, arguments); if (r && b.own === own) W.__smq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  }));
+  await fastForward(page, 40);
+  Object.assign(smR, await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__smQ; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__smq.join(',') || 'nothing' };
+  }));
+  ok('the Red Army\'s Avtopark raises the SU-76M, the 76 mm in an open compartment on a light chassis, with both rounds',
+     /sv_su76/.test(sm.makes) && sm.q === 'sv_su76' && sm.qKaz === 'refused' && sm.bufs && sm.fixed && sm.name === 'SU-76M' &&
+     sm.arc === .52 && Math.abs(Math.abs(sm.tur) - sm.arc / 2) < .03 && sm.shlem > 0 && sm.paint > 0 && sm.frame === 'hull' &&
+     sm.eye > sm.top && sm.eye < sm.top + 6 && sm.rifle === 0 && sm.pak === 1 && sm.onP4S === 1 && sm.onP4F < sm.onP4S &&
+     sm.staged && sm.apMen === 'nothing' && sm.apBoth === 'hr_p4' && sm.he === '90/45/480' && sm.heMen === 'hr_gren' &&
+     smR.menOnly && smR.withTank && smR.blown === 0 && smR.bodies >= 1 && smR.bodyNat === 'sov' && /sov_mot:sv_su76/.test(smR.q),
+     `the Avtopark makes ${sm.makes} and queues ${sm.q}, the Kazarma ${sm.qKaz} it; buffers ${sm.bufs ? 'built' : 'MISSING'}, ` +
+     `${sm.fixed ? 'a casemate' : 'NOT FIXED'}; named ${sm.name}; asked to lay 1.2 off the nose the gun came to ${sm.tur} on an arc ` +
+     `of ${sm.arc}; the crew have ${sm.shlem} faces of the padded helmet, the hull ${sm.paint} of its green; the eye in the ` +
+     `${sm.frame} at ${sm.eye} over walls at ${sm.top}; a Kar98k through the front ${sm.rifle} and a Pak 38 ${sm.pak}; its AP ` +
+     `round through a Panzer IV's front ${sm.onP4F} and side ${sm.onP4S}; ${sm.staged ? '' : 'NO clear line to ask the rounds along; '}` +
+     `with AP up it picked ${sm.apMen} with the squad alone and ${sm.apBoth} with the tank beside it, with HE up (${sm.he}) ` +
+     `${sm.heMen}; the brain put HE up with men only ${smR.menOnly ? 'yes' : 'NO'} and AP with a tank ${smR.withTank ? 'yes' : 'NO'}; ` +
+     `forty wrecks threw ${smR.blown} and sat down ${smR.sink}; killed it left ${smR.bodies} bodies of ${smR.bodyNat}; a brain ` +
+     `with the Avtopark standing queued ${smR.q}`);
+
+  /* --- The ZSU-37, out of the Avtopark: the Avtopark makes it and queues it and the Kazarma refuses
+     it. Every buffer it needs is built, the gun laid up and down on its trunnions among them, and it
+     is named the ZSU-37. Its gun asked to lay over the tail comes all the way round, and turned away
+     from the slot it is laid up over the walls, its muzzle well over the box's top; brought back
+     into the slot it comes down level again. The eye is the commander's at the back of the box. A
+     Kar98k never goes through its front and a Pak 38 always does, and its own 37 mm goes through a
+     Panzer IV's side more than eight times in ten at two hundred and never through its front: the
+     hull's and the turret's sides open square on, and the turret's rear corners, met at forty-five
+     degrees, do not. Forty wrecks throw
+     nothing, killed it leaves the army's crewmen, and a brain on his slot with the Avtopark standing
+     and the rungs under it bought buys one. --- */
+  const zk = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    let ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)[0];
+    if (!ab) { const at = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260); ab = W.spawnBuilding(own, 'sov_mot', at.x, at.y, true); }
+    out.makes = W.makesOf(ab).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(ab, 'sv_zsu37'); out.qKaz = q(kb, 'sv_zsu37');
+    const B = W.MODELS.veh.sv_zsu37, V = W.VMODEL.sv_zsu37;
+    out.bufs = !!(B && B.hull && B.tur && B.crew && B.turCrew && B.elv && B.elv.gun);
+    out.fixed = !!V.fixed;
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_zsu37', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = W.arcOf(t) || 0;
+    t.facing = 0; t.turret = 0; t.el = 0; t.want = 3.1;
+    for (let i = 0; i < 40; i++) W.updateModels(t, .2);
+    out.tur = +Math.abs(W.angDiff(t.facing, t.turret)).toFixed(2); out.elUp = +(t.el || 0).toFixed(2);
+    t._matT = -1;
+    const gz = W.groundZ(t.x, t.y);
+    out.muzUp = +(W.gunMuzzle(t).z - gz).toFixed(1); out.boxTop = W.ZKH.zT;
+    t.want = 0;
+    for (let i = 0; i < 40; i++) W.updateModels(t, .2);
+    out.back = +Math.abs(W.angDiff(t.facing, t.turret)).toFixed(2); out.elDown = +(t.el || 0).toFixed(2);
+    t._matT = -1;
+    out.muzDown = +(W.gunMuzzle(t).z - gz).toFixed(1);
+    const K = W.KIT.sov;
+    out.shlem = V.crew.concat(V.turCrew).filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    const E = W.VIN.sv_zsu37(V);
+    out.eye = +E.eyeUp.z.toFixed(1); out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.pak = +W.penVs(W.UNITS.hr_pak.w, 300, t, t.x + 300, t.y).toFixed(2);
+    const p4 = W.spawnUnit('ger', 'hr_p4', t.x + 200, t.y, Math.PI);
+    out.onP4F = +W.penVs(t.def.w, 200, p4, t.x, t.y).toFixed(2);
+    p4.facing = Math.PI / 2; p4._matT = -1;
+    out.onP4S = +W.penVs(t.def.w, 200, p4, t.x, t.y).toFixed(2);
+    G.units.splice(G.units.indexOf(p4), 1);
+    out.auto = !!t.def.w.auto;
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_su76', 'sv_t20', 'sv_ba64', 'sv_bm13', 'sv_bs3', 'sv_su85', 'sv_su122', 'sv_is2'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_zsu37 = 0;
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__zkq = []; W.__zkQ = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__zkQ.apply(this, arguments); if (r && b.own === own) W.__zkq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const zkAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__zkQ; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__zkq.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Avtopark raises the ZSU-37, the 37 mm on its turntable in an open box, laid up over the walls',
+     /sv_zsu37/.test(zk.makes) && zk.q === 'sv_zsu37' && zk.qKaz === 'refused' && zk.bufs && zk.fixed && zk.name === 'ZSU-37' &&
+     !zk.arc && zk.tur > 3.0 && zk.elUp > .85 && zk.muzUp > zk.boxTop + 6 && zk.back < .05 && zk.elDown < .05 &&
+     zk.muzDown < zk.boxTop - 3 && zk.shlem > 0 && zk.frame === 'hull' && zk.eye > zk.boxTop && zk.eye < zk.boxTop + 6 &&
+     zk.rifle === 0 && zk.pak === 1 && zk.onP4S > .8 && zk.onP4F === 0 && zk.auto && zk.blown === 0 && zk.bodies >= 1 &&
+     zk.bodyNat === 'sov' && /sov_mot:sv_zsu37/.test(zkAi.q),
+     `the Avtopark makes ${zk.makes} and queues ${zk.q}, the Kazarma ${zk.qKaz} it; buffers ${zk.bufs ? 'built' : 'MISSING'}, ` +
+     `${zk.fixed ? 'nothing to throw' : 'NOT FIXED'}; named ${zk.name}${zk.arc ? ' on an ARC of ' + zk.arc : ''}; asked to lay over the tail ` +
+     `the gun came round ${zk.tur} and was laid up ${zk.elUp}, its muzzle ${zk.muzUp} up over a box ${zk.boxTop} tall; brought back ` +
+     `to the nose it came to ${zk.back} and ${zk.elDown}, the muzzle at ${zk.muzDown}; the crew have ${zk.shlem} faces of the padded ` +
+     `helmet; the eye in the ${zk.frame} at ${zk.eye}; a Kar98k through the front ${zk.rifle} and a Pak 38 ${zk.pak}; its 37 mm ` +
+     `through a Panzer IV's side ${zk.onP4S} and front ${zk.onP4F}, ${zk.auto ? 'automatic' : 'NOT AUTOMATIC'}; forty wrecks threw ` +
+     `${zk.blown} and sat down ${zk.sink}; killed it left ${zk.bodies} bodies of ${zk.bodyNat}; a brain with the Avtopark standing ` +
+     `queued ${zkAi.q}`);
+
+
+  /* --- The B-4, the Red Army's heavy battery, dug by the Sapery. The army names it as its battery
+     and the sapper's card offers it; it is refused inside seven hundred of home and a second is
+     refused with the first standing. Dug forward, the howitzer stands on its tracks with its seven
+     men where the work lays them and every buffer built; laid on clear ground six hundred off it
+     fires its five rounds into its circle, and stood within reach of the enemy's base a mission 300
+     short of his headquarters is refused. Then the Br-5: AUTO is not offered on it and the brain's
+     routine will not fit it; fitted by hand for its price it is drawn as the Br-5, reaches 900 with a
+     round of 950, and after its change-over three rounds go into the circle. A brain on his slot
+     with two Sapery, four squads and the money digs one. The rounds come off the list as they leave the
+     tube. --- */
+  const b4 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0; G.shots.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    const foeHq = G.blds.filter(b => b.side !== G.side && b.def.hq)[0];
+    const mp = G.res[own].mp, fu = G.res[own].fu;
+    W.__b4mp = mp; W.__b4fu = fu;
+    /* the brain rows above it ran with the money in the till and the clock past seven hundred,
+       and a brain on his slot digs a battery, so a site of one may be standing: it holds the
+       limit and the population, and every placement below would be refused for it */
+    W.slotOf(own).ai = 0;
+    G.sites.slice().forEach(s => { if (s.own === own) G.sites.splice(G.sites.indexOf(s), 1); });
+    G.works.slice().forEach(w => { if (w.own === own && w.kind === 'howb4') G.works.splice(G.works.indexOf(w), 1); });
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    G.res[own].mp = 9000; G.res[own].fu = 9000;
+    const sap = W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0);
+    W.select([sap], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false);
+    out.battery = W.NATIONS.sov.battery;
+    const WK = W.WORKS.howb4;
+    const fx = foeHq.x - hq.x, fy = foeHq.y - hq.y, fl = Math.hypot(fx, fy), ux = fx / fl, uy = fy / fl;
+    out.near = !!W.placeWork(own, 'howb4', hq.x + ux * 220, hq.y + uy * 220, Math.atan2(uy, ux), [sap]);
+    let site = null, at = null;
+    for (let d = WK.minHq + 60; d < WK.minHq + 800 && !site; d += 60)
+      for (let k = -4; k <= 4 && !site; k++) {
+        const x = hq.x + ux * d - uy * k * 110, y = hq.y + uy * d + ux * k * 110;
+        site = W.placeWork(own, 'howb4', x, y, Math.atan2(uy, ux), [sap]);
+        if (site) at = { x, y };
+      }
+    out.dug = !!site;
+    if (!site) {
+      const x = hq.x + ux * (WK.minHq + 120), y = hq.y + uy * (WK.minHq + 120);
+      out.why = 'room ' + W.workRoom(x, y, WK) + ', full ' + W.workFull(own, 'howb4') + ', pop ' + W.popOf(own) + '/' + W.popCap(own) +
+                ', noArty ' + W.aiNoArty(own) + ', sites ' + G.sites.filter(s => s.own === own).map(s => s.kind).join('+');
+      G.res[own].mp = mp; G.res[own].fu = fu; return out;
+    }
+    site.prog = 1; W.updateSites(0);
+    const g = G.units.filter(u => u.key === 'sv_b4' && u.own === own)[0];
+    out.spawned = !!g;
+    if (!g) { G.res[own].mp = mp; G.res[own].fu = fu; return out; }
+    out.twice = !!W.placeWork(own, 'howb4', at.x + ux * 240, at.y + uy * 240 + 200, 0, [sap]);
+    out.men = g.models.length;
+    out.lay = g.models.every((m, i) => !WK.lay[i] || (m.ox === WK.lay[i][0] && m.oy === WK.lay[i][1]));
+    out.vars = g.models.map((m, i) => W.variantForModel(g, i)).join(',');
+    out.built = !!(W.MODELS.gun.sv_b4 && W.MODELS.gunBase.sv_b4 && W.MODELS.gunRec.sv_b4);
+    out.name = W.nameOf(g);
+    out.reach = Math.round(W.barrageRange(g));
+    function mission(D) {
+      let bear = null, tx = 0, ty = 0;
+      for (let a = 0; a < Math.PI * 2 && bear === null; a += .2) {
+        const x = g.x + Math.cos(a) * 600, y = g.y + Math.sin(a) * 600;
+        if (x < 60 || y < 60 || x > W.WORLD.w - 60 || y > W.WORLD.h - 60) continue;
+        if (W.barrageWhy(g, x, y) === null) { bear = a; tx = x; ty = y; }
+      }
+      const r = { bear: bear !== null, laid: false, first: -1, out: [] };
+      if (bear === null) return r;
+      g.facing = g.baseA = bear;
+      r.laid = !!W.orderBarrage(g, tx, ty);
+      let t = 0;
+      for (let f = 0; f < 60 * 200 && r.out.length < D.barrage.rounds; f++) {
+        const n0 = G.shots.length;
+        W.updateUnit(g, 1 / 60); G.t += 1 / 60; t += 1 / 60;
+        for (let i = G.shots.length - 1; i >= n0; i--) {
+          const sh = G.shots[i];
+          if (sh.kind === 'shell') { r.out.push(Math.hypot(sh.tx - tx, sh.ty - ty)); if (r.first < 0) r.first = +t.toFixed(1); }
+          G.shots.splice(i, 1);
+        }
+      }
+      const bound = D.barrage.r + D.barrage.sp * 1.6;
+      r.rounds = r.out.length; r.inBound = r.out.filter(d => d <= bound).length; r.bound = Math.round(bound);
+      return r;
+    }
+    const U = W.UNITS.sv_b4;
+    out.m1 = mission(U);
+    /* the enemy's base: stood 900 off his headquarters, a mission 300 short of it */
+    const gx0 = g.x, gy0 = g.y, hA = Math.atan2(hq.y - foeHq.y, hq.x - foeHq.x);
+    g.x = foeHq.x + Math.cos(hA) * 900; g.y = foeHq.y + Math.sin(hA) * 900;
+    out.whyBase = W.barrageWhy(g, foeHq.x + Math.cos(hA) * 300, foeHq.y + Math.sin(hA) * 300);
+    g.barrage = null; g.x = gx0; g.y = gy0;
+    /* the Br-5 */
+    const BD = U.defUp.br5;
+    out.auto = W.autoFits(g); out.up = W.upgradable(g);
+    out.autoGot = !!W.buyUpgradeAuto(own, [g], { floor: 0 }) || !!g.up.br5;
+    const mp0 = G.res[own].mp, fu0 = G.res[own].fu;
+    W.pay(own, W.UPGRADES.br5.cost); W.fitUp(g, 'br5');
+    const k = W.gmKey(g);
+    out.br = { piece: k, built: !!(W.MODELS.gun[k] && W.MODELS.gunBase[k] && W.MODELS.gunRec[k]),
+               cost: [mp0 - G.res[own].mp, fu0 - G.res[own].fu], want: [W.UPGRADES.br5.cost.mp, W.UPGRADES.br5.cost.fu],
+               name: W.nameOf(g), reach: Math.round(W.barrageRange(g)), dmg: W.mainW(g).dmg, setup: g.setup, D: BD.setup,
+               baseKey: W.gmKey({ def: U, key: 'sv_b4' }) };
+    out.m2 = mission(BD);
+    W.killUnit(g); W.killUnit(sap);
+    G.units.length = 0; G.shots.length = 0;
+    G.works.slice().forEach(w => { if (w.own === own && w.kind === 'howb4') G.works.splice(G.works.indexOf(w), 1); });
+    /* the brain on his slot digs one, with a Sapery, men about him and the money */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp = 9000; G.res[own].fu = 9000;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    W.AIR.fired['battery.dig'] = 0;
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_sap', hq.x + 140, hq.y + 90, 0);
+    for (let i = 0; i < 4; i++) W.spawnUnit(own, 'sv_strel', hq.x + 120 + i * 40, hq.y - 60, 0);
+    W.__b4mp = mp; W.__b4fu = fu;
+    return out;
+  });
+  await fastForward(page, 40);
+  const b4Ai = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.slotOf(own).ai = 0;
+    const dug = G.sites.some(s => s.own === own && s.kind === 'howb4') || G.units.some(u => u.own === own && u.key === 'sv_b4');
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    G.sites.slice().forEach(s => { if (s.own === own && s.kind === 'howb4') G.sites.splice(G.sites.indexOf(s), 1); });
+    G.works.slice().forEach(w => { if (w.own === own && w.kind === 'howb4') G.works.splice(G.works.indexOf(w), 1); });
+    G.res[own].mp = W.__b4mp; G.res[own].fu = W.__b4fu;
+    return { dug, fired: W.AIR.fired['battery.dig'] || 0 };
+  });
+  const m1 = b4.m1 || {}, m2 = b4.m2 || {}, br = b4.br || {};
+  ok('the Red Army\'s Sapery dig the B-4, its heavy battery, and it can be rebuilt by hand as the Br-5',
+     b4.battery === 'howb4' && (b4.cards || []).indexOf('B-4') >= 0 && !(b4.cards || []).some(t => /240 MM|MRS 18/.test(t)) &&
+     !b4.near && b4.dug && b4.spawned && !b4.twice && b4.men === 7 && b4.lay && b4.built &&
+     b4.vars === 'sv_atg,sv_atg,sv_atb,sv_atb_b,sv_atb,sv_atb,sv_atb_b' && /B-4/.test(b4.name) && b4.reach === 1250 &&
+     m1.bear && m1.laid && m1.rounds === 5 && m1.inBound === 5 && b4.whyBase === 'safe' &&
+     b4.up && !b4.auto && !b4.autoGot && br.piece === 'sv_b4:br5' && br.built && br.cost[0] === br.want[0] && br.cost[1] === br.want[1] &&
+     /Br-5/.test(br.name) && br.reach === 900 && br.dmg === 950 && br.setup === br.D && br.baseKey === 'sv_b4' &&
+     m2.bear && m2.laid && m2.first >= br.D * .95 && m2.rounds === 3 && m2.inBound === 3 && b4Ai.dug,
+     `the army's battery is ${b4.battery}; the sapper's card ${(b4.cards || []).indexOf('B-4') >= 0 ? 'offers' : 'does NOT offer'} it ` +
+     `${(b4.cards || []).some(t => /240 MM|MRS 18/.test(t)) ? 'and ANOTHER army\'s' : 'and no other army\'s'}; inside 700 of home ` +
+     `${b4.near ? 'TAKEN' : 'refused'}, dug forward ${b4.dug ? 'yes' : 'NO (' + b4.why + ')'}, the gun ${b4.spawned ? 'stood' : 'NEVER stood'}, a second ` +
+     `${b4.twice ? 'TAKEN' : 'refused'}; ${b4.men} men laid ${b4.lay} as ${b4.vars}, buffers ${b4.built}; "${b4.name}" reaching ${b4.reach}; ` +
+     `a mission six hundred off laid ${m1.laid}, ${m1.rounds} rounds, ${m1.inBound} inside ${m1.bound}; at the enemy's base ${b4.whyBase}; ` +
+     `the Br-5: AUTO ${b4.auto ? 'OFFERED' : 'not offered'}, the routine ${b4.autoGot ? 'FITTED it' : 'did not fit it'}; by hand for ` +
+     `${(br.cost || []).join('/')} of ${(br.want || []).join('/')}, drawn as ${br.piece} (buffers ${br.built}), "${br.name}", reach ${br.reach}, ` +
+     `a round of ${br.dmg}, change-over ${br.setup}s, the B-4 itself still ${br.baseKey}; first round at ${m2.first}s, ${m2.rounds} rounds, ` +
+     `${m2.inBound} inside ${m2.bound}; a brain on his slot ${b4Ai.dug ? 'dug one' : 'dug NONE'} (battery.dig ${b4Ai.fired})`);
+
+  /* --- The 82-PM-41, the Red Army's battalion mortar, out of the Kazarma: the Kazarma makes it
+     and queues it and the Shtab refuses it, it is named and the bunker's mortar pit is it, and it is
+     three men, the gunner and the loader at the tube and one bringing the bombs up. Halted, the
+     gunner kneels at the left of the bipod and the loader at the right of the tube facing it, with
+     the bearer beside the gunner, the flash comes off the muzzle and the bearer has his tray in his
+     hand; on the move the piece rides on its wheels behind the gunner with the strap at his right
+     hand. Laid on a point five hundred off it fires its ten rounds, it reaches 570 and it takes a
+     smoke mission, with the bursts switched off for the reason the self-propelled guns' row gives.
+     A man of it killed goes down as one of the crew, and a brain on his slot with a Kazarma standing
+     buys one. --- */
+  const pm = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {}, dt = 1 / 30;
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    out.makes = W.makesOf(kb).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(kb, 'sv_mor'); out.qHq = q(hq, 'sv_mor');
+    const D = W.UNITS.sv_mor;
+    out.name = D.name; out.bunk = W.bunkUnit(W.BUNKUP.mor, own);
+    /* open ground with room round it for the crew's places, found the way the ZiS-3's is */
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
+    let at = null;
+    for (let r = 200; r < 1400 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x = hq.x + r * Math.cos(k * Math.PI / 8), y = hq.y + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    out.open = !!at;
+    if (!at) at = W.nearestFree(hq.x + 200, hq.y);
+    const u = W.spawnUnit(own, 'sv_mor', at.x, at.y, 0);
+    out.men = u.models.length;
+    out.baked = ['sv_atg', 'sv_atb'].every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_STAND] && W.MODELS.man[v][W.POSE_WALK]) &&
+                !!(W.MODELS.served.sv_mor && W.MODELS.served.sv_mor.mate) && !!(W.MODELS.gun.sv_mor && W.MODELS.gunPk.sv_mor);
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.setup = 0; u.packed = false; u.pack = 0;
+    step(4);
+    out.set = W.gunSet(u);
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.poses = u.models.map(m => m.pose).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [(dx * cs + dy * sn) / W.FIG_SCALE, (-dx * sn + dy * cs) / W.FIG_SCALE]; };
+    const r1 = rel(u.models[1]), r2 = rel(u.models[2]);
+    out.loader = r1.map(v => +v.toFixed(1)).join(',');
+    out.loaderRight = r1[1] > 2 && Math.abs(r1[0] - D.gunMate.at[0]) < 2;
+    out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
+    out.bearer = u.coverSlots && u.coverSlots[2] ? 'cover' : r2[0] < 0 && r2[1] < -6;
+    out.bpos = r2.map(v => Math.round(v)).join(',');
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.sv_mor;
+    const mz = W.muzzlePoint(u, u.models[0], 0);
+    out.muz = Math.hypot(mz.x - gp.x - cs * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - sn * D.gunMuz[0] * W.FIG_SCALE) < 1;
+    out.tray = (W.mgCarryAt(u, u.models[2], 2, 'sv_atb') ? W._mgc.buf : null) === W.MODELS.carry.box82;
+    /* packed, the piece is behind the gunner in his own frame, with the strap's end at his side */
+    u.packed = true;
+    out.packMesh = W.teamMesh(u) === W.MODELS.gunPk.sv_mor;
+    const gq = W.gunPost(u), g0 = u.models[0], ex = gq.x - g0.x, ey = gq.y - g0.y;
+    out.back = +((ex * cs + ey * sn) / W.FIG_SCALE).toFixed(1); out.side = +((-ex * sn + ey * cs) / W.FIG_SCALE).toFixed(1);
+    u.packed = false;
+    /* a mission on a point five hundred off, on whichever bearing of eight keeps it on the map */
+    const boom = W.explode;
+    W.explode = function () {};
+    let tx = 0, ty = 0;
+    for (let k = 0; k < 8; k++) {
+      const a = u.facing + k * Math.PI / 4;
+      tx = gp.x + Math.cos(a) * 500; ty = gp.y + Math.sin(a) * 500;
+      if (tx > 80 && ty > 80 && tx < W.WORLD.w - 80 && ty < W.WORLD.h - 80) break;
+    }
+    out.reach = W.barrageRange(u);
+    out.laid = !!W.orderBarrage(u, tx, ty); out.n = u.barrage ? u.barrage.left : 0;
+    let fired = 0;
+    for (let i = 0; i < 30 * 60 && u.barrage; i++) {
+      const n0 = u.barrage.left;
+      W.updateUnit(u, dt); W.updateModels(u, dt); W.updateShots(dt); G.t += dt;
+      if (!u.barrage || u.barrage.left < n0) fired++;
+    }
+    out.fired = fired; out.left = u.barrage ? u.barrage.left : 0;
+    out.smoke = W.orderBarrage(u, tx, ty, true) && u.barrage && u.barrage.smoke ? u.barrage.left : 0;
+    u.barrage = null;
+    W.explode = boom; G.shots.length = 0;
+    /* a man of it goes down as one of the crew */
+    const mk = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, mk, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    W.killUnit(u);
+    G.units.slice().forEach(v => { if (!v.dead) W.killUnit(v); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Kazarma standing and nothing of the mortar on its tally, and a
+       machine gun team of theirs by their own headquarters to want a tube against: with the German
+       brain switched off for the earlier rows the Red Army held more ground than the enemy, and a
+       brain holding more ground with nothing for a tube to do buys none */
+    out.madePm = G.made[own].sv_mor || 0; G.made[own].sv_mor = 0;
+    const ghq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0], mp0 = W.nearestFree(ghq.x, ghq.y + 160);
+    W.__pmMg = W.spawnUnit('ger', 'hr_mg', mp0.x, mp0.y, 0);
+    W.__pmAi = W.slotOf('ger').ai; W.slotOf('ger').ai = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    /* the Kazarma's own vehicles standing, its queues empty and money in the till: the ladder buys
+       back whatever has died, the row above killed everything, and a T-20 bought back at the Kazarma
+       holds its queue for the whole of the row, so the post's list with the tube on it never ran */
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    const kz = W.nearestFree(hq.x - 160, hq.y);
+    W.spawnUnit(own, 'sv_t20', kz.x, kz.y, 0);
+    W.spawnUnit(own, 'sv_zis3', kz.x - 60, kz.y + 70, 0); W.spawnUnit(own, 'sv_zis3', kz.x - 60, kz.y - 70, 0);
+    W.__pmTill = [G.res[own].mp, G.res[own].fu];
+    G.res[own].mp = Math.max(G.res[own].mp, 3000); G.res[own].fu = Math.max(G.res[own].fu, 600);
+    W.__pmq = []; W.__pmU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__pmU.apply(this, arguments); if (r && b.own === own) W.__pmq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const pmAi = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.queueUnit = W.__pmU; W.slotOf(own).ai = 0; W.slotOf('ger').ai = W.__pmAi;
+    G.units.slice().forEach(u => { if (!u.dead && (u.own === own || u === W.__pmMg)) W.killUnit(u); });
+    G.res[own].mp = W.__pmTill[0]; G.res[own].fu = W.__pmTill[1];
+    return { q: W.__pmq.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Kazarma raises the 82-PM-41, a mortar of three men that rides on its wheels',
+     /sv_mor/.test(pm.makes) && pm.q === 'sv_mor' && pm.qHq === 'refused' && pm.name === '82 mm Mortar 82-PM-41' && pm.bunk === 'sv_mor' &&
+     pm.men === 3 && pm.baked && pm.set && pm.vars === 'sv_atg,sv_atg,sv_atb' && /^11,11,/.test(pm.poses) &&
+     pm.loaderRight && pm.loaderFaces && pm.bearer && pm.mesh && pm.muz && pm.tray && pm.packMesh &&
+     pm.back < -18 && pm.back > -27 && pm.side > 1 && pm.side < 4 &&
+     pm.reach === 570 && pm.laid && pm.n === 10 && pm.fired === 10 && pm.left === 0 && pm.smoke > 0 &&
+     pm.bodyNat === 'sov_at' && /sov_bar:sv_mor/.test(pmAi.q),
+     `the Kazarma makes ${pm.makes} and queues ${pm.q}, the Shtab ${pm.qHq} it; named ${pm.name}, the bunker's mortar pit ${pm.bunk}; ` +
+     `${pm.men} men, the variants, the served bodies and the two meshes ${pm.baked ? 'baked' : 'NOT baked'}; halted ` +
+     `${pm.set ? 'set up' : 'NOT set up'} as ${pm.vars} in poses ${pm.poses}, the loader at ${pm.loader} ` +
+     `${pm.loaderRight ? 'at the right of the tube' : 'NOT at the right of the tube'} and ${pm.loaderFaces ? 'facing it' : 'NOT facing it'}` +
+     `${pm.open ? '' : ' (no open ground)'}, the bearer ${pm.bearer === 'cover' ? 'in cover' : pm.bearer ? 'beside the gunner' : 'NOT in place (' + pm.bpos + ')'}, ` +
+     `the piece ${pm.mesh ? 'set up' : 'WRONG'}, the flash ${pm.muz ? 'at the muzzle' : 'OFF the muzzle'}, the tray ${pm.tray ? 'in his hand' : 'MISSING'}; ` +
+     `packed ${pm.packMesh ? 'on its wheels' : 'NOT on its wheels'} at ${pm.back},${pm.side} from the gunner; it reaches ${pm.reach}, laid ` +
+     `${pm.laid ? 'a mission of ' + pm.n : 'NO mission'} and fired ${pm.fired} with ${pm.left} left, and a smoke mission of ${pm.smoke}; ` +
+     `killed went down as ${pm.bodyNat}; a brain with the Kazarma standing (and ${pm.madePm} on the tally already, which the row ` +
+     `takes off it) queued ${pmAi.q}`);
 
   /* --- what a battle holds on the card. An iPhone tab is killed for memory without a word
      on the console, and a phone ran Saint-Lô for four seconds before it was: the buffers were
@@ -7878,7 +10514,7 @@ for (const device of TARGETS) {
              cols: document.querySelectorAll('#edstart .edscol').length, on: window.ED.on, small, checked,
              hScroll: document.documentElement.scrollWidth - window.innerWidth };
   });
-  await page.click('#edsdup-ortona');
+  await page.click('#edsdup-stlo');
   await page.waitForFunction(() => window.ED.on, null, { timeout: 120000 });
   await frames(page, 2);
   const ed = await page.evaluate(() => {
@@ -7947,9 +10583,9 @@ for (const device of TARGETS) {
              find, found, placed, mine, pal, lineGone, selKept, toolDown, modes, cols, rowsSmall,
              saved: document.getElementById('edsaved').textContent };
   });
-  ok('the editor opens on three ways to start', chooser.cols === 3 && chooser.tpl === 5 && chooser.dup === 4 && !chooser.on && chooser.small === 0 && chooser.hScroll <= 0,
+  ok('the editor opens on three ways to start', chooser.cols === 3 && chooser.tpl === 5 && chooser.dup === 2 && !chooser.on && chooser.small === 0 && chooser.hScroll <= 0,
      `${chooser.tpl} templates, ${chooser.dup} maps to copy, ${chooser.checked} controls with ${chooser.small} small, editor ${chooser.on ? 'ALREADY OPEN' : 'not yet open'}`);
-  ok('map editor opens on the copy, with no page of instructions over it', ed.on && !ed.helped && ed.named === 'Ortona (copy)',
+  ok('map editor opens on the copy, with no page of instructions over it', ed.on && !ed.helped && ed.named === 'Saint-Lô (copy)',
      `${ed.cats} categories, ${ed.tools} tools, named "${ed.named}", ${ed.helped ? 'panel ' + ed.helped + ' OPEN' : 'nothing over the map'}, "${ed.saved}"`);
   ok('a tool is found by what it is called or what it is for', ed.found,
      `road: ${ed.find.road.slice(0, 3)} | house: ${ed.find.house.slice(0, 3)} | crater: ${ed.find.crater.slice(0, 3)} | trees: ${ed.find.trees.slice(0, 3)}`);
@@ -8054,28 +10690,57 @@ for (const device of TARGETS) {
     W.edAdd(W.edNewEntity(W.edToolById('house').t, 1700, 300)); const nMid = E().length;
     W.edPointRestore(W.edPointList().findIndex(p => p.why === 'gate'));
     out.points = { nBefore, nMid, nAfter: E().length };
+    /* The drills below want open ground: a street with nothing round it, an area for a village,
+       one for fields, one for a wood and one for a brush. They were laid at fixed places on
+       Ortona, and Saint-Lô has no open ground that size on either half once its trees and walls
+       are counted, so a block of the first half and its twin are cleared first, as one more edit
+       the undo at the end takes back. */
+    const my = W.edMY(), O = my ? { x: 200, y: my + 160 } : { x: 120, y: 150 };
+    const RB = { x0: O.x - 20, y0: O.y - 20, x1: O.x + 1140, y1: O.y + 900 };
+    const rm0 = W.edMirPt(RB.x0, RB.y0), rm1 = W.edMirPt(RB.x1, RB.y1);
+    const RS = [RB, { x0: Math.min(rm0.x, rm1.x), y0: Math.min(rm0.y, rm1.y), x1: Math.max(rm0.x, rm1.x), y1: Math.max(rm0.y, rm1.y) }];
+    const inR = (x, y, pad) => RS.some(r => x > r.x0 - pad && x < r.x1 + pad && y > r.y0 - pad && y < r.y1 + pad);
+    const touches = e => {
+      if (e.t === 'hq' || e.t === 'sector') return false;
+      const lp = e.pts ? e.pts.map(q => q.x === undefined ? { x: q[0], y: q[1] } : q) : e.x1 !== undefined ? [{ x: e.x1, y: e.y1 }, { x: e.x2, y: e.y2 }] : null;
+      if (lp) {
+        const pw = (e.width || 24) / 2 + 20;
+        for (let i = 0; i + 1 < lp.length; i++) {
+          const p = lp[i], q = lp[i + 1], n = Math.max(1, Math.ceil(Math.hypot(q.x - p.x, q.y - p.y) / 20));
+          for (let k = 0; k <= n; k++) if (inR(p.x + (q.x - p.x) * k / n, p.y + (q.y - p.y) * k / n, pw)) return true;
+        }
+        return lp.length === 1 && inR(lp[0].x, lp[0].y, pw);
+      }
+      const b = W.edBBox(e);
+      return RS.some(r => b.x1 > r.x0 && b.x0 < r.x1 && b.y1 > r.y0 && b.y0 < r.y1);
+    };
+    ED.sel = E().filter(touches); W.edDeleteSel(); ED.sel = [];
     /* a house put down beside a street stands back off its kerb with its front to it, either
        side, asked of that street alone so the rule and not the town round it is measured */
-    W.edAddRoads(W.edLineEntity(rt, [{ x: 180, y: 300 }, { x: 600, y: 300 }]));
-    const nr = E().find(e => e.t === 'road' && e.pts.some(p => Math.hypot(p.x - 600, p.y - 300) < 1)), nhw = (nr.width || 48) / 2;
+    const ry = O.y + 120;
+    W.edAddRoads(W.edLineEntity(rt, [{ x: O.x + 30, y: ry }, { x: O.x + 450, y: ry }]));
+    const nr = E().find(e => e.t === 'road' && e.pts.some(p => Math.hypot(p.x - (O.x + 450), p.y - ry) < 1)), nhw = (nr.width || 48) / 2;
     const keepE = ED.data.entities; ED.data.entities = [nr];
-    const sbS = W.edSnapBuilding({ x: 390, y: 300 + nhw + 70, w: 90, h: 80 }), sbN = W.edSnapBuilding({ x: 390, y: 300 - nhw - 70, w: 90, h: 80 });
+    const sbS = W.edSnapBuilding({ x: O.x + 240, y: ry + nhw + 70, w: 90, h: 80 }), sbN = W.edSnapBuilding({ x: O.x + 240, y: ry - nhw - 70, w: 90, h: 80 });
     ED.data.entities = keepE;
-    out.frontage = sbS && sbN ? { front: [sbS.front, sbN.front], kerb: [Math.round(sbS.y - 40 - (300 + nhw)), Math.round((300 - nhw) - (sbN.y + 40))] } : null;
+    out.frontage = sbS && sbN ? { front: [sbS.front, sbN.front], kerb: [Math.round(sbS.y - 40 - (ry + nhw)), Math.round((ry - nhw) - (sbN.y + 40))] } : null;
     /* an area sketched round that street fills with houses along it that clash with nothing,
        and the far side's twin with as many; fields and woods fill too */
     const mk = (kind, p) => { const e = W.edLineEntity(W.edToolById('z' + kind).t, p)[0]; W.edAddMany([e]); return e; };
-    const v = mk('village', [{ x: 150, y: 180 }, { x: 640, y: 180 }, { x: 640, y: 430 }, { x: 150, y: 430 }]);
-    const fz = mk('fields', [{ x: 150, y: 1380 }, { x: 700, y: 1380 }, { x: 700, y: 1780 }, { x: 150, y: 1780 }]);
-    const wz = mk('woods', [{ x: 760, y: 1450 }, { x: 980, y: 1400 }, { x: 1020, y: 1700 }, { x: 800, y: 1760 }]);
+    const v = mk('village', [{ x: O.x, y: O.y }, { x: O.x + 490, y: O.y }, { x: O.x + 490, y: O.y + 250 }, { x: O.x, y: O.y + 250 }]);
+    const fx0 = O.x + 560, fy0 = O.y, wx0 = O.x, wy0 = O.y + 470;
+    const fz = mk('fields', [{ x: fx0, y: fy0 }, { x: fx0 + 550, y: fy0 }, { x: fx0 + 550, y: fy0 + 400 }, { x: fx0, y: fy0 + 400 }]);
+    const wz = mk('woods', [{ x: wx0, y: wy0 + 50 }, { x: wx0 + 220, y: wy0 }, { x: wx0 + 260, y: wy0 + 300 }, { x: wx0 + 40, y: wy0 + 360 }]);
     t1 = performance.now(); W.edFill([v, fz, wz]); const fillMs = Math.round(performance.now() - t1);
     const of = z => E().filter(e => e.gid && e.gid === z.fill), vm = of(v), tw = W.edTwinZone(v);
     out.fill = { ms: fillMs, houses: vm.filter(e => e.t === 'house').length, conf: W.edConflicts(vm, vm).map(q => q.msg), twin: tw ? of(tw).filter(e => e.t === 'house').length : 0,
                  fields: of(fz).filter(e => e.t === 'field').length, trees: of(wz).filter(e => e.t === 'tree').length };
     /* an area brush lays its trees no nearer each other than its gap, as one group */
     const ab = W.edToolById('agrove').t; W.edSetTool(ab); ED.brush.r = 70; const gap = W.edAreaSet(ab).gap, nb = E().length;
-    W.edAreaFill(ab, [{ x: 1100, y: 1650 }, { x: 1160, y: 1680 }, { x: 1220, y: 1700 }]);
-    const br = E().slice(nb).filter(e => e.t === 'tree' && e.x < 1400); let near = 1e9;
+    /* and only the stroke's own trees: the twin across the line is a group of its own */
+    const abx = O.x + 720, aby = O.y + 640;
+    W.edAreaFill(ab, [{ x: abx - 60, y: aby - 30 }, { x: abx, y: aby }, { x: abx + 60, y: aby + 20 }]);
+    const br = E().slice(nb).filter(e => e.t === 'tree' && Math.hypot(e.x - abx, e.y - aby) < 200); let near = 1e9;
     for (let i = 0; i < br.length; i++) for (let j = i + 1; j < br.length; j++) near = Math.min(near, Math.hypot(br[i].x - br[j].x, br[i].y - br[j].y));
     W.edSetTool(null);
     out.brush = { n: br.length, gap, near: Math.round(near), grouped: br.length > 1 && br.every(e => e.gid && e.gid === br[0].gid) };

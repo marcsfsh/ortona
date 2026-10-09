@@ -1,0 +1,8 @@
+{ "image": "shots/ref/sv_ba64.png", "key": "sv_ba64", "prop": "baShow", "args": [],
+  "note": "A four-view of the BA-64B with two side views and the DT's mount drawn apart. The sheet has no scale; the side views agree with the 2.10 m wheelbase at 81 px/m, and the plan and the two ends with the 1.69 m over the mudguards and the 1.44 m track at the same scale.",
+  "views": {
+    "side":   { "nose": "left", "crop": [0, 0, 300, 165], "ppm": 81, "at": [12.28, 0, 0], "px": [55, 157], "k": 3 },
+    "side_l": { "nose": "right", "crop": [0, 315, 300, 165], "ppm": 81, "at": [12.28, 0, 0], "px": [246, 475], "k": 3 },
+    "plan":   { "nose": "left", "crop": [0, 160, 300, 155], "ppm": 81, "at": [12.28, 0, 0], "px": [55, 238], "k": 3 },
+    "front":  { "crop": [335, 0, 160, 165], "ppm": 81, "at": [0, 0, 0], "px": [415.5, 159], "k": 4 },
+    "rear":   { "crop": [335, 160, 160, 155], "ppm": 81, "at": [0, 0, 0], "px": [415.5, 314], "k": 4 } } }

@@ -1,0 +1,7 @@
+{ "image": "shots/ref/sv_zsu37.png", "key": "sv_zsu37", "prop": "zkShow", "args": [0],
+  "note": "A four-view of the ZSU-37 with no scale on the sheet. Its six road wheels agree with the SU-76M drawing's at 73.6 px/m along the side and the plan; the front and the rear agree with the same track centres at 78.8 and 75.2 across, and are read at 74.5 up. The chassis is the SU-76M's, which this sheet draws about 0.9 units higher on the same wheels, so the side, front and rear are pinned at the deck rather than the ground.",
+  "views": {
+    "side":  { "nose": "left", "crop": [40, 0, 420, 178], "ppm": 73.6, "at": [17.85, 0, 16.2], "px": [143.75, 64.0], "k": 3 },
+    "plan":  { "nose": "left", "crop": [55, 362, 400, 216], "ppm": 73.6, "ppmv": 76.6, "at": [0, 0, 16], "px": [256, 471], "k": 3 },
+    "front": { "crop": [0, 182, 232, 172], "ppm": 78.8, "ppmv": 74.5, "at": [0, 0, 16.2], "px": [119.5, 246.0], "k": 4 },
+    "rear":  { "crop": [275, 182, 220, 172], "ppm": 75.2, "ppmv": 74.5, "at": [0, 0, 16.2], "px": [383, 248.5], "k": 4 } } }

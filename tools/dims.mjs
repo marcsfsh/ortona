@@ -99,6 +99,59 @@ const REAL = {
                the sprocket to the tail at the scale of its running gear, which with the towing eyes reads 4.73, and
                draws its gun a tenth long: built to the Pak 40's published length with its breech where the drawing
                has it, the length over the gun reads 6.2 m */
+  sv_t20:    { name: 'Komsomolets T-20',    len: 3.45,  gun: 3.45,   wid: 1.86,  hgt: 1.58,
+               clear: 0.30 },   /* 3.45 m over the towing fittings, 1.86 m wide, 1.58 m high and 300 mm of
+               clearance. The drawing it is laid over (tools/ref/sv_t20.json) agrees with the length at its own
+               scale bar and puts the width over the rails at the seats and the height at the backrests */
+  sv_ba64:   { name: 'BA-64B',              len: 3.67,  gun: 3.67,   wid: 1.69,  hgt: 1.90,
+               clear: 0.21 },   /* 3.67 m over the spare wheel, 1.69 m over the mudguards, 1.90 m to the rim of
+               the turret and 210 mm under the axles. The drawing it is laid over (tools/ref/sv_ba64.json) agrees
+               with the wheelbase, the width and the track at one scale, and at that scale it is 3.64 m from the
+               nose to the spare and 1.87 m to the rim */
+  sv_t34:    { name: 'T-34/76',             len: 5.92,  gun: 6.62,   wid: 3.00,  hgt: 2.40,
+               body: 2.53, bodyZ: 1.20, roof: 1.85, clear: 0.40 },   /* the published 5.92 m of hull, 6.62 m over
+               the gun, 3.00 m wide, 2.40 m high and 400 mm of clearance. The drawing it is laid over
+               (tools/ref/sv_t34.json) agrees with the width at its own scale bar, and at that scale it is 6.2 m over
+               the fenders and 2.36 m to the top of the periscope on the turret; the body across the feet of the side
+               plates and the roof between their tops are the drawing's */
+  sv_t3485:  { name: 'T-34-85',             len: 6.10,  gun: 8.15,   wid: 3.00,  hgt: 2.72,
+               body: 2.53, bodyZ: 1.20, roof: 1.85, clear: 0.40 },   /* the published 6.10 m of hull, 8.15 m
+               over the gun, 3.00 m wide, 2.72 m high and 400 mm of clearance. The hull is the T-34/76's, laid over
+               the 1941 drawing; the drawing of this one (tools/ref/sv_t3485.json) agrees with that hull to a pixel
+               and puts the top of the periscope on the cupola's lid at 2.70 m */
+  sv_su85:   { name: 'SU-85',               len: 6.10,  gun: 8.15,   wid: 3.00,  hgt: 2.45,
+               body: 2.52, bodyZ: 1.20, roof: 1.94, clear: 0.40 },   /* the published 6.10 m of hull, 8.15 m
+               over the gun, 3.00 m wide, 2.45 m high and 400 mm of clearance. The drawing it is laid over
+               (tools/ref/sv_su85.json) agrees with the width and the T-34's road wheels at one scale, and at that
+               scale it is 6.02 m over the hull and 2.34 m to the top of the commander's periscope; the body across
+               the feet of the casemate's sides and the roof between their tops are the drawing's */
+  sv_su122:  { name: 'SU-122',              len: 6.10,  gun: 6.95,   wid: 3.00,  hgt: 2.24,
+               body: 2.52, bodyZ: 1.20, roof: 1.94, clear: 0.40 },   /* the SU-85's hull, 6.95 m over the
+               howitzer, 3.00 m wide and 2.235 m high. The drawing it is laid over (tools/ref/sv_su122.json) agrees
+               with the T-34's road wheels and track at one scale, and at that scale it is 6.89 m over the gun and
+               2.15 m to the top of the hood on the roof */
+  sv_is2:    { name: 'IS-2',                len: 6.77,  gun: 9.83,   wid: 3.07,  hgt: 2.73,
+               clear: 0.42 },   /* the published 6.77 m of hull, 9.83 m over the gun, 3.07 m wide over the tracks,
+               2.73 m high and 420 mm of clearance. The drawing it is laid over (tools/ref/sv_is2.json) is taken off
+               the hull, and stands the fuel tanks on the rear fenders out past the tracks, so the card reads the
+               width over the tanks at 3.36 */
+  sv_bm13:   { name: 'BM-13N Katyusha',     len: 6.12,  gun: 6.12,   wid: 2.21,  hgt: 2.86,
+               clear: 0.32 },   /* off the drawing it is laid over (tools/ref/sv_bm13.json), at its own scale bar,
+               which agrees with the US6's published 148 in from the front axle to the middle of the bogie and 44 in
+               between the bogie's axles: 6.12 m from the bumper to the tail of the frame, 7.06 m over the fins of the
+               rockets lying on the rails, which the card does not count, 2.21 m wide, 2.86 m to the top of the rack
+               lying down and 320 mm under the differentials */
+  sv_su76:   { name: 'SU-76M',              len: 4.966, gun: 5.00,   wid: 2.715, hgt: 2.10,
+               clear: 0.30 },   /* the published 4.966 m of hull, 5.00 m with the gun forward, 2.715 m over the
+               fenders, 2.10 m to the top of the walls and 300 mm of clearance. The drawing it is laid over
+               (tools/ref/sv_su76.json) agrees with the height and the length over the tracks at one scale, and
+               carries the fender guards out past the sprocket and the idler, so the card reads 5.28 m over the
+               guards, which is what the ZSU-37 on the same chassis is published at */
+  sv_zsu37:  { name: 'ZSU-37',              len: 5.29,  gun: 5.29,   wid: 2.745, hgt: 2.18,
+               clear: 0.30 },   /* the published 5.29 m of hull, 2.745 m over the fenders, 2.18 m to the top of
+               the box and 300 mm of clearance; the gun laid level does not reach the nose. The drawing it is laid
+               over (tools/ref/sv_zsu37.json) is taken off the SU-76M's road wheels, and at that scale the box is
+               2.13 m high */
   am_weasel: { name: 'M29C Weasel',         len: 4.79,  gun: 4.79,   wid: 1.70,  hgt: 1.80,
                clear: 0.28 },   /* 15 ft 8.5 in over the cells, 5 ft 7 in wide over the tracks, 5 ft 11 in high
                and 11 in of clearance. The drawing it is laid over (tools/ref/am_weasel.json) stands the
@@ -210,6 +263,22 @@ const PROBE = {
   hr_wespe:  { topZ: 4.5, tailX: -28.7 },   /* topZ holds the tube, laid up as the game lays it, out of the
                casemate's height, and tailX the silencer across the tail out of the length */
   hr_marder: { hullZ: 30.0 },   /* hullZ holds the two aerials out of the height, which is to the shield */
+  sv_t20:    { noMount: true, hullZ: 18.9 },   /* the mount is a ball in the front plate, and hullZ holds the open door out */
+  sv_t34:    { bodyZ: 14.0, roofZ: 17.9, xLo: -20.0, xHi: -16.0, straddle: true, hullZ: 30.0 },   /* the slice is
+               taken over the engine, behind the boxes on the side plates, above the fenders; a side plate
+               straddling it gives its foot, and the roof's slice is just over the roof, where only its edge
+               reaches; hullZ holds the aerial out */
+  sv_t3485:  { bodyZ: 14.0, roofZ: 17.9, xLo: 0.0, xHi: 4.0, straddle: true, topZ: 15.0 },   /* the slice is
+               taken ahead of the fuel tanks and between the brackets of the rails; topZ holds the aerial on the
+               turret out */
+  sv_su85:   { bodyZ: 14.0, roofZ: 23.1, xLo: .5, xHi: 4.5, straddle: true },   /* the slice is taken across the
+               casemate between its rear plate and the boxes on the fenders, ahead of the fuel tanks; the roof's
+               just over the roof, where only its edge reaches */
+  sv_su122:  { bodyZ: 14.0, roofZ: 23.1, xLo: .5, xHi: 4.5, straddle: true },   /* the SU-85's slices */
+  sv_is2:    { topZ: 14.0 },   /* topZ holds the aerial on the turret out */
+  sv_bm13:   {},
+  sv_su76:   {},
+  sv_zsu37:  {},
   am_weasel: { noMount: true, hullZ: 23.0, tailX: -28.2 },   /* the mount is a gun on a post, hullZ holds the
                aerial out and tailX the rudders folded up behind the stern cell */
   ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },

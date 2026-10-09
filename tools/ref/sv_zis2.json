@@ -1,0 +1,6 @@
+{ "image": "shots/ref/sv_zis2.png", "key": "sv_zis2", "up": [], "crew": false,
+  "note": "The level side view and the plan, both with the trails open, at 39.7 px/m along the gun and across it; the front view at 39.05, where the wheels are on the ZiS-3's track.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 115, 265, 58], "ppm": 39.7, "at": [0, 0, 0], "px": [130.6, 166.9], "k": 4 },
+    "plan":  { "nose": "left", "crop": [0, 168, 265, 100], "ppm": 39.7, "at": [0, 0, 0], "px": [131.9, 239.25], "k": 4 },
+    "front": { "crop": [0, 266, 76, 61], "ppm": 39.05, "at": [0, 0, 0], "px": [37.5, 324.5], "k": 8 } } }
