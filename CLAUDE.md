@@ -14,21 +14,35 @@ their stats are listed in `docs/soviet-roster.csv`, and none of them is built un
 by name. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
-Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
-**The Gothic Line**, the Foglia valley at the end of August 1944, is two ridges with
-fourteen hundred units of no man's land between them, laid out for four players and
-mirrored about the midline to the unit. **Omaha Beach**, the Dog and Easy sectors on the
-morning of the 6th of June 1944, is the first of a second theatre and the first map that
-is not a field with a headquarters at either end: a corridor 1500 across and 4000 deep,
-the Americans starting on the sand at the bottom among the craft that brought them in and
-the Germans in a manor in the bocage at the top, with the seawall and the Atlantic Wall
-across the middle and two draws up the bluff behind it that are the only way armour gets
-off the beach. **Saint-Lô**, the 18th of July 1944, is the town on the Vire the 29th came
-into that evening, laid for three a side: 3800 by 2800, the old town walled on its rock in
-the middle, the river and the station on the right and the faubourgs on the left, laid in
-five stages (see *Saint-Lô*). They are picked on the title screen under GROUND and
-all four open in the editor; Ortona is the one ticked at the start, because every card and every
-gate row that does not name a ground deploys on it.
+Two maps ship and a third is kept hidden. **Omaha Beach**, the Dog and Easy sectors on the
+morning of the 6th of June 1944, is the first map that is not a field with a headquarters at
+either end: a corridor 1500 across and 4000 deep, the Americans starting on the sand at the
+bottom among the craft that brought them in and the Germans in a manor in the bocage at the
+top, with the seawall and the Atlantic Wall across the middle and two draws up the bluff
+behind it that are the only way armour gets off the beach. **Saint-Lô**, the 18th of July
+1944, is the town on the Vire the 29th came into that evening, laid for three a side: 3800 by
+2800, the old town walled on its rock in the middle, the river and the station on the right
+and the faubourgs on the left, laid in five stages (see *Saint-Lô*). **The Gothic Line**, the
+Foglia valley at the end of August 1944, two ridges with fourteen hundred units of no man's
+land between them, is hidden (`MAPS.gothic.hidden`): neither the title screen nor the editor
+offers it, and it is kept to be rebuilt as a map of the eastern front, so the map check and the
+gate still read it and it does not rot while it waits.
+
+**Ortona is gone.** It was the first map, the town fought one building at a time in December
+1943, and it was taken out of the game whole: its map data (`defaultMapData`), its entry in
+`MAPS`, its button, its card in the editor's chooser, its line in the editor's load panel and
+menu, and the editor's ORTONA template. What is left of it is the country it stood in,
+`LANDS.ortona` (the Adriatic coast, the cliff, the valloni and the railway in its cutting),
+because the editor's own templates (country, village, town and ruins) are laid on it when a map
+names no country, along with the Italian town house and the rest of the pieces Ortona was built
+of. Every figure in this file measured on Ortona, which is most of the older ones, is history:
+it was true of that map and cannot be measured again.
+
+The two grounds are picked on the title screen under GROUND and both open in the editor. The
+title screen keeps the last one picked on the device (`ORT_MAP`, `mapLoad`) and opens on Omaha
+when nothing is kept, and a key that names a map it no longer offers is no choice at all. The
+tools are told which ground to run on instead (see *Verifying*): Saint-Lô, unless a card is
+given `--map`.
 
 **The title screen is a Signal Corps field message** (`#start`), and the game is called OMAHA on
 it and in the browser's tab. The whole menu is one printed form in blue ruled boxes on a desk
@@ -108,14 +122,20 @@ node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
 ```
 
-**`--map=gothic`, `--map=omaha` or `--map=stlo` runs a card on the other ground.** `harness.deploy` clicks the title
-screen's own GROUND control, which is the one path that also decides what a later
-`startGame()` inside a probe keeps, so `shoot`, `move`, `brain` and `skirmish` all take
-it and nothing else had to change. A card run only on Ortona is a card that has never
-seen a map with 1,400 units of open ground on it -- the movement card put the Gothic Line
-at 131 paths found against Ortona's 12,177, because Ortona's are nearly all the
-straight-line shortcut down a street and here the belts and the walls make the search do
-real work.
+**Every card runs on Saint-Lô unless it is given `--map=omaha` (or `--map=gothic`, for the
+hidden map).** `harness.DEFAULT_MAP` is the ground: `openGame` writes it into the title
+screen's kept choice before the page loads, so a probe that calls `startGame()` straight after
+a reload builds it, and `harness.deploy` clicks its button on the title screen even when it is
+the default, so that a `--base` run on an older file, which has a default of its own, is fought
+on the same ground. A ground the title screen hides has no button and is set instead. Ortona
+was the ground every card was written on until it was taken out of the game; a comparison
+against a revision from before then compares Saint-Lô with Saint-Lô only because of that
+click. The cards with places of their own were moved with it: the movement card's five
+journeys and the sight card's six positions are Saint-Lô's (up the ramp onto the rock, down the
+Bayeux road, over the Vire; the three victory flags, the shelf, the far bank). A card run only on
+one ground is a card that has never seen the other: the movement card put the Gothic Line at
+131 paths found against Ortona's 12,177, because Ortona's were nearly all the straight-line
+shortcut down a street and the belts and the walls made the search do real work.
 
 A `SessionStart` hook (`.claude/hooks/session-start.sh`) runs `npm install` and
 confirms Chromium is present, so a fresh session is ready without being asked.

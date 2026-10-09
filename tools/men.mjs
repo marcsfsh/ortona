@@ -775,11 +775,13 @@ function PIX(opt) {
      properties of the ground as much as of the figure, so a harness change that moved
      the stage moved four verdicts with it -- two pose pairs by one pixel, and the FJ from
      darker than the ground to brighter, because this map has pale sand in one place and
-     dark dirt in another. The spot is the open ground east of the town, where the card
-     was calibrated. If it ever has to move, every threshold here is re-read on the new
-     ground first and the move is written down. */
+     dark dirt in another. The spot was the open ground east of Ortona, where the card was
+     calibrated, until Ortona was taken out of the game. It is the open, levelled ground of
+     the American base area on Saint-Lô now, to the left of the centre headquarters, which
+     nothing stands on and nothing is dug into. If it ever has to move, every threshold
+     here is re-read on the new ground first and the move is written down. */
   const O = window.__o;
-  const spot = { x: 2180, y: 1140, dev: 0, clear: 120, open: 120, z: window.groundZ(2180, 1140) };
+  const spot = { x: 1700, y: 2470, dev: 0, clear: 120, open: 120, z: window.groundZ(1700, 2470) };
   const W = cv.width, H = cv.height;
   const realCast = window.castUnit;
   function grab() { render(); const b = new Uint8Array(W * H * 4); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, b); return b; }

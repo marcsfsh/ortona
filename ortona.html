@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#12150e">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="A historically grounded isometric tactical battle set at Ortona, December 1943.">
+<meta name="description" content="A historically grounded tactical battle in Normandy, June and July 1944: Omaha Beach and Saint-Lô.">
 <title>Omaha · Tactical Command</title>
 <style>
 :root{
@@ -954,7 +954,7 @@ body:not(.simple) #tOrders{display:none}
 <div id="editor" class="hidden">
   <div id="edtop">
     <button class="edb ico" id="edmenu" title="Map menu" aria-label="Map menu">☰</button>
-    <button class="edb edname" id="edname" title="Rename the map"><span id="ednametxt">Ortona</span><small id="edsaved"></small></button>
+    <button class="edb edname" id="edname" title="Rename the map"><span id="ednametxt">New map</span><small id="edsaved"></small></button>
     <button class="edb ico" id="edundo" title="Undo (Z)" aria-label="Undo">↶</button>
     <button class="edb ico" id="edredo" title="Redo (Y)" aria-label="Redo">↷</button>
     <button class="edb tog on" id="edmirror" title="Mirror every placement to the other side (M)">MIRROR</button>
@@ -971,8 +971,6 @@ body:not(.simple) #tOrders{display:none}
     <button class="edb wide" id="edmpoints">RESTORE POINTS…</button>
     <button class="edb wide" id="edmtest">TEST SETTINGS…</button>
     <button class="edb wide" id="edmnew">NEW MAP…</button>
-    <button class="edb wide" id="edmortona">RELOAD ORTONA</button>
-    <button class="edb wide" id="edmgothic">RELOAD GOTHIC LINE</button>
     <button class="edb wide" id="edmomaha">RELOAD OMAHA BEACH</button>
     <button class="edb wide" id="edmstlo">RELOAD SAINT-LÔ</button>
     <div class="edh">FILES</div>
@@ -1081,18 +1079,18 @@ body:not(.simple) #tOrders{display:none}
       <div class="cell"><em>PRIORITY</em><b class="pri">URGENT</b></div>
       <div class="cell"><em>FROM</em><b id="mfrom">HQ 29TH INF DIV</b></div>
       <div class="cell"><em>TO</em><b>ALL UNITS</b></div>
-      <div class="cell"><em>DATE-TIME GROUP</em><b id="mdtg">231200 DEC 43</b></div>
+      <div class="cell"><em>DATE-TIME GROUP</em><b id="mdtg">060630 JUN 44</b></div>
     </header>
     <section class="mtext">
       <em class="lbl">TEXT</em>
-      <div class="eyebrow" id="beyebrow">ITALIAN CAMPAIGN · DECEMBER 1943</div>
-      <h2 class="gname">GROUND: <span id="btitle">ORTONA</span></h2>
-      <p class="sub" id="bsub">Eight days of close fighting in a rain-soaked Adriatic town. Take
-        Ortona with the 29th Infantry Division or hold its shattered streets with the
-        352. Infanterie-Division.</p>
-      <div class="brief"><b>PARA A. <span id="bcard0h">URBAN GROUND</span></b> <span id="bcard0">Stone walls, rubble and shell holes decide firefights. Cross streets are killing grounds.</span></div>
-      <div class="brief"><b>PARA B. <span id="bcard1h">ENFILADE</span></b> <span id="bcard1">Linear cover protects across its face. Fire down its length strips two grades of protection.</span></div>
-      <div class="brief"><b>PARA C. OBJECTIVE</b> <span id="objtext">Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.</span></div>
+      <div class="eyebrow" id="beyebrow">US FIRST ARMY · OPERATION OVERLORD · 6 JUNE 1944</div>
+      <h2 class="gname">GROUND: <span id="btitle">OMAHA</span></h2>
+      <p class="sub" id="bsub">Dog and Easy sectors on the morning of D-Day. Bring the 29th Infantry
+        Division up the open sand, over the seawall and through the draws, or hold the Atlantic Wall
+        and the bocage behind it with the 352. Infanterie-Division.</p>
+      <div class="brief"><b>PARA A. <span id="bcard0h">THE SEAWALL</span></b> <span id="bcard0">A man can shelter behind it and fire over it. A tank cannot climb it.</span></div>
+      <div class="brief"><b>PARA B. <span id="bcard1h">THE DRAWS</span></b> <span id="bcard1">Armour gets off the beach only up the Vierville and Les Moulins draws. Infantry can climb the bluff anywhere.</span></div>
+      <div class="brief"><b>PARA C. OBJECTIVE</b> <span id="objtext">The Americans come ashore at the bottom of the map and the Germans hold the wall and the bluff above it. Take the village at the top, or put them back into the sea. Cut-off sectors stop producing resources.</span></div>
       <div class="keys" id="keyhelp">
         <b>LMB</b> select &nbsp; <b>RMB</b> move or attack &nbsp; <b>Q</b>+click attack-move &nbsp; <b>X</b> stop &nbsp; <b>R</b> retreat to HQ<br>
         <b>WASD</b> or edge scroll &nbsp; <b>wheel</b> zoom &nbsp; <b>middle-drag</b> or <b>Z/C</b> rotate &nbsp; <b>ctrl+wheel</b> tilt &nbsp; <b>space</b> jump to HQ &nbsp; <b>tab</b> next idle &nbsp; <b>P</b> pause &nbsp; <b>M</b> mute
@@ -1102,10 +1100,8 @@ body:not(.simple) #tOrders{display:none}
       <section class="msec" data-k="ground">
         <div class="mh"><i>1</i><b>GROUND</b></div>
         <div class="mmaps">
-          <button class="gmap" data-map="omaha" title="Omaha Beach, 6 June 1944: ashore at the water, up twelve hundred units of open sand, over the seawall and up one of two draws into the bocage" aria-pressed="false"><b>OMAHA</b><small>6 JUN 1944</small></button>
+          <button class="gmap on" data-map="omaha" title="Omaha Beach, 6 June 1944: ashore at the water, up twelve hundred units of open sand, over the seawall and up one of two draws into the bocage" aria-pressed="true"><b>OMAHA</b><small>6 JUN 1944</small></button>
           <button class="gmap" data-map="stlo" title="Saint-Lô, 18 July 1944: three a side through the capital of ruins, the old town on its rock over the Vire, the station across the river and the Bayeux road up the left" aria-pressed="false"><b>SAINT-LÔ</b><small>18 JUL 1944</small></button>
-          <button class="gmap" data-map="gothic" title="The Foglia valley, 30 August 1944: two ridges and the no man's land between them" aria-pressed="false"><b>GOTHIC LINE</b><small>30 AUG 1944</small></button>
-          <button class="gmap on" data-map="ortona" title="The old town, 23 December 1943: a street fought one building at a time" aria-pressed="true"><b>ORTONA</b><small>23 DEC 1943</small></button>
         </div>
       </section>
       <section class="msec" data-k="army">
@@ -2208,7 +2204,7 @@ var UNITS = {
     gunAt: 4.7, gunMuz: [3.96, 14.1], gunGrip: [0.90, 1.80, 7.60],
     barrage: { range: 560, r: 54, rof: 2.4, rounds: 10 },
     w: { range: 470, dmg: 60, rof: 4.4, acc: .41, sup: .054, pen: 12, aoe: 34, shell: 1 },
-    desc: 'The German battalion mortar, and the reason a street in Ortona is not a safe street. It shells what the company can see, over the roofs, or it is laid on a patch of ground and puts ten bombs into it faster than it fires on its own. Set it behind a block and it reaches most of the way across the town.'
+    desc: 'The German battalion mortar, and the reason a street in Saint-Lô is not a safe street. It shells what the company can see, over the roofs, or it is laid on a patch of ground and puts ten bombs into it faster than it fires on its own. Set it behind a block and it reaches most of the way across the town.'
   },
   /* The 10.5 cm leFH 18, the light field howitzer of the division's artillery regiment and the
      German opposite of the 105 across the beach: much the same shell out of much the same
@@ -3048,7 +3044,7 @@ function makeSectors() {
      has a different tactical character: fields, rail cut, corso, alleys and squares. */
   /* Nine points on a mirror: two home sectors each, a forward sector each, and the
      three objectives down the midline. Named for the ground they stand on. */
-  if (!G.mapData) G.mapData = defaultMapData();
+  if (!G.mapData) G.mapData = chosenMapData();
   var defs = G.mapData.entities.filter(function (e) { return e.t === 'sector'; });
   G.sectors = defs.map(function (d) { return S(d.id, d.x, d.y, d.type, d.owner || null, (d.nb || []).slice()); });
   /* neighbours: as authored, or the three nearest when a map does not say */
@@ -3180,507 +3176,6 @@ function omDrawX(pts, y) {
 function coastOmaha(x) { return omLine(OM.water, x); }
 function omahaUp(x, y) { return coastOmaha(x) - y; }
 function mainRoadY(x) { return 1038 - clamp((x - 350) / 2250, 0, 1) * 142 + Math.sin(x / 420) * 13; }
-/* ================================================================ the map as data
-   A map is a list of entities in world units plus a height-brush list. The editor edits
-   exactly what the game builds from, so a custom map is this with different entries.
-
-   Ortona is placed rather than generated, and it is placed on a plan rather than by eye.
-   The old town stood on a bluff with the Adriatic along the north edge and the railway
-   in the cutting along the south, and the 1st Canadian Infantry Division came at it from
-   the Moro, which on this map is the west.
-
-   The plan, west to east, because every coordinate below belongs to one of these bands:
-
-       0- 430   the Allied rear: headquarters, farms, olive terraces
-     430- 600   the shelled approach, walked over by the guns before the attack
-     600- 760   the Allied start line: two trench lines and the wire in front of them
-     760- 840   the last of the open ground, and the gate
-     840-2100   the town
-    2100-2320   the German line: wire, then two trenches, dug where the town gives out
-    2320-2800   the German rear
-
-   And in the town, north to south: the coast road, the cathedral quarter, a cross
-   street, the northern blocks, the Corso, the southern blocks, a cross street, the
-   station quarter, the cemetery road, the railway. The blocks are built back to back,
-   because that is what a medieval town is: two ranks of houses sharing a spine wall,
-   with a real street on either side and nothing in between. Every street is wide enough
-   to walk down and none of them runs the length of the map without a junction.
-
-   Nothing stands in anything else. `node tools/mapcheck.mjs` is the rule book: craters
-   off trenches, wire off both, nothing inside a building, and every gap between two
-   buildings either a shared wall or wide enough to get through. It is checked because a
-   screenshot from one angle will not show you a wire belt laid through a shell hole. */
-function defaultMapData() {
-  var E = [], HB = [];
-  function road(w, pts) { E.push({ t: 'road', width: w, pts: pts.map(function (p) { return { x: p[0], y: p[1] }; }) }); }
-  function house(x, y, w, h, s, dmg, o) {
-    o = o || {};
-    E.push({ t: 'house', x: x, y: y, w: w, h: h, tall: o.tall || 0, style: o.style || 'row',
-             s: s, damage: dmg, roof: o.roof === undefined ? 1 : o.roof });
-  }
-  /* a terrace: houses of the given frontages laid along a row from x0, sharing walls */
-  /* A terrace: the buildings of one block laid along the street it faces, sharing walls.
-     Each entry is [frontage, depth, seed, damage, setback, options]. Depth and setback
-     both vary per building, because no two houses in an Italian hill town were built to
-     the same depth or set the same distance back from the street -- so the front line
-     steps along the street and the back of the block is ragged, with whatever courtyards
-     that leaves inside it. A block with a straight front and a straight back is what
-     makes a map read as a grid, and this is the fix for it. `dir` is +1 for a block on
-     the south side of its street and -1 for one on the north. */
-  function terrace(x0, yFront, dir, list) {
-    var x = x0;
-    for (var i = 0; i < list.length; i++) {
-      var w = list[i][0], h = list[i][1], set = list[i][4] || 0;
-      house(x + w / 2, yFront + dir * (set + h / 2), w, h, list[i][2], list[i][3], list[i][5]);
-      x += w + 4;
-    }
-    return x - 4;
-  }
-  function wall(x1, y1, x2, y2) { E.push({ t: 'wall', x1: x1, y1: y1, x2: x2, y2: y2 }); }
-  function crater(x, y, r) { E.push({ t: 'crater', x: x, y: y, r: r }); }
-  function rubble(x, y, r, s) { E.push({ t: 'rubble', x: x, y: y, r: r }); E.push({ t: 'debris', x: x, y: y, r: r * .62, s: s }); }
-  /* A block that was brought down. The footprint is rubble and nothing stands on it: it
-     is cover a man can fight from and ground a tank can still cross, which is what makes
-     a razed frontage a different tactical problem from a standing one. The heaps are
-     laid on the diagonals of the footprint rather than in a row, because a terrace that
-     collapses falls into its own street frontage and leaves the party walls as spines. */
-  function razed(x0, y0, x1, y1, seed) {
-    var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, hw = (x1 - x0) / 2, hh = (y1 - y0) / 2;
-    var big = Math.min(hw, hh) * .82;
-    rubble(cx, cy, big, seed);
-    rubble(cx - hw * .58, cy - hh * .42, big * .74, (seed + .31) % 1);
-    rubble(cx + hw * .61, cy + hh * .38, big * .78, (seed + .57) % 1);
-    rubble(cx - hw * .54, cy + hh * .46, big * .66, (seed + .73) % 1);
-    rubble(cx + hw * .57, cy - hh * .44, big * .70, (seed + .19) % 1);
-    E.push({ t: 'wall', x1: x0 + hw * .2, y1: cy, x2: x1 - hw * .2, y2: cy });
-  }
-  function tree(x, y, r, s, lean) { E.push({ t: 'tree', x: x, y: y, r: r, s: s, lean: lean || 0 }); }
-  function cypress(x, y) { E.push({ t: 'tree', x: x, y: y, r: 9, s: .9, lean: 0, cypress: 1 }); }
-  function scrub(x, y, r, s) { E.push({ t: 'scrub', x: x, y: y, r: r, s: s }); }
-  function grass(x, y, r, tone, a) { E.push({ t: 'grass', x: x, y: y, r: r, tone: tone, a: a }); }
-  function trench(side, pts, face) {
-    E.push({ t: 'trench', side: side, face: face, pts: pts.map(function (p) { return { x: p[0], y: p[1] }; }) });
-  }
-  function wire(x1, y1, x2, y2) { E.push({ t: 'wire', x1: x1, y1: y1, x2: x2, y2: y2 }); }
-
-  /* ---- the ground under it all -----------------------------------------------------
-     The natural surface already gives the bluff and the fall to the sea. These are the
-     works of man on top of it: the piazza was levelled when it was laid, the castle
-     stands on its own rock, the station yard was cut flat for the sidings, and the
-     sunken lane behind the Allied line is the one piece of dead ground an attack could
-     form up in without being seen from the Municipio. */
-  HB.push({ x: 1400, y: 950, r: 190, mode: 'flat', z: 96 });
-  HB.push({ x: 1470, y: 470, r: 130, mode: 'flat', z: 97 });
-  HB.push({ x: 1400, y: 1400, r: 190, mode: 'flat', z: 88 });
-  HB.push({ x: 2450, y: 320, r: 200, d: 16 });
-  HB.push({ x: 2440, y: 320, r: 110, mode: 'flat', z: 110 });
-  HB.push({ x: 520, y: 760, r: 110, d: -13 });
-  HB.push({ x: 520, y: 950, r: 120, d: -15 });
-  HB.push({ x: 520, y: 1140, r: 110, d: -13 });
-  HB.push({ x: 300, y: 620, r: 140, d: 9 });
-  HB.push({ x: 300, y: 1280, r: 140, d: 9 });
-  HB.push({ x: 2480, y: 1180, r: 150, d: -10 });
-
-  /* ---- the streets ------------------------------------------------------------------
-     Wide, and few. Ortona is a town that has been fought through for a week: whole
-     frontages are down and what were alleys are now gaps between heaps. What the ground
-     needs is room to work in -- a section needs somewhere to go that is not the middle
-     of a street, and a Sherman needs a turning circle -- so the streets below are broad,
-     the blocks are small, and the space between them is open ground rather than another
-     lane. Three cross streets and two vicoli is the whole of it; everything else you
-     cross is a yard, a garden or a flattened block.
-
-     The horizontal streets run in the corridors the blocks leave. The cross streets jog
-     where the blocks either side of them do not line up. */
-  road(70, [[40, 1042], [220, 1036], [400, 1028], [560, 1018], [700, 1008], [830, 996]]);
-  road(64, [[830, 996], [930, 992], [1030, 988], [1120, 986], [1190, 984]]);
-  road(64, [[1600, 984], [1720, 980], [1840, 972], [1960, 960], [2080, 946], [2140, 936]]);
-  road(70, [[2140, 936], [2300, 918], [2460, 902], [2620, 890], [2780, 884]]);
-  /* Corso Matteotti above the spine and Via della Liberta below it */
-  road(52, [[836, 990], [844, 900], [850, 800], [856, 700], [862, 648]]);
-  road(52, [[862, 648], [1040, 646], [1240, 645], [1440, 644], [1640, 645], [1840, 647], [2000, 650]]);
-  road(52, [[2000, 650], [2060, 720], [2100, 800], [2130, 880], [2146, 934]]);
-  road(52, [[838, 1004], [846, 1100], [852, 1200], [858, 1300], [864, 1344]]);
-  road(52, [[864, 1344], [1040, 1345], [1240, 1346], [1440, 1346], [1640, 1345], [1840, 1344], [2000, 1342]]);
-  road(52, [[2000, 1342], [2060, 1260], [2100, 1160], [2130, 1050], [2146, 950]]);
-  /* the coast road along the bluff and the cemetery road along the south */
-  road(50, [[40, 336], [250, 326], [460, 316], [660, 308], [820, 302]]);
-  road(50, [[820, 302], [1000, 298], [1180, 296], [1360, 296], [1540, 298], [1700, 302]]);
-  road(50, [[1700, 302], [1900, 316], [2100, 338], [2320, 364], [2540, 388], [2780, 410]]);
-  road(50, [[40, 1628], [250, 1632], [460, 1636], [660, 1638], [820, 1642]]);
-  road(50, [[820, 1642], [1010, 1644], [1200, 1646], [1390, 1646], [1580, 1644], [1740, 1642]]);
-  road(50, [[1740, 1642], [1940, 1638], [2140, 1634], [2360, 1630], [2580, 1626], [2780, 1624]]);
-  /* the three cross streets, each jogging where the blocks do not line up */
-  road(48, [[1232, 300], [1232, 430], [1258, 490], [1258, 606]]);
-  road(52, [[1232, 650], [1232, 790], [1260, 880], [1260, 980]]);
-  road(52, [[1206, 990], [1206, 1180], [1180, 1280], [1180, 1342]]);
-  road(48, [[1196, 1348], [1196, 1500], [1170, 1590], [1170, 1640]]);
-  /* the second carries the harbour road down off the bluff at its north end */
-  road(50, [[1382, 200], [1386, 260], [1390, 330], [1390, 430], [1412, 490], [1412, 606]]);
-  road(52, [[1438, 650], [1438, 800], [1456, 890], [1456, 980]]);
-  road(52, [[1470, 990], [1470, 1180], [1494, 1280], [1494, 1342]]);
-  road(52, [[1500, 1348], [1500, 1500], [1478, 1600], [1482, 1700], [1486, 1780]]);
-  /* the third, at the castle end */
-  road(48, [[1866, 312], [1866, 430], [1844, 490], [1844, 606]]);
-  road(50, [[1812, 650], [1812, 790], [1876, 880], [1876, 978]]);
-  road(48, [[1818, 992], [1818, 1180], [1796, 1280], [1796, 1342]]);
-  /* two vicoli that stop at a wall, which is what the quarter was full of */
-  road(30, [[1050, 650], [1050, 706], [1046, 732]]);
-  road(30, [[1660, 990], [1660, 1046], [1656, 1074]]);
-  /* the two headquarters and their approaches */
-  road(48, [[250, 950], [330, 972], [430, 992], [520, 1004]]);
-  road(44, [[330, 972], [330, 800], [330, 600], [330, 430], [330, 330]]);
-  road(44, [[330, 972], [330, 1140], [330, 1320], [330, 1500], [330, 1632]]);
-  road(48, [[2550, 950], [2470, 934], [2370, 922], [2280, 914]]);
-  road(44, [[2470, 934], [2470, 760], [2470, 580], [2470, 440], [2470, 392]]);
-  road(44, [[2470, 934], [2470, 1100], [2470, 1280], [2470, 1460], [2470, 1626]]);
-  road(36, [[2440, 500], [2460, 440], [2480, 392]]);
-
-  /* ---- the blocks --------------------------------------------------------------------
-     A week of street fighting does not leave a town looking like a town. Roughly a third
-     of what stood here is standing now: what is left is islands -- one house, or a pair
-     sharing a wall -- with open ground, a yard or a heap where the rest of the frontage
-     used to be. Nothing is repeated: every building carries its own frontage, depth,
-     setback, storey height and state of repair, so there is a three-storey palazzo on
-     one corner of a block and a one-bay cottage with no roof on the other.
-
-     `razed()` lays a block that was brought down. The footprint is rubble and nothing
-     stands: it is cover a man can fight from, it is not cover a tank cannot drive over,
-     and it is the difference between a street plan and a battlefield. */
-  var x;
-
-  /* the old town under the coast road. The seaward frontage took the naval gunfire and
-     most of it is down. */
-  x = terrace(880, 340, 1, [[96, 122, .17, .44, 0, { tall: 1 }]]);
-  razed(1010, 336, 1180, 448, .21);
-  x = terrace(1272, 332, 1, [[64, 92, .58, .72, 0], [48, 76, .83, .38, 18, { roof: 0 }]]);
-  house(1560, 440, 240, 170, .5, 0, { tall: 1, style: 'church' });
-  x = terrace(1740, 338, 1, [[110, 116, .36, .21, 0, { style: 'civic' }]]);
-  razed(1900, 340, 2060, 442, .64);
-  /* and the rank facing Corso Matteotti */
-  x = terrace(880, 600, -1, [[72, 100, .74, .36, 0], [56, 84, .19, .81, 14, { roof: 0 }]]);
-  razed(1080, 500, 1220, 600, .47);
-  x = terrace(1300, 596, -1, [[88, 108, .45, .62, 0, { roof: 0 }]]);
-  house(1560, 610, 200, 88, .28, .22, { tall: 1, style: 'civic' });
-  x = terrace(1720, 602, -1, [[64, 96, .31, .49, 0]]);
-  x = terrace(1900, 592, -1, [[52, 80, .66, .77, 0, { roof: 0 }]]);
-
-  /* the Matteotti blocks. The Edmontons came up this ground a building at a time and
-     there are not many buildings left on it. */
-  x = terrace(880, 702, 1, [[120, 98, .21, .34, 0, { tall: 1 }]]);
-  razed(1040, 700, 1190, 800, .58);
-  x = terrace(1300, 696, 1, [[72, 88, .38, .55, 0], [52, 72, .87, .29, 16]]);
-  x = terrace(1520, 690, 1, [[96, 94, .42, .18, 0, { style: 'civic' }]]);
-  razed(1660, 688, 1800, 786, .33);
-  razed(1960, 692, 2090, 780, .76);
-  x = terrace(1880, 694, 1, [[64, 84, .61, .66, 0, { roof: 0 }]]);
-  /* the rank facing the Corso and the piazza: the shops, and the fire */
-  x = terrace(880, 930, -1, [[88, 82, .47, .72, 0], [60, 70, .11, .38, 12, { roof: 0 }]]);
-  x = terrace(1080, 926, -1, [[104, 86, .24, .61, 0, { tall: 1 }]]);
-  razed(1290, 840, 1420, 924, .79);
-  x = terrace(1500, 920, -1, [[76, 78, .63, .26, 0]]);
-  x = terrace(1700, 916, -1, [[92, 84, .39, .44, 0], [56, 68, .05, .71, 14]]);
-  x = terrace(1960, 918, -1, [[68, 74, .71, .33, 0, { roof: 0 }]]);
-
-  /* the Liberta blocks, south of the spine */
-  x = terrace(880, 1052, 1, [[84, 92, .26, .41, 0]]);
-  razed(1010, 1050, 1160, 1150, .67);
-  x = terrace(1250, 1046, 1, [[116, 100, .33, .24, 0, { tall: 1 }]]);
-  x = terrace(1520, 1050, 1, [[72, 84, .73, .47, 0], [48, 70, .28, .62, 16, { roof: 0 }]]);
-  razed(1680, 1048, 1820, 1146, .51);
-  x = terrace(1890, 1042, 1, [[88, 90, .37, .29, 0]]);
-  /* the rank facing Via della Liberta, with the school in the middle of it */
-  x = terrace(900, 1300, -1, [[76, 88, .54, .29, 0], [52, 72, .77, .66, 14, { roof: 0 }]]);
-  razed(1120, 1206, 1260, 1298, .18);
-  x = terrace(1330, 1304, -1, [[96, 92, .31, .48, 0]]);
-  x = terrace(1560, 1300, -1, [[180, 88, .2, .15, 0, { tall: 1, style: 'civic' }]]);
-  x = terrace(1830, 1296, -1, [[68, 80, .84, .57, 0, { roof: 0 }]]);
-
-  /* the station quarter: what is left of it. Newer, poorer, and the demolitions here
-     were ours rather than theirs. */
-  x = terrace(900, 1392, 1, [[96, 82, .21, .56, 0, { roof: 0 }]]);
-  razed(1040, 1390, 1180, 1478, .43);
-  x = terrace(1260, 1386, 1, [[84, 78, .36, .32, 0], [56, 66, .72, .68, 14]]);
-  razed(1560, 1384, 1700, 1470, .29);
-  x = terrace(1780, 1378, 1, [[74, 76, .58, .35, 0]]);
-  x = terrace(904, 1602, -1, [[88, 78, .19, .63, 0]]);
-  x = terrace(1076, 1604, -1, [[76, 74, .27, .38, 0, { roof: 0 }]]);
-  razed(1300, 1520, 1440, 1600, .61);
-  x = terrace(1560, 1606, -1, [[82, 78, .43, .22, 0]]);
-  x = terrace(1800, 1600, -1, [[72, 72, .66, .47, 0, { roof: 0 }]]);
-
-  /* ---- Castello Aragonese --------------------------------------------------------------
-     A curtain wall round a courtyard, a tower at each corner and the keep across the
-     back. It stands on its own rock at the point with the sea behind it, and it is the
-     last thing on the map that can be held. */
-  wall(2300, 196, 2620, 196);
-  wall(2620, 196, 2620, 320);
-  wall(2620, 320, 2300, 320);
-  wall(2300, 320, 2300, 196);
-  house(2326, 218, 48, 40, .3, .18, { tall: 1, style: 'civic', roof: 0 });
-  house(2594, 218, 48, 40, .7, .24, { tall: 1, style: 'civic', roof: 0 });
-  house(2594, 298, 48, 40, .5, .31, { tall: 1, style: 'civic', roof: 0 });
-  house(2326, 298, 48, 40, .9, .12, { tall: 1, style: 'civic', roof: 0 });
-  house(2460, 258, 140, 76, .4, .22, { tall: 1, style: 'civic' });
-
-  /* ---- the farms and the walled country ------------------------------------------------
-     Olive terraces and vine rows, each farm with its yard wall on the side the wind comes
-     from. This is the ground a section crosses before the town starts. */
-  E.push({ t: 'farm', x: 180, y: 560, w: 120, h: 90 });
-  E.push({ t: 'farm', x: 180, y: 1340, w: 118, h: 88 });
-  E.push({ t: 'farm', x: 150, y: 950, w: 98, h: 96 });
-  E.push({ t: 'farm', x: 2680, y: 560, w: 118, h: 88 });
-  E.push({ t: 'farm', x: 2680, y: 1340, w: 120, h: 90 });
-  E.push({ t: 'farm', x: 2700, y: 950, w: 98, h: 96 });
-  wall(110, 512, 110, 604); wall(110, 604, 250, 610);
-  wall(110, 1292, 110, 1384); wall(110, 1384, 252, 1388);
-  wall(2610, 512, 2610, 604); wall(2610, 604, 2470, 610);
-  wall(2612, 1292, 2612, 1384); wall(2612, 1384, 2472, 1388);
-  /* the field walls between the start line and the gate, the only cover on that ground */
-  wall(830, 470, 830, 600); wall(830, 1330, 830, 1460);
-  wall(2110, 470, 2110, 600); wall(2110, 1330, 2110, 1460);
-  wall(860, 1000, 860, 1120);
-  wall(2100, 800, 2100, 920);
-
-  /* ---- the field works ------------------------------------------------------------------
-     Two trench lines a side with the wire out in front of them, laid on the bands the
-     plan gives: the Allies between 600 and 760, the Germans between 2180 and 2320.
-     Nothing else is allowed in those bands, which is why there is not a shell hole in
-     them: a bowl through a parapet is a drawing error and the checker treats it as one.
-     The faces matter -- a parapet only protects across itself -- so each is laid on the
-     bearing the fire is expected from. */
-  trench('us', [[700, 360], [668, 470], [700, 580], [668, 690], [700, 800]], 1);
-  trench('us', [[700, 800], [668, 910], [700, 1020], [668, 1130], [700, 1240]], 1);
-  trench('us', [[700, 1240], [668, 1350], [700, 1460], [668, 1570], [700, 1660]], 1);
-  trench('us', [[612, 520], [584, 640], [612, 760], [584, 880]], 1);
-  trench('us', [[612, 1020], [584, 1140], [612, 1260], [584, 1380], [612, 1470]], 1);
-  trench('ger', [[2220, 360], [2252, 470], [2220, 580], [2252, 690], [2220, 800]], 0);
-  trench('ger', [[2220, 800], [2252, 910], [2220, 1020], [2252, 1130], [2220, 1240]], 0);
-  trench('ger', [[2220, 1240], [2252, 1350], [2220, 1460], [2252, 1570], [2220, 1660]], 0);
-  trench('ger', [[2308, 520], [2336, 640], [2308, 760], [2336, 880]], 0);
-  trench('ger', [[2308, 1020], [2336, 1140], [2308, 1260], [2336, 1380], [2308, 1470]], 0);
-  /* the wire, out in front of each line and clear of every bowl and every parapet */
-  wire(770, 370, 770, 830);
-  wire(770, 1070, 770, 1650);
-  wire(2150, 370, 2150, 830);
-  wire(2150, 1070, 2150, 1650);
-  wire(540, 380, 540, 470);
-  wire(2340, 370, 2340, 460);
-
-  /* ---- the shelling -----------------------------------------------------------------------
-     Grouped, because a programme is fired at points and not spread over a map, and kept
-     out of the trench bands and off the buildings. Each group is one task: an approach
-     registered before the attack, a crossroads kept under fire, or the stonk that went
-     down on the open country. In the streets they are mortar and small shell, because a
-     carriageway cratered end to end is a street nothing can fight down. */
-  /* the west approach, walked in from the Moro, between the farms and the start line */
-  crater(400, 900, 52); crater(470, 860, 44); crater(370, 980, 56); crater(500, 1010, 40);
-  crater(440, 1070, 48); crater(330, 900, 38); crater(520, 940, 34); crater(390, 1130, 44);
-  crater(460, 1170, 40); crater(300, 1040, 34);
-  crater(330, 620, 50); crater(410, 660, 42); crater(320, 700, 44); crater(460, 580, 36);
-  crater(360, 720, 40); crater(280, 700, 34);
-  crater(330, 1300, 50); crater(410, 1260, 42); crater(270, 1340, 44); crater(460, 1340, 36);
-  crater(360, 1210, 38); crater(280, 1250, 34);
-  /* the last of the open ground, between the wire and the gate: small, and few */
-  crater(826, 880, 22); crater(818, 1060, 20); crater(830, 960, 18);
-  /* the crossroads in the town, kept under mortar fire. Every one of these is in a
-     street corridor rather than beside it: a bowl cut under a house leaves it standing
-     on air, and the checker treats that as the error it is. */
-  crater(1000, 988, 16); crater(1720, 978, 15); crater(1900, 960, 14);
-  crater(1100, 648, 15); crater(1380, 646, 14); crater(1900, 650, 13);
-  crater(1100, 1341, 15); crater(1500, 1342, 14); crater(1900, 1339, 13);
-  crater(1060, 478, 14); crater(1800, 483, 13);
-  crater(1155, 540, 13); crater(1419, 540, 12); crater(1683, 540, 13);
-  crater(1332, 984, 14); crater(1650, 984, 14);
-  crater(1175, 1320, 13); crater(1664, 1320, 12);
-  crater(1000, 298, 18); crater(1500, 298, 16);
-  crater(1100, 1643, 18); crater(1600, 1642, 16);
-  /* the piazza. Three only: it is paved and it was wanted intact enough to fight across */
-  crater(1300, 984, 17); crater(1500, 980, 15); crater(1395, 1010, 13);
-  /* the castle approach, ranged on by the ships offshore */
-  crater(2440, 560, 40); crater(2180, 330, 28); crater(2540, 500, 36); crater(2640, 440, 32);
-  /* the east country, which took what the Allied mediums could reach */
-  crater(2480, 940, 44); crater(2560, 1010, 38); crater(2420, 1040, 34); crater(2600, 880, 30);
-  crater(2500, 1240, 42); crater(2420, 1320, 36); crater(2560, 1180, 32);
-  crater(2480, 660, 40); crater(2560, 720, 34); crater(2400, 700, 30);
-  /* the ground the Germans had to cross to reach their own line, thin and old */
-  crater(2140, 1000, 22); crater(2098, 1160, 20); crater(2090, 620, 22);
-  /* and a scatter over the rest, none of them on anything */
-  crater(140, 700, 30); crater(190, 1200, 26); crater(120, 1480, 30); crater(160, 300, 26);
-  crater(1000, 1690, 22); crater(1880, 1620, 20); crater(1000, 250, 22); crater(1900, 250, 20);
-  crater(2660, 180, 26); crater(2740, 1480, 30); crater(2700, 1180, 24);
-
-  /* ---- the gun positions -----------------------------------------------------------------
-     Each sited on something: a street it can see the length of, or the ground in front of
-     a building that has to be held. The bearing is written down because a gun in a pit
-     is worth what its arc is worth. */
-  E.push({ t: 'emplace', x: 1216, y: 940, r: 24, s: .2, a: Math.PI });
-  E.push({ t: 'emplace', x: 1604, y: 966, r: 24, s: .6, a: 0 });
-  E.push({ t: 'emplace', x: 1400, y: 912, r: 22, s: .4, a: -Math.PI / 2 });
-  E.push({ t: 'emplace', x: 1418, y: 1020, r: 22, s: .8, a: Math.PI / 2 });
-  E.push({ t: 'emplace', x: 1412, y: 636, r: 20, s: .3, a: -Math.PI / 2 });
-  E.push({ t: 'emplace', x: 2110, y: 880, r: 24, s: .5, a: Math.PI });
-  E.push({ t: 'emplace', x: 2396, y: 430, r: 22, s: .7, a: -2.2 });
-  E.push({ t: 'emplace', x: 2360, y: 1470, r: 22, s: .1, a: 2.2 });
-  E.push({ t: 'emplace', x: 846, y: 950, r: 22, s: .9, a: 0 });
-  E.push({ t: 'emplace', x: 620, y: 950, r: 20, s: .35, a: 0 });
-  E.push({ t: 'emplace', x: 2300, y: 950, r: 20, s: .65, a: Math.PI });
-  /* sandbagged positions in the town: doorways and window bays that were built up */
-  E.push({ t: 'bags', x: 1236, y: 964, r: 26, a: 0 });
-  E.push({ t: 'bags', x: 1584, y: 940, r: 26, a: 0 });
-  E.push({ t: 'bags', x: 1340, y: 916, r: 24, a: Math.PI / 2 });
-  E.push({ t: 'bags', x: 1470, y: 1044, r: 24, a: Math.PI / 2 });
-  E.push({ t: 'bags', x: 1180, y: 820, r: 22, a: 0 });
-  E.push({ t: 'bags', x: 1180, y: 1100, r: 22, a: 0 });
-  E.push({ t: 'bags', x: 1640, y: 820, r: 22, a: 0 });
-  E.push({ t: 'bags', x: 1640, y: 1100, r: 22, a: 0 });
-  E.push({ t: 'bags', x: 1400, y: 760, r: 22, a: 1.57 });
-  E.push({ t: 'bags', x: 1400, y: 1180, r: 22, a: 1.57 });
-
-  /* ---- the demolitions ---------------------------------------------------------------------
-     Houses dropped into street mouths to close them, and not all of them: what is left
-     open is a funnel into the piazza, which is where the guns are. Every heap is in a
-     junction and every junction is on the street list above. */
-  rubble(1180, 880, 34, .21);
-  rubble(1180, 1180, 32, .58);
-  rubble(1640, 880, 32, .34);
-  rubble(1640, 1180, 34, .77);
-  rubble(1400, 780, 30, .45);
-  rubble(1400, 1160, 30, .12);
-  rubble(1010, 980, 28, .66);
-  rubble(1900, 944, 28, .29);
-  rubble(1290, 700, 26, .83);
-  rubble(1780, 700, 26, .51);
-  rubble(1290, 1270, 24, .18);
-  rubble(1780, 1270, 24, .62);
-  E.push({ t: 'roadblock', x: 1160, y: 980, a: .1 });
-  E.push({ t: 'roadblock', x: 1620, y: 944, a: -.08 });
-  E.push({ t: 'roadblock', x: 1180, y: 960, a: 1.52 });
-  E.push({ t: 'roadblock', x: 1640, y: 1000, a: 1.48 });
-  E.push({ t: 'roadblock', x: 860, y: 996, a: .06 });
-  E.push({ t: 'roadblock', x: 1400, y: 1230, a: 1.5 });
-
-  /* ---- what is growing, and where it would be ----------------------------------------------
-     Olives in terraced rows on the slopes behind each line, because that is what grew on
-     this coast and because a row of trees is cover that runs in one direction only.
-     Cypresses where someone planted them on purpose. Scrub on the cliff and in the
-     railway cutting, where nothing was tended. Nothing grows in a street or a block. */
-  tree(120, 700, 17, .12, -.18); tree(190, 700, 16, .44, .09); tree(260, 700, 18, .77, -.05);
-  tree(120, 760, 15, .23, .21); tree(190, 760, 17, .58, -.12); tree(260, 760, 16, .86, .04);
-  tree(120, 820, 16, .31, .15); tree(190, 820, 18, .64, -.09); tree(260, 820, 15, .05, .18);
-  tree(120, 1100, 17, .53, .11); tree(190, 1100, 15, .88, -.16); tree(260, 1100, 18, .27, .06);
-  tree(120, 1160, 16, .39, -.19); tree(190, 1160, 18, .72, .13); tree(260, 1160, 15, .91, .02);
-  tree(120, 1220, 17, .35, -.11); tree(190, 1220, 16, .21, .17); tree(260, 1220, 18, .55, -.06);
-  tree(430, 420, 17, .83, .12); tree(500, 420, 15, .29, -.19); tree(570, 420, 16, .62, .03);
-  tree(430, 480, 18, .07, .15); tree(500, 480, 16, .46, -.12); tree(570, 480, 17, .79, .08);
-  tree(430, 1480, 16, .16, .2); tree(500, 1480, 17, .51, -.04); tree(570, 1480, 15, .88, .14);
-  tree(430, 1540, 18, .33, -.17); tree(500, 1540, 16, .68, .05); tree(570, 1540, 17, .11, -.15);
-  tree(2640, 700, 17, .18, .13); tree(2570, 700, 16, .51, -.07); tree(2500, 700, 18, .84, .1);
-  tree(2640, 760, 15, .25, -.2); tree(2570, 760, 17, .67, .05); tree(2500, 760, 16, .09, .16);
-  tree(2640, 820, 16, .43, -.14); tree(2570, 820, 18, .76, .11); tree(2500, 820, 15, .32, .04);
-  tree(2640, 1100, 17, .65, -.18); tree(2570, 1100, 16, .01, .19); tree(2500, 1100, 18, .28, .08);
-  tree(2640, 1160, 16, .61, -.13); tree(2570, 1160, 18, .95, .06); tree(2500, 1160, 15, .38, .17);
-  tree(2640, 1220, 17, .71, -.05); tree(2570, 1220, 16, .49, .12); tree(2500, 1220, 18, .83, -.09);
-  tree(2400, 1480, 15, .22, .15); tree(2470, 1480, 17, .56, -.02); tree(2540, 1480, 16, .89, .11);
-  tree(2400, 1540, 17, .34, -.16); tree(2470, 1540, 15, .68, .09); tree(2540, 1540, 18, .13, .03);
-  /* the cypresses: the cemetery road, and the walk up to San Tommaso */
-  cypress(1408, 372); cypress(1408, 440); cypress(1408, 508);
-  cypress(1700, 372); cypress(1700, 420); cypress(1700, 444);
-  cypress(960, 1690); cypress(1040, 1690); cypress(1120, 1690);
-  cypress(1720, 1692); cypress(1800, 1692); cypress(1880, 1692);
-  cypress(420, 1690); cypress(500, 1690); cypress(2300, 1694); cypress(2380, 1694);
-  /* scrub on the cliff edge and in the railway cutting */
-  scrub(200, 250, 13, .2); scrub(420, 246, 12, .55); scrub(640, 242, 14, .81);
-  scrub(880, 240, 11, .34); scrub(1080, 238, 13, .67); scrub(1560, 240, 12, .12);
-  scrub(1780, 244, 14, .48); scrub(2000, 248, 11, .73); scrub(2200, 254, 13, .29);
-  scrub(120, 270, 14, .07); scrub(2760, 300, 12, .61);
-  scrub(200, 1760, 13, .42); scrub(560, 1758, 12, .76); scrub(920, 1756, 14, .18);
-  scrub(1280, 1754, 11, .53); scrub(1640, 1754, 13, .87); scrub(2000, 1756, 12, .24);
-  scrub(2360, 1758, 14, .59); scrub(2720, 1762, 11, .35);
-
-  /* ---- the props ------------------------------------------------------------------------
-     Carts where a cart would have been left: in a farm yard, backed against a wall, or
-     abandoned in the road where the horse was cut out of the traces. Poles down the
-     Corso, broken where the fighting has been heaviest. Smoke over what is still
-     burning, which is the quarter either side of the piazza. */
-  E.push({ t: 'cart', x: 250, y: 610, a: .4 });
-  E.push({ t: 'cart', x: 250, y: 1290, a: 2.1 });
-  E.push({ t: 'cart', x: 210, y: 1010, a: 1.2 });
-  E.push({ t: 'cart', x: 620, y: 1010, a: 2.8 });
-  E.push({ t: 'cart', x: 1010, y: 1010, a: .2 });
-  E.push({ t: 'cart', x: 1320, y: 1000, a: 3.0 });
-  E.push({ t: 'cart', x: 1500, y: 960, a: 1.7 });
-  E.push({ t: 'cart', x: 2560, y: 610, a: .9 });
-  E.push({ t: 'cart', x: 2560, y: 1290, a: 2.4 });
-  E.push({ t: 'cart', x: 2620, y: 1010, a: 1.5 });
-  E.push({ t: 'pole', x: 300, y: 1000, broken: 0 });
-  E.push({ t: 'pole', x: 520, y: 992, broken: 0 });
-  E.push({ t: 'pole', x: 760, y: 984, broken: 1 });
-  E.push({ t: 'pole', x: 940, y: 952, broken: 1 });
-  E.push({ t: 'pole', x: 1100, y: 946, broken: 0 });
-  E.push({ t: 'pole', x: 1700, y: 908, broken: 1 });
-  E.push({ t: 'pole', x: 1860, y: 900, broken: 1 });
-  E.push({ t: 'pole', x: 2020, y: 892, broken: 0 });
-  E.push({ t: 'pole', x: 2300, y: 880, broken: 1 });
-  E.push({ t: 'pole', x: 2520, y: 872, broken: 0 });
-  E.push({ t: 'smoke', x: 1290, y: 1160 });
-  E.push({ t: 'smoke', x: 1560, y: 1160 });
-  E.push({ t: 'smoke', x: 1290, y: 800 });
-  E.push({ t: 'smoke', x: 1820, y: 1040 });
-  E.push({ t: 'smoke', x: 2000, y: 820 });
-  E.push({ t: 'smoke', x: 960, y: 1120 });
-
-  /* ---- grass --------------------------------------------------------------------------------
-     On the verges and over the open country. Not in the streets, not on the piazza, and
-     not where a shell has turned the ground over. */
-  grass(120, 420, 120, .62, .3); grass(240, 380, 110, .48, 1.1); grass(420, 340, 100, .72, 2.2);
-  grass(160, 880, 130, .55, .8); grass(260, 1060, 115, .68, 1.9); grass(140, 1140, 120, .41, 2.7);
-  grass(120, 1560, 125, .59, .5); grass(280, 1560, 110, .74, 1.4); grass(480, 1560, 100, .46, 2.4);
-  grass(620, 700, 90, .81, .9); grass(620, 1200, 95, .37, 2.0); grass(760, 640, 85, .64, 1.6);
-  grass(760, 1280, 88, .52, .7); grass(880, 640, 80, .69, 2.5); grass(880, 1300, 82, .44, 1.2);
-  grass(1000, 380, 100, .57, .4); grass(1540, 260, 110, .73, 1.8); grass(2040, 380, 105, .35, 2.9);
-  grass(1000, 1560, 102, .61, .6); grass(1560, 1560, 108, .49, 1.5); grass(2040, 1560, 112, .66, 2.1);
-  grass(2660, 420, 120, .58, .35); grass(2540, 380, 110, .44, 1.25); grass(2380, 340, 100, .7, 2.15);
-  grass(2640, 880, 130, .5, .85); grass(2520, 1060, 115, .66, 1.95); grass(2660, 1140, 120, .39, 2.75);
-  grass(2660, 1560, 125, .61, .55); grass(2520, 1560, 110, .72, 1.45); grass(2340, 1560, 100, .43, 2.45);
-  grass(2180, 700, 90, .79, .95); grass(2180, 1200, 95, .35, 2.05); grass(2040, 640, 85, .62, 1.65);
-  grass(2040, 1300, 88, .5, .75); grass(1920, 640, 80, .67, 2.55); grass(1920, 1300, 82, .42, 1.25);
-
-  /* ---- paving ---------------------------------------------------------------------------------
-     Only what was actually paved: the piazza, the cathedral forecourt, and two widenings
-     on the Corso. The rest of the town is beaten earth and rubble, which is what makes
-     the paved ground read as somewhere. */
-  E.push({ t: 'paved', x: 1395, y: 984, w: 410, h: 92, kind: 'piazza' });
-  E.push({ t: 'paved', x: 1330, y: 606, w: 240, h: 110, kind: 'street' });
-  E.push({ t: 'paved', x: 1000, y: 980, w: 160, h: 110, kind: 'street' });
-  E.push({ t: 'paved', x: 1900, y: 944, w: 160, h: 110, kind: 'street' });
-  E.push({ t: 'paved', x: 1400, y: 1330, w: 160, h: 110, kind: 'street' });
-
-  /* ---- sectors and headquarters ------------------------------------------------------------
-     Named for what is actually there. The three on the spine are the victory ground: the
-     cathedral quarter, the piazza and the station yard, and they are worth taking in that
-     order from either end. The flags mirror about the midline exactly: the first draft
-     had Via Cavour a hundred units nearer its headquarters than Porta Caldari was to
-     the other, and the same brain on both sides took the German third flag twenty
-     seconds sooner every game, which on ground that pays by the second was the whole
-     battle by the fifth minute. */
-  var secs = [
-    ['A', 500, 420, 'fuel', 'us', 'Coast Road', ['C', 'D']],
-    ['B', 500, 1480, 'mp', 'us', 'Moro Approach', ['C', 'F']],
-    ['C', 1000, 980, 'mp', null, 'Porta Caldari', ['A', 'B', 'E']],
-    ['D', 1400, 606, 'vp', null, 'San Tommaso', ['A', 'E', 'H']],
-    ['E', 1400, 980, 'vp', null, 'Piazza Municipale', ['C', 'D', 'F', 'G']],
-    ['F', 1400, 1330, 'vp', null, 'Station Yard', ['B', 'E', 'I']],
-    ['G', 1800, 980, 'mp', null, 'Via Cavour', ['E', 'H', 'I']],
-    ['H', 2300, 420, 'fuel', 'ger', 'Castello', ['D', 'G']],
-    ['I', 2300, 1480, 'mp', 'ger', 'Santa Caterina', ['F', 'G']]];
-  secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
-  E.push({ t: 'hq', side: 'us', x: 250, y: 950 });
-  E.push({ t: 'hq', side: 'ger', x: 2800 - 250, y: 950 });
-  E = baseOpen(E, HB, 'ortona', 2800, 1900);
-  return { name: 'Ortona', when: 'ADRIATIC FRONT · 23 DEC 1943', version: 1, entities: E, height: HB };
-}
-
 /* ================================================================ the Gothic Line
    The Adriatic sector, at the end of August 1944: the Foglia running down the middle of
    it with a ridge either side, and 1st Canadian Division coming at the line that ran
@@ -4950,7 +4445,7 @@ function buildMap(data) {
   buildDecks();
   makeFields();
 }
-function makeTerrain() { terrOk = 0; buildMap(G.mapData || (G.mapData = defaultMapData())); }
+function makeTerrain() { terrOk = 0; buildMap(G.mapData || (G.mapData = chosenMapData())); }
 
 /* ---------------------------------------------------------------- terrain height
    The world is a real surface, not a flat plane with boxes on it. A height is stored on
@@ -58630,7 +58125,7 @@ function startGame(side, diff, mode, arty, team, army) {
      of `G.res.us.vp` already asks for */
   G.res[slotsOf('us')[0]].vp = VP_START; G.res[slotsOf('ger')[0]].vp = VP_START;
   recInit();
-  if (!G.mapData) G.mapData = defaultMapData();
+  if (!G.mapData) G.mapData = chosenMapData();
   makeSectors(); makeTerrain(); rebuildGrid();
   initDecals(); initExplored();
   buildModels(); buildScene();
@@ -58766,13 +58261,10 @@ var chosenArmy = 'usa';
    knowing before the first order. Written once for Ortona in the markup, they went on
    naming the Adriatic town over the beach. */
 var MAPS = {
-  ortona: { make: defaultMapData,
-            eyebrow: 'ITALIAN CAMPAIGN · DECEMBER 1943', title: 'ORTONA', dtg: '231200 DEC 43',
-            sub: 'Eight days of close fighting in a rain-soaked Adriatic town. Take Ortona with the 29th Infantry Division or hold its shattered streets with the 352. Infanterie-Division.',
-            cards: [['URBAN GROUND', 'Stone walls, rubble and shell holes decide firefights. Cross streets are killing grounds.'],
-                    ['ENFILADE', 'Linear cover protects across its face. Fire down its length strips two grades of protection.']],
-            brief: 'Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.' },
-  gothic: { make: gothicMapData,
+  /* The Gothic Line is hidden: neither the title screen nor the editor offers it, and it is
+     kept in the file to be rebuilt as a map of the eastern front. The map check and the
+     gate still read it, so it does not rot while it waits. */
+  gothic: { make: gothicMapData, hidden: 1,
             eyebrow: 'OPERATION OLIVE · AUGUST 1944', title: 'GOTHIC LINE', dtg: '300600 AUG 44',
             sub: 'The Foglia valley at the end of August: two ridges with the river between them and a valley floor already fought over. Force a crossing with the 29th Infantry Division or hold the ridge with the 352. Infanterie-Division.',
             cards: [['DEAD GROUND', 'The folds and hollows on the valley floor are the only shelter between the belts. Move from one to the next.'],
@@ -58791,15 +58283,24 @@ var MAPS = {
                     ['THE VIRE', 'The river is crossed at three bridges and two footbridges. The station and the yards are on the far bank.']],
             brief: 'Three lanes and three victory flags on the midline: the Champ de Mars, Notre-Dame and the station. Cut-off sectors stop producing resources.' }
 };
-var chosenMap = 'ortona';
-function chosenMapData() { return (MAPS[chosenMap] || MAPS.ortona).make(); }
+/* The ground last picked is kept on the device, the way the control scheme is, and Omaha is
+   the ground when nothing is kept. A key that names a map the game no longer offers (Ortona
+   was the first map, and is gone) is no choice at all. */
+var MAP_KEY = 'ORT_MAP';
+function mapLoad() {
+  var k = null;
+  try { k = localStorage.getItem(MAP_KEY); } catch (e) { /* private browsing */ }
+  return k && MAPS[k] && !MAPS[k].hidden ? k : 'omaha';
+}
+var chosenMap = mapLoad();
+function chosenMapData() { return (MAPS[chosenMap] || MAPS.omaha).make(); }
 function objSync() {
   el('objtext').textContent = chosenMode === 'anni'
     ? 'Destroy every building in the enemy base. Victory points do not run down.'
-    : (MAPS[chosenMap] || MAPS.ortona).brief;
+    : (MAPS[chosenMap] || MAPS.omaha).brief;
 }
 function brandSync() {
-  var M = MAPS[chosenMap] || MAPS.ortona;
+  var M = MAPS[chosenMap] || MAPS.omaha;
   el('beyebrow').textContent = M.eyebrow; el('btitle').textContent = M.title; el('bsub').textContent = M.sub;
   M.cards.forEach(function (c, i) { el('bcard' + i + 'h').textContent = c[0]; el('bcard' + i).textContent = c[1]; });
   /* the message's header: who sends it, which follows the army, and when, which follows the ground */
@@ -58835,6 +58336,7 @@ document.querySelectorAll('.gmap').forEach(function (btn) {
     document.querySelectorAll('.gmap').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('on'); chosenMap = btn.dataset.map;
     btn.setAttribute('aria-pressed', 'true');
+    try { localStorage.setItem(MAP_KEY, chosenMap); } catch (e) { /* private browsing */ }
     wallSync(); objSync(); sideSync(); brandSync(); sfx('click');
   };
 });
@@ -59194,7 +58696,12 @@ el('moret').onclick = function () { soOpen(!el('morders').classList.contains('op
 /* every control on the page has run its own handler by the time a click reaches the screen */
 el('start').addEventListener('click', soSync);
 soOpen(!hcapEven() || !hcapEven(ACAP));
-sideSync(); brandSync(); soSync();
+/* the ground kept from the last visit is ticked, with its briefing and whether it has a wall */
+document.querySelectorAll('.gmap').forEach(function (b) {
+  var on = b.dataset.map === chosenMap;
+  b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+});
+wallSync(); objSync(); sideSync(); brandSync(); soSync();
 el('deploy').onclick = function () { G.mapData = chosenMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenTeam, chosenArmy); };
 el('tHQ').onclick = function () {
   var hq = hqOf(G.own); if (!hq) return;
@@ -59274,7 +58781,7 @@ document.addEventListener('visibilitychange', function () {
    change. */
 var ED = { on: false, data: null, sel: [], tool: null, cat: 'select', mirror: true, snap: 0, grid: false,
            undo: [], redo: [], line: null, drag: null, hover: null, dirty: 0, rebuildT: 0, saveT: 0,
-           name: 'Ortona', touching: false, fromEditor: false, brush: { r: 90, d: 6 }, marq: null, faceFlag: undefined,
+           name: 'New map', touching: false, fromEditor: false, brush: { r: 90, d: 6 }, marq: null, faceFlag: undefined,
            menu: false, panel: null, tiles: {}, rect: null, padTiles: {}, padRect: null, needGround: false, needGrass: false, padT: 0, scope: 'full' };
 /* the tools, by category. kind is how the hand works it: place (tap, or press and
    carry), line (one stroke, or point by point), rect (drag a box), height and scatter
@@ -59408,9 +58915,9 @@ var ED_DRAFT = 'ortona.draft', ED_LAST = 'ortona.map', ED_SLOTS = 'ortona.maps';
 /* ---- opening and closing ---- */
 function edOpen(data, name, opts) {
   ED.on = true;
-  ED.data = data || edLoadDraft() || edLoadLocal() || defaultMapData();
+  ED.data = data || edLoadDraft() || edLoadLocal() || omahaMapData();
   ED.data.height = ED.data.height || [];
-  ED.name = name || ED.data.name || 'Ortona';
+  ED.name = name || ED.data.name || 'New map';
   ED.data.name = ED.name;
   ED.undo = []; ED.redo = []; ED.sel = []; ED.line = null; ED.drag = null; ED.marq = null; ED.tool = null; ED.cat = 'select'; ED.view = 'select';
   /* the version of the map against what is kept of it: saved under its name, or the draft */
@@ -61688,8 +61195,6 @@ function edDockLight() {
    map is built once the choice is made, and the instructions are a button on the way in
    for whoever wants them. */
 var ED_SHIPPED = [
-  ['ortona', 'Ortona', 'The old town, 23 December 1943: a street fought one building at a time'],
-  ['gothic', 'The Gothic Line', 'The Foglia valley, 30 August 1944: two ridges and no man’s land, laid out for four'],
   ['omaha', 'Omaha Beach', 'Dog and Easy, 6 June 1944: from the water up the draws to the bocage'],
   ['stlo', 'Saint-Lô', '18 July 1944: three a side, the old town on its rock and the station over the Vire']];
 var ED_STARTS = [
@@ -61795,7 +61300,7 @@ function edStartNew(tpl) {
 }
 function edStartDup(k) {
   var m = ED_SHIPPED.filter(function (q) { return q[0] === k; })[0];
-  edOpen((MAPS[k] || MAPS.ortona).make(), (m ? m[1] : 'Map') + ' (copy)', { fresh: true });
+  edOpen((MAPS[k] || MAPS.omaha).make(), (m ? m[1] : 'Map') + ' (copy)', { fresh: true });
 }
 function edBuildDock() {
   var dock = el('eddock'); dock.innerHTML = '';
@@ -62855,7 +62360,7 @@ var ED_TEMPLATES = [
   { id: 'village', name: 'VILLAGE', town: .42, damage: .35, works: .55 },
   { id: 'town', name: 'TOWN', town: .8, damage: .45, works: .5 },
   { id: 'ruins', name: 'RUINS', town: .85, damage: .95, works: .7 },
-  { id: 'blank', name: 'BLANK' }, { id: 'ortona', name: 'ORTONA' }];
+  { id: 'blank', name: 'BLANK' }];
 function edPanelNew() {
   var html = '<div class="edh">NAME</div><input type="text" id="edpname" value="New map" maxlength="40">' +
     '<div class="edh">START FROM</div><div class="edseg" id="edntpl">';
@@ -62869,14 +62374,13 @@ function edPanelNew() {
     '<div class="edbtns" style="display:flex;gap:6px;margin-top:12px"><button class="edb" id="edpok" style="flex:1;min-height:52px;font-size:14px">CREATE THE MAP</button><button class="edb warn" id="edpcancel" style="flex:1;min-height:52px">CANCEL</button></div>';
   edPanel('NEW MAP', html);
   var tpl = 'village';
-  function show() { el('ednsl').style.display = tpl === 'blank' || tpl === 'ortona' ? 'none' : ''; }
+  function show() { el('ednsl').style.display = tpl === 'blank' ? 'none' : ''; }
   el('edntpl').querySelectorAll('button').forEach(function (b) {
     b.addEventListener('click', function () {
       el('edntpl').querySelectorAll('button').forEach(function (o) { o.classList.remove('on'); }); b.classList.add('on'); tpl = b.getAttribute('data-v');
       var t = ED_TEMPLATES.filter(function (q) { return q.id === tpl; })[0];
       if (t && t.town !== undefined) { el('edntown').value = Math.round(t.town * 100); el('edndmg').value = Math.round(t.damage * 100); el('ednworks').value = Math.round(t.works * 100); }
       ['edntown', 'edndmg', 'ednworks'].forEach(function (id) { el(id + 'v').textContent = el(id).value; });
-      if (tpl === 'ortona') el('edpname').value = 'Ortona'; else if (el('edpname').value === 'Ortona') el('edpname').value = 'New map';
       show();
     });
   });
@@ -62886,10 +62390,9 @@ function edPanelNew() {
   el('edpok').addEventListener('click', function () {
     var name = el('edpname').value.trim() || 'New map', data;
     if (tpl === 'blank') data = edBlankMap(name);
-    else if (tpl === 'ortona') { data = defaultMapData(); name = 'Ortona'; }
     else data = edGenerate({ name: name, seed: parseInt(el('ednseed').value, 10) || 1, town: el('edntown').value / 100, damage: el('edndmg').value / 100, works: el('ednworks').value / 100 });
     edSnapshot(); ED.data = data; ED.name = name; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose(); edFit();
-    toast(tpl === 'blank' ? 'A blank map: three flags and two headquarters' : tpl === 'ortona' ? 'Ortona, as shipped' : 'Made from seed ' + data.seed + '. Not what you wanted? NEW MAP again.');
+    toast(tpl === 'blank' ? 'A blank map: three flags and two headquarters' : 'Made from seed ' + data.seed + '. Not what you wanted? NEW MAP again.');
   });
   show();
 }
@@ -62957,6 +62460,11 @@ function edPanelHelp() {
 
 /* ---- the menu and the panel ---- */
 function edMenu(on) { ED.menu = on === undefined ? !ED.menu : on; el('edmenus').classList.toggle('hidden', !ED.menu); if (ED.menu) { el('edmgrid').textContent = 'GRID: ' + (ED.grid ? 'ON' : 'OFF'); el('edmsnap').textContent = 'SNAP: ' + (ED.snap ? ED.snap + ' UNITS' : 'OFF'); } }
+/* whether a name is a shipped map's own, which SAVE will not write over without asking */
+function edShippedName(n) {
+  for (var i = 0; i < ED_SHIPPED.length; i++) if (ED_SHIPPED[i][1] === n) return true;
+  return false;
+}
 function edPanel(title, html) { ED.panel = title; el('edpaneltitle').textContent = title; el('edpanelbody').innerHTML = html; el('edpanel').classList.remove('hidden'); el('editor').classList.add('panel'); edMenu(false); }
 function edPanelClose() { ED.panel = null; el('edpanel').classList.add('hidden'); el('editor').classList.remove('panel'); edLayout(); }
 function edPanelLoad() {
@@ -62968,8 +62476,6 @@ function edPanelLoad() {
             '<button class="edb" data-load="' + encodeURIComponent(n) + '">LOAD</button><button class="edb warn" data-kill="' + encodeURIComponent(n) + '">✕</button></div>';
   });
   html += '<div class="edh">THE SHIPPED MAPS</div>';
-  html += '<div class="edli"><div class="t">Ortona<small>the old town, 23 December 1943</small></div><button class="edb" id="edloadortona">LOAD</button></div>';
-  html += '<div class="edli"><div class="t">The Gothic Line<small>the Foglia valley, 30 August 1944, laid out for four</small></div><button class="edb" id="edloadgothic">LOAD</button></div>';
   html += '<div class="edli"><div class="t">Omaha Beach<small>Dog and Easy, 6 June 1944, from the water to the village</small></div><button class="edb" id="edloadomaha">LOAD</button></div>';
   html += '<div class="edli"><div class="t">Saint-L\u00f4<small>18 July 1944, three a side through the old town and over the Vire</small></div><button class="edb" id="edloadstlo">LOAD</button></div>';
   edPanel('LOAD A MAP', html);
@@ -62978,11 +62484,9 @@ function edPanelLoad() {
   /* One loader for both, because two copies of these nine statements go out of step the
      moment a third map is added. */
   function edLoadShipped(key, name) {
-    edSnapshot(); ED.data = (MAPS[key] || MAPS.ortona).make(); ED.name = name;
+    edSnapshot(); ED.data = (MAPS[key] || MAPS.omaha).make(); ED.name = name;
     G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose();
   }
-  el('edloadortona').addEventListener('click', function () { edLoadShipped('ortona', 'Ortona'); });
-  el('edloadgothic').addEventListener('click', function () { edLoadShipped('gothic', 'The Gothic Line'); });
   el('edloadomaha').addEventListener('click', function () { edLoadShipped('omaha', 'Omaha Beach'); });
   el('edloadstlo').addEventListener('click', function () { edLoadShipped('stlo', 'Saint-L\u00f4'); });
 }
@@ -63210,7 +62714,7 @@ function edPanelCheckShow() {
   el('edminicv').addEventListener('touchmove', edMiniJump, { passive: false });
   el('edpillok').addEventListener('click', function () { if (ED.fix) edFixApply(); else edFinishLine(); });
   el('edpillx').addEventListener('click', function () { if (ED.fix) edFixCancel(); else { ED.line = null; edPill(); edHint(); } });
-  el('edmsave').addEventListener('click', function () { if (ED.name && ED.name !== 'Ortona') edSaveSlot(ED.name); else edPanelName('SAVE THE MAP', 'NAME', ED.name === 'Ortona' ? 'My Ortona' : ED.name, function (v) { edSaveSlot(v); edPanelClose(); }); edMenu(false); });
+  el('edmsave').addEventListener('click', function () { var shipped = edShippedName(ED.name); if (ED.name && !shipped) edSaveSlot(ED.name); else edPanelName('SAVE THE MAP', 'NAME', shipped ? 'My ' + ED.name : ED.name, function (v) { edSaveSlot(v); edPanelClose(); }); edMenu(false); });
   el('edmsaveas').addEventListener('click', function () { edPanelName('SAVE AS', 'NAME', ED.name, function (v) { edSaveSlot(v); edPanelClose(); }); });
   el('edmload').addEventListener('click', edPanelLoad);
   el('edmnew').addEventListener('click', edPanelNew);
@@ -63218,11 +62722,9 @@ function edPanelCheckShow() {
   el('edmsharefile').addEventListener('click', function () { edShareFile(); edMenu(false); });
   if (!navigator.share) el('edmsharefile').classList.add('hidden');
   function edReload(key, name) {
-    edSnapshot(); ED.data = (MAPS[key] || MAPS.ortona).make(); ED.name = name;
+    edSnapshot(); ED.data = (MAPS[key] || MAPS.omaha).make(); ED.name = name;
     G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edMenu(false);
   }
-  el('edmortona').addEventListener('click', function () { edReload('ortona', 'Ortona'); });
-  el('edmgothic').addEventListener('click', function () { edReload('gothic', 'The Gothic Line'); });
   el('edmomaha').addEventListener('click', function () { edReload('omaha', 'Omaha Beach'); });
   el('edmstlo').addEventListener('click', function () { edReload('stlo', 'Saint-L\u00f4'); });
   el('edmexport').addEventListener('click', function () { edExport(); edMenu(false); });

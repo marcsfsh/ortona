@@ -861,6 +861,12 @@ for (const device of TARGETS) {
        two streets away. The flag row empties the board for the same reason; this one has
        to stop the dealing as well, because a call raised inside the tick is dealt inside it */
     const realAns = window.aiAnswer; window.aiAnswer = function () {};
+    /* and no operation raised or manned for them either: on Saint-Lô a hold raised on the
+       first tick borrowed two of the three, a unit on an operation is not in the wave, and the
+       wave went in with one section or not at all. The operations outrank the plan by design,
+       which is the brain being right about the wrong thing for a row about the plan. */
+    const realPlan = window.aiOpsPlan, realMan = window.aiOpsMan;
+    window.aiOpsPlan = function () {}; window.aiOpsMan = function () {};
     /* ATTACK given through the pad with the three sections he put down NAMED as its
        force, which is the board's own way of saying it and is what makes the deal
        readable: dealt by nearest-first they compete with whatever the battle's army has
@@ -871,6 +877,7 @@ for (const device of TARGETS) {
     window.simpleOrdOpen({ sec: S, x: S.x, y: S.y });
     document.querySelector('#tordbtns .tf[data-ord="attack"]').click();
     window.select([], false); window.ORDWHO = 'any';
+    secs3.forEach(u => { u.op = 0; });
     P.asKey = null; P.asT = -99; P.t = 0;
     const tick = () => { window.AIP[own].t = 0; window.aiThink(1); };
     tick();
@@ -924,7 +931,7 @@ for (const device of TARGETS) {
     const screenFired = (window.AIR.fired['smoke.screen'] || 0) - (f0['smoke.screen'] || 0);
     const kind = (q) => q ? (q.smoke ? 'smoke' : 'HE') + ' ' + q.d + ' from the flag' : 'nothing';
     /* down again */
-    window.aiAnswer = realAns;
+    window.aiAnswer = realAns; window.aiOpsPlan = realPlan; window.aiOpsMan = realMan;
     window.aiDirSet(own, S.id, null);
     P.asKey = null; P.asT = -99; P.asSec = null;
     raised.forEach(u => { u.barrage = null; const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); });
@@ -1098,7 +1105,11 @@ for (const device of TARGETS) {
     if (!window.UNITS[key] || !window.UNITS[key].indirect) return { has: false };
     const keep = window.G.units.slice(), shots = window.G.shots.slice();
     const foe = window.G.side === 'us' ? 'ger' : 'us';
-    const b = window.G.blds[0], a = Math.PI / 2, R = 190;
+    /* across the player's own headquarters, along the row it stands in: square to the line
+       the two armies face each other on, so both ends are in the open ground of his base
+       area. Staged off the first building at a fixed bearing, on Saint-Lô the far end was
+       off the bottom of the map with the observer beyond it, and nobody saw anything. */
+    const b = window.hqOf(window.G.own), F0 = window.frontOf(window.G.side), a = Math.atan2(F0.y, F0.x) + Math.PI / 2, R = 190;
     function stage(withEyes) {
       window.G.units.length = 0; window.G.shots.length = 0;
       const u = window.spawnUnit(window.G.side, key, b.x - Math.cos(a) * R, b.y - Math.sin(a) * R, a);
@@ -1232,10 +1243,17 @@ for (const device of TARGETS) {
        meant to refuse targets it can. Seeing is a rate now, so the flag is read after the
        minute rather than off one call to computeVisibility. */
     clear();
-    const g = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    /* on the open ground of his base area, a hundred and fifty in front of his headquarters
+       and along its row: at fixed coordinates, which were open on Ortona, the gun and the
+       section stood in a Saint-Lô street with houses between them and nobody saw anybody */
+    const U = window.UNITS[key], D = Math.round(Math.min(U.barrage.range / 2, U.sight - 60));
+    const hq0 = window.hqOf(window.G.own), F1 = window.frontOf(window.G.side);
+    const at1 = (al, fw) => window.nearestFree(hq0.x + F1.x * fw - F1.y * al, hq0.y + F1.y * fw + F1.x * al);
+    const p0 = at1(-D / 2, 150), p1 = at1(D / 2, 150), fa = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+    const g = window.spawnUnit(window.G.side, key, p0.x, p0.y, fa);
     g.setup = 0;
-    const B = g.def.barrage, D = Math.round(Math.min(B.range / 2, g.def.sight - 60));
-    const e = window.spawnUnit(foe, foe === 'ger' ? 'hr_gren' : 'am_rifle', 600 + D, 900, Math.PI);
+    const B = g.def.barrage;
+    const e = window.spawnUnit(foe, foe === 'ger' ? 'hr_gren' : 'am_rifle', p1.x, p1.y, fa + Math.PI);
     window.computeVisibility();
     const idle = run(g, 60);
     const seen = window.G.side === 'us' ? e.vUs : e.vGer;
@@ -1255,9 +1273,9 @@ for (const device of TARGETS) {
     }
     /* the crew have to get it into action first: a mission on a gun just put down waits */
     clear();
-    const h = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    const h = window.spawnUnit(window.G.side, key, p0.x, p0.y, fa);
     h.setup = h.def.setup;
-    window.orderBarrage(h, 600 + D, 900);
+    window.orderBarrage(h, p1.x, p1.y);
     let early = 0;
     for (let f = 0; f < 60 * Math.max(1, h.def.setup - 1); f++) {
       const n = window.G.shots.length;
@@ -2832,9 +2850,13 @@ for (const device of TARGETS) {
   const tooBig = ring.filter(r => r.r > r.far + 20);
   await fastForward(page, 90);
   const held = await page.evaluate(() => {
-    let men = 0, out = 0, worst = 0, worstKey = '';
+    let men = 0, out = 0, worst = 0, worstKey = '', gar = 0;
     window.G.units.forEach(u => {
       if (u.dead || !u.models) return;
+      /* a garrison's men stand at the openings of the building it holds and the clamp leaves
+         them there on purpose; Ortona's houses were small enough that they stood inside the
+         ring anyway, and a Saint-Lô town house is nine metres deep */
+      if (u.gar) { gar += u.models.filter(m => m.alive).length; return; }
       const R = window.selRadius(u);
       u.models.forEach(m => {
         if (!m.alive) return;
@@ -2844,7 +2866,7 @@ for (const device of TARGETS) {
         if (d - R > worst - 0) { worst = d - R; worstKey = u.key; }
       });
     });
-    return { men, out, over: Math.round(worst), worstKey };
+    return { men, out, over: Math.round(worst), worstKey, gar };
   });
   ok('the selection ring holds its unit and fits it',
      !tooSmall.length && !tooBig.length && held.men > 20 && held.out === 0,
@@ -2854,7 +2876,7 @@ for (const device of TARGETS) {
      (tooSmall.length ? tooSmall.map(r => r.k + ' ' + r.r + '<' + r.far).join(', ') + '; ' : '') +
      (tooBig.length ? tooBig.map(r => r.k + ' ' + r.r + '>>' + r.far).join(', ') + '; ' : '') +
      `after 90s of battle ${held.out} of ${held.men} men are outside their own ring ` +
-     `(furthest ${held.over} past it, ${held.worstKey})`);
+     `(furthest ${held.over} past it, ${held.worstKey}), ${held.gar} men holding buildings left out`);
 
   /* --- Two maps ship, which makes two things true that were vacuous with one: the
      picker has to build the one it names, and the second map has to be fair. Fairness on a
@@ -2868,7 +2890,10 @@ for (const device of TARGETS) {
   const maps = await page.evaluate(() => {
     const out = { keys: Object.keys(window.MAPS).sort().join(','), picked: '', brief: '' };
     /* the picker builds the map it names */
-    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'gothic') b.click(); });
+    /* the Gothic Line is hidden, so there is no button for it: what the title screen offers
+       is read, and the ground is set the way the harness sets a hidden one */
+    out.offered = [...document.querySelectorAll('.gmap')].map(b => b.dataset.map).join(',');
+    window.chosenMap = 'gothic'; window.objSync(); window.brandSync();
     out.picked = window.chosenMapData().name;
     out.brief = document.getElementById('objtext').textContent;
     /* and the page above the buttons names the ground it is going to be fought over */
@@ -2920,8 +2945,8 @@ for (const device of TARGETS) {
     made: window.G.slots.filter(s => s.ai).every(s => Object.keys(window.G.made[s.k]).length > 0),
     held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort()
   }));
-  ok('four maps ship, and the mirrored one is fair to the unit',
-     maps.keys === 'gothic,omaha,ortona,stlo' && maps.picked === 'The Gothic Line' &&
+  ok('two maps are offered and the hidden third is kept, and the mirrored one is fair to the unit',
+     maps.keys === 'gothic,omaha,stlo' && maps.offered === 'omaha,stlo' && maps.picked === 'The Gothic Line' &&
      maps.head === 'GOTHIC LINE' && maps.lede.indexOf('Foglia') >= 0 &&
      maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
      maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
@@ -3127,7 +3152,7 @@ for (const device of TARGETS) {
      sites his barracks, his motor pool and his tank yard where the brain's own routine puts
      them, inside his own side's area where it has one, or on a craft. --- */
   const bases = [];
-  for (const map of ['ortona', 'gothic', 'stlo', 'omaha']) {
+  for (const map of ['gothic', 'stlo', 'omaha']) {
     await reload(page);
     await page.evaluate(m => { window.G.mapData = window.MAPS[m].make(); window.startGame('us', 1, 'vp', true, 3); }, map);
     await page.waitForFunction(() => window.SCENE && window.SCENE.ready);
@@ -3173,7 +3198,7 @@ for (const device of TARGETS) {
   const bz = Object.fromEntries(bases.map(b => [b.map, b]));
   ok('the base areas: big, level and empty, and every player of a 3v3 sites his three buildings in his own',
      bases.every(b => b.off < 6 && b.tilt < .025 && b.grade < .2 && b.solid === 0 && b.sited === 18) &&
-     ['ortona', 'gothic', 'stlo'].every(m => bz[m].zones >= 2 && bz[m].outside === 0) &&
+     ['gothic', 'stlo'].every(m => bz[m].zones >= 2 && bz[m].outside === 0) &&
      bz.omaha.zones >= 1 && bz.omaha.craft >= 12,
      bases.map(b => `${b.map}: ${b.zones} areas over ${b.area}k square units, the ground ${b.off} at most off a plane whose grade ` +
        `is ${b.tilt}, and ${b.grade} at the steepest, ${b.solid} solid things in them` + (b.map === 'omaha' ? `, ${b.craft} craft aground and whole` : '') +
@@ -3593,7 +3618,7 @@ for (const device of TARGETS) {
     const W = window, G = W.G, made = G.made.us || {};
     const out = { am: made.am_rifle || 0,
                   live: G.units.filter(u => u.own === 'us' && u.key === 'am_rifle' && !u.dead).length };
-    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'ortona') b.click(); });
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'stlo') b.click(); });
     out.back = document.getElementById('pickus').querySelector('h3').textContent;
     out.backGer = document.getElementById('pickger').querySelector('h3').textContent;
     document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
@@ -3608,7 +3633,7 @@ for (const device of TARGETS) {
      `${natA.vars}${natA.fitted ? ' (fitted ' + natA.fitted + ')' : ''}; the headquarters makes ${natA.makes}, and asked for the squad ${natA.qAm ? 'queued it' : 'REFUSED it'}; a man killed ` +
      `${natA.fell ? 'went down' : 'DID NOT go down'} as ${natA.fellNat}, American bodies ${natA.bodies ? 'baked' : 'MISSING'}; ` +
      `a brain on the Allied side ordered ${natB.am} rifle squads in 45 s (${natB.live} standing); ` +
-     `Ortona's button reads ${natB.back}`);
+     `Saint-Lô's button reads ${natB.back}`);
   const ng = natA.ger;
   ok('Omaha: the German side is the 352nd Infantry Division, and its headquarters, its opening, its wall and its brain field the grenadier squad',
      /352/.test(ng.name) && /352/.test(ng.pick) && ng.hr >= 2 && ng.wallHr === 3 &&
@@ -3619,7 +3644,7 @@ for (const device of TARGETS) {
      `wall; its brain ordered ${ng.madeHr} grenadier squads in the wall row's minute; ${ng.men} men of ${ng.vars}; the ` +
      `headquarters makes ${ng.makes}, and the squad asked for queues ${ng.qHr}; a man killed ` +
      `${ng.fell ? 'went down' : 'DID NOT go down'} as ${ng.fellNat}, German bodies ${ng.bodies ? 'baked' : 'MISSING'}; ` +
-     `Ortona's German button reads ${natB.backGer}`);
+     `Saint-Lô's German button reads ${natB.backGer}`);
 
   /* --- The jeep. The Americans' light vehicle is the jeep: the motor pool turns it out and
      queues it, the count and the order book read it, the men riding in it are drawn with it
@@ -10368,7 +10393,7 @@ for (const device of TARGETS) {
              cols: document.querySelectorAll('#edstart .edscol').length, on: window.ED.on, small, checked,
              hScroll: document.documentElement.scrollWidth - window.innerWidth };
   });
-  await page.click('#edsdup-ortona');
+  await page.click('#edsdup-stlo');
   await page.waitForFunction(() => window.ED.on, null, { timeout: 120000 });
   await frames(page, 2);
   const ed = await page.evaluate(() => {
@@ -10439,7 +10464,7 @@ for (const device of TARGETS) {
   });
   ok('the editor opens on three ways to start', chooser.cols === 3 && chooser.tpl === 5 && chooser.dup === 4 && !chooser.on && chooser.small === 0 && chooser.hScroll <= 0,
      `${chooser.tpl} templates, ${chooser.dup} maps to copy, ${chooser.checked} controls with ${chooser.small} small, editor ${chooser.on ? 'ALREADY OPEN' : 'not yet open'}`);
-  ok('map editor opens on the copy, with no page of instructions over it', ed.on && !ed.helped && ed.named === 'Ortona (copy)',
+  ok('map editor opens on the copy, with no page of instructions over it', ed.on && !ed.helped && ed.named === 'Saint-Lô (copy)',
      `${ed.cats} categories, ${ed.tools} tools, named "${ed.named}", ${ed.helped ? 'panel ' + ed.helped + ' OPEN' : 'nothing over the map'}, "${ed.saved}"`);
   ok('a tool is found by what it is called or what it is for', ed.found,
      `road: ${ed.find.road.slice(0, 3)} | house: ${ed.find.house.slice(0, 3)} | crater: ${ed.find.crater.slice(0, 3)} | trees: ${ed.find.trees.slice(0, 3)}`);

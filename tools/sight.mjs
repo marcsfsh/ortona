@@ -142,13 +142,16 @@ async function install(page) {
 
     /* --- REACH: what a position commands --- */
     S.reach = function () {
+      /* Saint-Lô's, since Ortona was taken out of the game: the three victory flags on the
+         midline, the square between the lanes, the German shelf behind the left lane, and
+         the far bank of the Vire out toward the yards */
       const SPOTS = [
-        ['the crossroads', 1400, 950],
-        ['the piazza', 1400, 700],
-        ['a back lane', 1180, 1120],
-        ['the shelf', 900, 380],
-        ['the vallone', 1750, 1500],
-        ['open ground west', 520, 950]
+        ['the Champ de Mars', 760, 1400],
+        ['the Neuf-Bourg', 1470, 1400],
+        ['Notre-Dame', 2050, 1400],
+        ['the station', 3000, 1400],
+        ['the Route de Torigni', 566, 500],
+        ['the far bank', 3600, 1100]
       ];
       const out = [];
       for (const [name, x0, y0] of SPOTS) {

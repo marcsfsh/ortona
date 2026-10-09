@@ -50,7 +50,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { launch, openGame, deploy, fastForward, parseArgs, GAME } from './harness.mjs';
+import { launch, openGame, deploy, fastForward, parseArgs, GAME, DEFAULT_MAP } from './harness.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const MAP = args.map || null;      /* which shipped map to fight on */
@@ -701,15 +701,22 @@ async function install(page) {
 
 /* ------------------------------------------------------------------ the card */
 
-/* Five journeys across the shipped map, named for what they are. The first is the whole
-   width of it; the rest are the ones a battle actually asks for. */
-const ROUTES = [
-  ['crossing', 'hq:us', 'hq:ger'],
-  ['into town', 'hq:us', 'sec:E'],
-  ['the Corso', 'sec:C', 'sec:G'],
-  ['across the grain', 'sec:D', 'sec:F'],
-  ['the long diagonal', 'sec:A', 'sec:I']
-];
+/* Five journeys across the map, named for what they are. The first is the whole length of
+   it; the rest are the ones a battle actually asks for. They were Ortona's (into the town,
+   down the Corso, across the grain of the blocks) until Ortona was taken out of the game; on
+   Saint-Lô they are up the ramp onto the rock, down the Bayeux road that is the armour's lane,
+   over the Vire from Notre-Dame to the station and the long diagonal from the American left
+   to the gasworks. A map without its own list is asked the crossing alone. */
+const ROUTES_BY = {
+  stlo: [
+    ['crossing', 'hq:us', 'hq:ger'],
+    ['onto the rock', 'hq:us', 'sec:m3'],
+    ['the Bayeux road', 'sec:a1', 'sec:g1'],
+    ['over the Vire', 'sec:m3', 'sec:m4'],
+    ['the long diagonal', 'sec:a1', 'sec:g3']
+  ]
+};
+const ROUTES = ROUTES_BY[MAP || DEFAULT_MAP] || [['crossing', 'hq:us', 'hq:ger']];
 /* foot, tracks, wheels, and the heaviest thing on the roster, which is the one that
    finds out how wide a street is */
 const MOVERS = [
