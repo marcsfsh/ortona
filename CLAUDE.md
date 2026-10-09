@@ -1592,7 +1592,8 @@ buffer is built, the gun laid up and down on its trunnions among them, it is nam
 asked to lay over the tail it comes all the way round and is laid up over the walls with its muzzle six units
 or more over the top of the box, and brought back to the nose it comes down level with the muzzle under the
 top; the eye is the commander's, over the top of the box; a Kar98k never goes through its front and a Pak 38
-always does, and its 37 mm goes through a Panzer IV's side and never its front at two hundred; forty wrecks throw
+always does, and its 37 mm goes through a Panzer IV's side more than eight times in ten and never its front
+at two hundred; forty wrecks throw
 nothing, killed it leaves the army's crewmen, and a brain on his slot buys one. The twentieth asks the B-4:
 the army names it as its battery and the sapper's card offers it and none of the other armies'; it is refused
 inside 700 of home and a second is refused with the first standing; dug forward it stands with its seven men

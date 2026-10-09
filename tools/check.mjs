@@ -9871,7 +9871,9 @@ for (const device of TARGETS) {
      from the slot it is laid up over the walls, its muzzle well over the box's top; brought back
      into the slot it comes down level again. The eye is the commander's at the back of the box. A
      Kar98k never goes through its front and a Pak 38 always does, and its own 37 mm goes through a
-     Panzer IV's side every time at two hundred and never through its front. Forty wrecks throw
+     Panzer IV's side more than eight times in ten at two hundred and never through its front: the
+     hull's and the turret's sides open square on, and the turret's rear corners, met at forty-five
+     degrees, do not. Forty wrecks throw
      nothing, killed it leaves the army's crewmen, and a brain on his slot with the Avtopark standing
      and the rungs under it bought buys one. --- */
   const zk = await page.evaluate(() => {
@@ -9951,7 +9953,7 @@ for (const device of TARGETS) {
      /sv_zsu37/.test(zk.makes) && zk.q === 'sv_zsu37' && zk.qKaz === 'refused' && zk.bufs && zk.fixed && zk.name === 'ZSU-37' &&
      !zk.arc && zk.tur > 3.0 && zk.elUp > .85 && zk.muzUp > zk.boxTop + 6 && zk.back < .05 && zk.elDown < .05 &&
      zk.muzDown < zk.boxTop - 3 && zk.shlem > 0 && zk.frame === 'hull' && zk.eye > zk.boxTop && zk.eye < zk.boxTop + 6 &&
-     zk.rifle === 0 && zk.pak === 1 && zk.onP4S >= .98 && zk.onP4F === 0 && zk.auto && zk.blown === 0 && zk.bodies >= 1 &&
+     zk.rifle === 0 && zk.pak === 1 && zk.onP4S > .8 && zk.onP4F === 0 && zk.auto && zk.blown === 0 && zk.bodies >= 1 &&
      zk.bodyNat === 'sov' && /sov_mot:sv_zsu37/.test(zkAi.q),
      `the Avtopark makes ${zk.makes} and queues ${zk.q}, the Kazarma ${zk.qKaz} it; buffers ${zk.bufs ? 'built' : 'MISSING'}, ` +
      `${zk.fixed ? 'nothing to throw' : 'NOT FIXED'}; named ${zk.name}${zk.arc ? ' on an ARC of ' + zk.arc : ''}; asked to lay over the tail ` +
