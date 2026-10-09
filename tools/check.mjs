@@ -3000,8 +3000,8 @@ for (const device of TARGETS) {
     made: window.G.slots.filter(s => s.ai).every(s => Object.keys(window.G.made[s.k]).length > 0),
     held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort()
   }));
-  ok('two maps are offered and the hidden third is kept, and the mirrored one is fair to the unit',
-     maps.keys === 'gothic,omaha,stlo' && maps.offered === 'omaha,stlo' && maps.picked === 'The Gothic Line' &&
+  ok('three maps are offered and the hidden fourth is kept, and the mirrored one is fair to the unit',
+     maps.keys === 'elbe,gothic,omaha,stlo' && maps.offered === 'omaha,stlo,elbe' && maps.picked === 'The Gothic Line' &&
      maps.head === 'GOTHIC LINE' && maps.lede.indexOf('Foglia') >= 0 &&
      maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
      maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
@@ -3195,6 +3195,67 @@ for (const device of TARGETS) {
      `headquarters against ${stlo.walkGer} from the German (${(walkSkew * 100).toFixed(2)}%); ` +
      `${stloFight.raised} of ${stloFight.brains} brains raised something in 90 s`);
 
+  /* --- Rosswitz, laid for three a side like Saint-Lo and mirrored about y 1400 the same way,
+     but flat farmland, where Saint-Lo is a town on a rock. Asked the same arithmetic: the
+     ground is its own reflection, six headquarters on the map's own spots with ground to
+     march out onto, and every walk from every headquarters to every flag arriving the same
+     both ways, for a man and for a tank, because the flanks are laid for armour and a flank
+     a hull cannot cross is not one. Then ninety seconds of battle with every brain raising
+     something. The cover at the flags is printed and not yet asked: the strongpoints round
+     them are the next stage of the map. --- */
+  await reload(page);
+  await page.evaluate(() => { document.getElementById('heven').click(); document.getElementById('aeven').click(); });
+  await page.evaluate(() => { window.G.mapData = window.MAPS.elbe.make(); window.startGame('us', 1, 'vp', true, 3); });
+  await page.waitForFunction(() => window.SCENE && window.SCENE.ready);
+  const elbe = await page.evaluate(() => {
+    const G = window.G, MY = 1400, out = {};
+    let worst = 0;
+    for (let i = 0; i < 2000; i++) {
+      const x = 30 + (i * 137.71) % 3740, y = 30 + (i * 71.37) % 1340;
+      worst = Math.max(worst, Math.abs(window.bareZ(x, y) - window.bareZ(x, 2 * MY - y)));
+    }
+    out.ground = Math.round(worst * 100) / 100;
+    const ents = G.mapData.entities.filter(e => e.t === 'hq'), hq = G.blds.filter(b => b.def.hq);
+    out.hqs = hq.length;
+    out.spots = ents.filter(e => hq.some(b => b.side === e.side && b.own === (e.side + ((e.n || 1) > 1 ? e.n : '')) &&
+                                        Math.hypot(b.x - e.x, b.y - e.y) < 8)).length;
+    out.hqWalk = hq.filter(b => { const f = window.frontOf(b.side); return window.walkable(b.x + f.x * 130, b.y + f.y * 130); }).length;
+    out.flags = G.sectors.length; out.vp = G.sectors.filter(s => s.type === 'vp').length;
+    out.bare = G.sectors.filter(sc => !G.covers.some(c => c.type >= 3 && Math.hypot(c.x - sc.x, c.y - sc.y) < 110)).length;
+    const twin = id => id[0] === 'g' ? 'a' + id.slice(1) : id[0] === 'a' ? 'g' + id.slice(1) : id;
+    [['man', { cat: 'inf', def: {} }], ['tank', { cat: 'veh', def: {} }]].forEach(([nm, who]) => {
+      const walk = {}, noWay = [];
+      for (const b of hq) for (const sc of G.sectors) {
+        const f = window.frontOf(b.side), x0 = b.x + f.x * 130, y0 = b.y + f.y * 130, p = window.findPath(x0, y0, sc.x, sc.y, who);
+        let L = 0, px = x0, py = y0;
+        for (const q of p) { L += Math.hypot(q.x - px, q.y - py); px = q.x; py = q.y; }
+        if (p.noWay || Math.hypot(px - sc.x, py - sc.y) > 60) noWay.push(b.own + '>' + sc.id);
+        walk[b.own + '>' + sc.id] = L;
+      }
+      let us = 0, ger = 0;
+      for (const k in walk) if (k.indexOf('us') === 0) { const [o, id] = k.split('>'); us += walk[k]; ger += walk[o.replace('us', 'ger') + '>' + twin(id)]; }
+      out[nm] = { walks: Object.keys(walk).length, noWay: noWay.slice(0, 4), us: Math.round(us), ger: Math.round(ger),
+                  skew: Math.abs(us - ger) / Math.max(1, ger) };
+    });
+    return out;
+  });
+  await fastForward(page, 90);
+  const elbeFight = await page.evaluate(() => {
+    const G = window.G, ai = G.slots.filter(s => s.ai);
+    return { raised: ai.filter(s => Object.keys(G.made[s.k]).length > 0).length, brains: ai.length,
+             held: [...new Set(G.sectors.map(x => x.owner).filter(Boolean))].filter(o => o !== 'us' && o !== 'ger').length };
+  });
+  ok('Rosswitz: the ground is its own reflection, six headquarters on their spots, and every walk arrives the same both ways for a man and a tank',
+     elbe.ground < .5 && elbe.hqs === 6 && elbe.spots === 6 && elbe.hqWalk === 6 && elbe.flags === 15 && elbe.vp === 3 &&
+     ['man', 'tank'].every(k => elbe[k].walks === 90 && elbe[k].noWay.length === 0 && elbe[k].skew < .02) &&
+     elbeFight.raised === elbeFight.brains && elbeFight.brains === 5 && elbeFight.held === 0,
+     `the ground disagrees with its reflection by ${elbe.ground} at most; ${elbe.hqs} headquarters, ${elbe.spots} on the map's ` +
+     `own spots and ${elbe.hqWalk} with ground to march out onto; ${elbe.flags} flags, ${elbe.vp} of them victory flags, ` +
+     `${elbe.bare} without tier-3 cover inside 110 yet; ` +
+     ['man', 'tank'].map(k => `${elbe[k].walks} ${k} walks, no way: ${elbe[k].noWay.join(' ') || 'none'}, ${elbe[k].us} from the ` +
+       `American headquarters against ${elbe[k].ger} from the German (${(elbe[k].skew * 100).toFixed(2)}%)`).join('; ') +
+     `; ${elbeFight.raised} of ${elbeFight.brains} brains raised something in 90 s`);
+
   /* --- The base areas. Ortona, the Gothic Line and Saint-Lo give each side ground to build a
      base on (`LAND.base`): an area round every headquarters spot of the full three a side,
      levelled very nearly flat and laid with nothing but roads, flags and grass. Omaha gives it
@@ -3207,7 +3268,7 @@ for (const device of TARGETS) {
      sites his barracks, his motor pool and his tank yard where the brain's own routine puts
      them, inside his own side's area where it has one, or on a craft. --- */
   const bases = [];
-  for (const map of ['gothic', 'stlo', 'omaha']) {
+  for (const map of ['gothic', 'stlo', 'elbe', 'omaha']) {
     await reload(page);
     await page.evaluate(m => { window.G.mapData = window.MAPS[m].make(); window.startGame('us', 1, 'vp', true, 3); }, map);
     await page.waitForFunction(() => window.SCENE && window.SCENE.ready);
@@ -3253,7 +3314,7 @@ for (const device of TARGETS) {
   const bz = Object.fromEntries(bases.map(b => [b.map, b]));
   ok('the base areas: big, level and empty, and every player of a 3v3 sites his three buildings in his own',
      bases.every(b => b.off < 6 && b.tilt < .025 && b.grade < .2 && b.solid === 0 && b.sited === 18) &&
-     ['gothic', 'stlo'].every(m => bz[m].zones >= 2 && bz[m].outside === 0) &&
+     ['gothic', 'stlo', 'elbe'].every(m => bz[m].zones >= 2 && bz[m].outside === 0) &&
      bz.omaha.zones >= 1 && bz.omaha.craft >= 12,
      bases.map(b => `${b.map}: ${b.zones} areas over ${b.area}k square units, the ground ${b.off} at most off a plane whose grade ` +
        `is ${b.tilt}, and ${b.grade} at the steepest, ${b.solid} solid things in them` + (b.map === 'omaha' ? `, ${b.craft} craft aground and whole` : '') +

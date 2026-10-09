@@ -973,6 +973,7 @@ body:not(.simple) #tOrders{display:none}
     <button class="edb wide" id="edmnew">NEW MAP…</button>
     <button class="edb wide" id="edmomaha">RELOAD OMAHA BEACH</button>
     <button class="edb wide" id="edmstlo">RELOAD SAINT-LÔ</button>
+    <button class="edb wide" id="edmelbe">RELOAD ROSSWITZ</button>
     <div class="edh">FILES</div>
     <button class="edb wide" id="edmexport">EXPORT FILE</button>
     <button class="edb wide" id="edmsharefile">SHARE…</button>
@@ -1102,6 +1103,7 @@ body:not(.simple) #tOrders{display:none}
         <div class="mmaps">
           <button class="gmap on" data-map="omaha" title="Omaha Beach, 6 June 1944: ashore at the water, up twelve hundred units of open sand, over the seawall and up one of two draws into the bocage" aria-pressed="true"><b>OMAHA</b><small>6 JUN 1944</small></button>
           <button class="gmap" data-map="stlo" title="Saint-Lô, 18 July 1944: three a side through the capital of ruins, the old town on its rock over the Vire, the station across the river and the Bayeux road up the left" aria-pressed="false"><b>SAINT-LÔ</b><small>18 JUL 1944</small></button>
+          <button class="gmap" data-map="elbe" title="Rosswitz, 25 April 1945: three a side over flat Saxon farmland, a village for each side and the manor in its walled park between them" aria-pressed="false"><b>ROSSWITZ</b><small>25 APR 1945</small></button>
         </div>
       </section>
       <section class="msec" data-k="army">
@@ -4600,6 +4602,18 @@ var SOILS = {
           screeHi: '138,136,120', screeLo: '62,60,52',
           thin: '112,124,76', thinHi: '146,156,104', blade: ['#7a9a48', '#688a42'],
           slSoil: .5, slScree: .95, slRock: 1.2, rock0: .64, rockK: 8.0,
+          sea: ['#2a3024', '#343c2a', '#46503a'] },
+  /* Saxony in April: loess over the plain, a deep brown loam, and everything that is not
+     ploughed is in its first green of the year, fresher and yellower than Normandy's in
+     July. The ground is flat, so the stone family is never seen and is Saint-Lo's. */
+  elbe: { g0: '#53633a', g1: '#5a693d', g2: '#516036',
+          mdark: '58,72,38', mpale: '120,132,80', grass: '84,112,50',
+          hollow: '88,76,50', tuft: '72,100,44', shoulder: '152,154,124',
+          rockL: 96, rockN: 34, rockD: [-6, -2, 8], joint: '38,40,46',
+          screeL: 92, screeN: 40, screeD: [8, 6, -4],
+          screeHi: '138,136,120', screeLo: '62,60,52',
+          thin: '108,120,72', thinHi: '140,152,100', blade: ['#7a9a46', '#688a42'],
+          slSoil: .5, slScree: .95, slRock: 1.2, rock0: .64, rockK: 8.0,
           sea: ['#2a3024', '#343c2a', '#46503a'] }
 };
 function soil() { return SOILS[LAND.soil] || SOILS.ortona; }
@@ -4634,6 +4648,12 @@ var ATMO_OMAHA = { sun: [0.740, 0.270, 0.616], sunCol: [0.56, 0.56, 0.55], skyCo
 var ATMO_STLO = { sun: [0.829, -0.176, 0.530], sunCol: [1.16, 1.02, 0.84], skyCol: [0.74, 0.83, 1.00], amb: .46,
                   fog: [.66, .66, .62], zenith: [0.36, 0.49, 0.70], glow: .9,
                   seaDeep: [0.050, 0.075, 0.052], seaSky: [0.56, 0.64, 0.68], surf: 0 };
+/* Rosswitz at noon on the 25th of April: the sun due south and a little west at fifty-two
+   degrees, which is down the screen and a little to the right, white and hard, under a
+   clear spring sky with a light haze over the fields. */
+var ATMO_ELBE = { sun: [0.25, 0.57, 0.783], sunCol: [1.10, 1.04, 0.93], skyCol: [0.74, 0.83, 0.98], amb: .44,
+                  fog: [.68, .71, .72], zenith: [0.33, 0.50, 0.78], glow: 1,
+                  seaDeep: [0.050, 0.075, 0.052], seaSky: [0.56, 0.64, 0.68], surf: 0 };
 var ATMO = ATMO0;
 function setAtmo(a) {
   ATMO = a || ATMO0;
@@ -4665,7 +4685,12 @@ var LANDS = {
      each end of the map a lane apart. */
   stlo: { name: 'stlo', build: landStlo, at: stloZ, coast: null, rail: null, val: [], sea: 0, river: stloRiver, noPad: stloOnWay,
           padR: 210, padY: 150, padM: 120, soil: 'stlo', atmo: ATMO_STLO, hand: 1, mirrorY: 1400,
-          base: { a: 440, f: 250, g: .015 } }
+          base: { a: 440, f: 250, g: .015 } },
+  /* Rosswitz: flat Saxon farmland with no water on it, three headquarters a side like
+     Saint-Lo, and fields that have been turned over this spring growing no grass */
+  elbe: { name: 'elbe', build: landElbe, at: elbeZ, coast: null, rail: null, val: [],
+          padR: 210, padY: 150, padM: 120, soil: 'elbe', atmo: ATMO_ELBE, hand: 1, mirrorY: 1400, bareFields: 1,
+          base: { a: 440, f: 220, g: .015 } }
 };
 var LAND = LANDS.ortona;
 /* Where the armies deploy, which is where their headquarters stand. This was two
@@ -6021,6 +6046,177 @@ function stloZ(x, y) {
 }
 function landStlo(h) {
   for (var j = 0; j < HH; j++) for (var i = 0; i < HW; i++) h[hidx(i, j)] = stloZ(i * HG, j * HG);
+}
+/* ---- Rosswitz, 25 April 1945 ----
+   Flat Saxon farmland a few miles short of the Elbe on the day the American and the Soviet
+   armies met on the river, laid for three a side and for either Allied army against the
+   352nd. Each side has a village of its own in front of its headquarters, Wendelsdorf on
+   the German half and Schoenfeld on the American, a street village along the road that
+   crosses the map, and between them the manor of Gut Rosswitz in its walled park on the
+   midline, with the three victory flags on the midline: the windmill on the left, the manor
+   in the middle and the field barn on the right. The centre lane is the infantry's, village,
+   avenue, park and manor one after another; the two flanks are open fields for armour with
+   small strongpoints scattered over them for the men (a farm, a cross with its lime trees,
+   the straw stacks), each a flag.
+     Everything that plays is mirrored about y 1400, as Saint-Lo is, and the dressing is
+   not: the fields of the two halves are laid in the same blocks with their own strips and
+   crops, and the villages, the farms and what stands in the fields will be dressed from
+   lists of their own. The ground is flat: a drift of a unit or two either way over the
+   whole map, which is the whole of what an open field is to a tank, and the base areas
+   are levelled out of it like any other.
+     It is laid in stages and this is the first: the ground, the roads and tracks, the
+   fields, the park wall, the headquarters and the flags. The farmyards, the manor, the
+   church, the windmill, the barns, the stacks, the carts and the trees come in the next. */
+var ELBE = { w: 3800, h: 2800, mid: 1400 };
+function elbeZ(x, y) {
+  var dy = Math.abs(y - ELBE.mid);
+  return 40 + (hfbm(x / 900, dy / 900, 401, 2) - .5) * 4 + (hfbm(x / 240, dy / 240, 403, 2) - .5) * 1.4;
+}
+function landElbe(h) {
+  for (var j = 0; j < HH; j++) for (var i = 0; i < HW; i++) h[hidx(i, j)] = elbeZ(i * HG, j * HG);
+}
+/* whether nothing grows on a point because a field there has been turned over this spring */
+function fieldBare(x, y) {
+  for (var i = 0; i < G.fieldTones.length; i++) {
+    var f = G.fieldTones[i];
+    if (x > f.x0 && x < f.x1 && y > f.y0 && y < f.y1) return f.k === 'tilled' || f.k === 'sown' || f.k === 'plough';
+  }
+  return false;
+}
+function elbeMapData() {
+  var E = [], MID = 1400, sd = 0;
+  function my(y) { return 2 * MID - y; }
+  function P(pts) { return pts.map(function (p) { return { x: p[0], y: p[1] }; }); }
+  function road(style, w, pts) {
+    var e = { t: 'road', width: w, pts: P(pts) };
+    if (style) e.style = style;
+    E.push(e);
+  }
+  /* a road laid on the German half and its twin on the American */
+  function pair(style, w, pts) {
+    road(style, w, pts);
+    road(style, w, pts.map(function (p) { return [p[0], my(p[1])]; }));
+  }
+  /* a road from the German half through the midline to its twin */
+  function both(style, w, pts) {
+    var back = pts.slice(0, pts.length - 1).reverse().map(function (p) { return [p[0], my(p[1])]; });
+    road(style, w, pts.concat(back));
+  }
+  /* the dice, drawn in the same order every time the map is built, so it is one map */
+  function rr() { sd++; var v = Math.sin(sd * 12.9898 + 4.1) * 43758.5453; return v - Math.floor(v); }
+
+  /* ---- the headquarters, three a side at the head of each lane ---- */
+  [[1900, 1], [600, 2], [3200, 3]].forEach(function (h) {
+    E.push({ t: 'hq', side: 'ger', n: h[1], x: h[0], y: 210 });
+    E.push({ t: 'hq', side: 'us', n: h[1], x: h[0], y: my(210) });
+  });
+
+  /* ---- the roads and tracks. The Landstrasse crosses the map along y 700 through each
+     village, tarred outside it and cobbled through it, laid from junction to junction; a
+     tarred road comes down from each headquarters onto it. Below it the farm tracks are
+     rolled dirt: one down each flank lane through the midline to its twin, the avenue down
+     the centre from the village to the manor's forecourt, the mill track across the fields
+     between the village and the park, one more down the edge of each flank, a track from
+     the windmill to the park's west gate and from its east gate to the field barn, and a
+     field track up each side of the village to the mill track. ---- */
+  pair('tar', 50, [[0, 690], [620, 700]]);
+  pair('tar', 50, [[620, 700], [1340, 705]]);
+  pair('setts', 50, [[1340, 705], [1900, 700], [2460, 705]]);
+  pair('tar', 50, [[2460, 705], [3180, 700]]);
+  pair('tar', 50, [[3180, 700], [3800, 690]]);
+  pair('tar', 44, [[1900, 210], [1900, 700]]);
+  pair('tar', 44, [[600, 210], [620, 700]]);
+  pair('tar', 44, [[3200, 210], [3180, 700]]);
+  both(null, 34, [[620, 700], [640, 1000], [652, 1250], [640, 1400]]);
+  both(null, 34, [[3180, 700], [3160, 1000], [3148, 1250], [3160, 1400]]);
+  both(null, 28, [[250, 692], [232, 1050], [222, 1400]]);
+  both(null, 28, [[3550, 692], [3568, 1050], [3578, 1400]]);
+  pair(null, 40, [[1900, 700], [1900, 1265]]);
+  pair(null, 30, [[640, 1000], [1250, 1030], [1900, 1040]]);
+  pair(null, 30, [[1900, 1040], [2550, 1030], [3160, 1000]]);
+  pair(null, 26, [[1190, 705], [1210, 1030]]);
+  pair(null, 26, [[2610, 705], [2590, 1030]]);
+  road(null, 30, [[0, MID], [640, MID]]);
+  road(null, 30, [[640, MID], [1560, MID]]);
+  road(null, 30, [[2240, MID], [3160, MID]]);
+  road(null, 30, [[3160, MID], [3800, MID]]);
+
+  /* ---- the park wall round Gut Rosswitz, chest high, so a man fights over it and a tank
+     goes over it; open at a gate on each side, where the avenue and the two midline tracks
+     come in, and laid in runs short enough to stand on their own ground ---- */
+  function wall(x1, y1, x2, y2) {
+    var L = Math.hypot(x2 - x1, y2 - y1), n = Math.max(1, Math.ceil(L / 110)), k;
+    for (k = 0; k < n; k++) E.push({ t: 'wall', h: 13, x1: Math.round(lerp(x1, x2, k / n)), y1: Math.round(lerp(y1, y2, k / n)),
+                                     x2: Math.round(lerp(x1, x2, (k + 1) / n)), y2: Math.round(lerp(y1, y2, (k + 1) / n)) });
+  }
+  var PX0 = 1560, PX1 = 2240, PY0 = 1160;
+  [PY0, my(PY0)].forEach(function (wy) { wall(PX0, wy, 1870, wy); wall(1930, wy, PX1, wy); });
+  [PX0, PX1].forEach(function (wx) { wall(wx, PY0, wx, 1370); wall(wx, 1430, wx, my(PY0)); });
+
+  /* ---- the fields. The country round a Saxon village was ploughed in strips laid in
+     blocks, the strips of a block all running one way and the next block often the other,
+     with a grass balk between two strips and a track round the block. In late April the
+     winter rye is up, a field that was ploughed in the autumn has been harrowed and sown or
+     is waiting to be, the clover is dark and the meadows are coming into flower. A field is
+     paint and nothing else, so the American half is laid in the same blocks with its own
+     strips and its own crops. ---- */
+  var CROP = [['rye', .34], ['tilled', .18], ['sown', .16], ['clover', .12], ['meadow', .2]];
+  function crop() {
+    var k = rr();
+    for (var i = 0; i < CROP.length; i++) { k -= CROP[i][1]; if (k < 0) return CROP[i][0]; }
+    return 'rye';
+  }
+  function gewann(x0, y0, x1, y1, ax, us) {
+    var p = ax === 'x' ? y0 : x0, end = ax === 'x' ? y1 : x1;
+    while (end - p > 1) {
+      var w = Math.round(90 + rr() * 150);
+      if (end - p - w < 70) w = end - p;
+      var f = ax === 'x' ? { x: x0, y: p, w: x1 - x0, h: w } : { x: p, y: y0, w: w, h: y1 - y0 };
+      if (us) f.y = my(f.y + f.h);
+      E.push({ t: 'field', x: f.x, y: f.y, w: f.w, h: f.h, k: crop() });
+      p += w;
+    }
+  }
+  var BLOCKS = [
+    [0, 0, 620, 690, 'y'], [620, 0, 1340, 700, 'y'], [1340, 0, 2460, 440, 'x'],
+    [2460, 0, 3180, 700, 'y'], [3180, 0, 3800, 690, 'y'],
+    [0, 700, 232, 1400, 'y'], [232, 700, 640, 1400, 'x'], [640, 705, 1200, 1020, 'x'], [1200, 705, 1340, 1030, 'y'],
+    [2460, 705, 2600, 1030, 'y'], [2600, 705, 3160, 1020, 'x'], [3160, 700, 3568, 1400, 'x'], [3568, 700, 3800, 1400, 'y'],
+    [640, 1030, 1560, 1400, 'y'], [2240, 1030, 3160, 1400, 'y'], [1340, 990, 1560, 1030, 'x'], [2240, 990, 2460, 1030, 'x'],
+    [1560, 990, 2240, 1160, 'x']
+  ];
+  BLOCKS.forEach(function (b) { gewann(b[0], b[1], b[2], b[3], b[4], 0); });
+  BLOCKS.forEach(function (b) { gewann(b[0], b[1], b[2], b[3], b[4] === 'x' && rr() < .3 ? 'y' : b[4], 1); });
+  /* the park inside the wall, on both halves at once */
+  E.push({ t: 'field', x: PX0, y: PY0, w: PX1 - PX0, h: my(PY0) - PY0, k: 'park' });
+
+  /* ---- the flags. Fifteen: three a side by the headquarters (the outlying farms and the
+     village), three a side on the forward row (a cross at the crossroads, the avenue and the
+     straw stacks), and the three victory flags on the midline. The manor's is in the
+     courtyard of its farm, east of the house, which will stand across the midline. ---- */
+  var F = [
+    ['g1', 520, 560, 'mp', 'ger', 'The Vorwerk', ['g2', 'g4']],
+    ['g2', 1900, 760, 'mp', 'ger', 'Wendelsdorf', ['g1', 'g3', 'g5']],
+    ['g3', 3280, 560, 'fuel', 'ger', 'The Schäferei', ['g2', 'g6']],
+    ['g4', 560, 1000, 'mp', null, 'The wayside cross', ['g1', 'g5', 'm1']],
+    ['g5', 1900, 1090, 'fuel', null, 'The lime avenue', ['g2', 'g4', 'g6', 'm2']],
+    ['g6', 3240, 1000, 'mp', null, 'The straw stacks', ['g3', 'g5', 'm3']]
+  ];
+  var US = { g1: ['a1', 'The Neuhof'], g2: ['a2', 'Schönfeld'], g3: ['a3', 'The Lindenhof'],
+             g4: ['a4', 'The field chapel'], g5: ['a5', 'The poplar avenue'], g6: ['a6', 'The hay barns'] };
+  function twin(id) { return US[id] ? US[id][0] : id; }
+  F.forEach(function (f) {
+    E.push({ t: 'sector', id: f[0], x: f[1], y: f[2], type: f[3], owner: f[4], label: f[5], nb: f[6] });
+    E.push({ t: 'sector', id: US[f[0]][0], x: f[1], y: my(f[2]), type: f[3], owner: f[4] ? 'us' : null,
+             label: US[f[0]][1], nb: f[6].map(twin) });
+  });
+  E.push({ t: 'sector', id: 'm1', x: 760, y: MID, type: 'vp', owner: null, label: 'The windmill', nb: ['g4', 'a4', 'm2'] });
+  E.push({ t: 'sector', id: 'm2', x: 2080, y: MID, type: 'vp', owner: null, label: 'Gut Rosswitz', nb: ['m1', 'm3', 'g5', 'a5'] });
+  E.push({ t: 'sector', id: 'm3', x: 3040, y: MID, type: 'vp', owner: null, label: 'The field barn', nb: ['m2', 'g6', 'a6'] });
+
+  E = baseOpen(E, null, 'elbe', 3800, 2800);
+  return { name: 'Rosswitz', when: 'SAXONY · 25 APR 1945', version: 1, land: 'elbe', w: 3800, h: 2800,
+           entities: E, height: [] };
 }
 /* The country's hooks. SAND is how much of a point is beach, for the grass scatter, which
    grows none on it. WET is the bottom of the flat and the runnels, which the shader
@@ -22936,6 +23132,8 @@ function buildGrass() {
     /* and nothing at all grows on a beach, which is a harder rule than the churn's: sand
        is not thin ground, it is no ground */
     if (LAND.sand && srand() < LAND.sand(x, y) * 1.06) continue;
+    /* nor on a field ploughed or sown this spring */
+    if (LAND.bareFields && fieldBare(x, y)) continue;
     var z = groundZ(x, y), h = srange(3.2, 5.8), w = h * 1.6, yaw = srange(0, Math.PI), col = hexRGB(soil().blade[srand() < .5 ? 0 : 1]);
     /* two quads at right angles, each drawn from both sides */
     for (var q = 0; q < 2; q++) {
@@ -23594,9 +23792,38 @@ function paintGround(t, DET) {
   G.fieldTones.forEach(function (fd) {
     var fw = fd.x1 - fd.x0, fh = fd.y1 - fd.y0;
     var tone = { pasture: 'rgba(66,92,46,.22)', park: 'rgba(78,112,52,.32)', hay: 'rgba(150,152,92,.36)',
-                 wheat: 'rgba(84,116,82,.42)', plough: 'rgba(92,76,52,.62)' }[fd.k];
+                 wheat: 'rgba(84,116,82,.42)', plough: 'rgba(92,76,52,.62)',
+                 rye: 'rgba(44,80,40,.62)', tilled: 'rgba(76,60,42,.9)', sown: 'rgba(108,90,66,.82)',
+                 clover: 'rgba(38,72,34,.6)', meadow: 'rgba(92,122,52,.4)' }[fd.k];
     if (!tone) return;
     t.fillStyle = tone; t.fillRect(fd.x0, fd.y0, fw, fh);
+    /* a spring field in a strip: the winter rye in its drills, the furrows of a field
+       ploughed and not yet harrowed, the fine lines the harrow leaves on one that is sown,
+       clover in dark clumps and a meadow with the dandelions out, each strip bounded by its
+       balk of rough grass, which is what makes a patchwork of strips read from above */
+    var strip = { rye: 1, tilled: 1, sown: 1, clover: 1, meadow: 1 }[fd.k], lng = fw > fh, rk, rn;
+    if (strip) {
+      var lines = { rye: ['rgba(30,60,28,.4)', 1.4, 5], tilled: ['rgba(44,34,24,.62)', 2.1, 4.6], sown: ['rgba(138,118,88,.32)', 1, 3.4] }[fd.k];
+      if (lines) {
+        t.strokeStyle = lines[0]; t.lineWidth = lines[1];
+        t.beginPath();
+        if (lng) for (rk = fd.y0 + 3; rk < fd.y1 - 2; rk += lines[2]) { t.moveTo(fd.x0 + 3, rk); t.lineTo(fd.x1 - 3, rk); }
+        else for (rk = fd.x0 + 3; rk < fd.x1 - 2; rk += lines[2]) { t.moveTo(rk, fd.y0 + 3); t.lineTo(rk, fd.y1 - 3); }
+        t.stroke();
+      }
+      if (fd.k === 'clover') for (rn = fw * fh / 900; rn > 0; rn--) {
+        t.fillStyle = srand() < .5 ? 'rgba(36,74,30,.3)' : 'rgba(92,128,60,.22)';
+        t.beginPath(); t.ellipse(srange(fd.x0 + 4, fd.x1 - 4), srange(fd.y0 + 4, fd.y1 - 4), srange(4, 11), srange(3, 8), srand() * 3, 0, TAU); t.fill();
+      }
+      if (fd.k === 'meadow') for (rn = fw * fh / 260; rn > 0; rn--) {
+        t.fillStyle = srand() < .8 ? 'rgba(226,198,58,.6)' : 'rgba(236,234,220,.55)';
+        t.fillRect(srange(fd.x0 + 3, fd.x1 - 3), srange(fd.y0 + 3, fd.y1 - 3), 1.6, 1.6);
+      }
+      t.strokeStyle = 'rgba(98,124,56,.78)'; t.lineWidth = 3.6;
+      t.strokeRect(fd.x0, fd.y0, fw, fh);
+      t.strokeStyle = 'rgba(70,96,40,.35)'; t.lineWidth = 1.2;
+      t.strokeRect(fd.x0 + 2.2, fd.y0 + 2.2, fw - 4.4, fh - 4.4);
+    }
     if (fd.k === 'wheat' || fd.k === 'plough') {
       t.strokeStyle = fd.k === 'wheat' ? 'rgba(60,84,58,.28)' : 'rgba(84,104,58,.5)'; t.lineWidth = fd.k === 'wheat' ? 1.2 : 2.2;
       t.beginPath();
@@ -58287,7 +58514,13 @@ var MAPS = {
             sub: 'The capital of ruins on the evening the 29th Infantry Division came into it. Three a side: fight up the Bayeux road, over the rock the old town stands on, and across the Vire to the station, or hold it with the 352. Infanterie-Division.',
             cards: [['THE ENCLOS', 'The old town stands walled on its rock. A vehicle gets onto it by three gates; a man by the stairs from the quay as well.'],
                     ['THE VIRE', 'The river is crossed at three bridges and two footbridges. The station and the yards are on the far bank.']],
-            brief: 'Three lanes and three victory flags on the midline: the Champ de Mars, Notre-Dame and the station. Cut-off sectors stop producing resources.' }
+            brief: 'Three lanes and three victory flags on the midline: the Champ de Mars, Notre-Dame and the station. Cut-off sectors stop producing resources.' },
+  elbe:   { make: elbeMapData,
+            eyebrow: 'SAXONY · CENTRAL GERMANY · 25 APRIL 1945', title: 'ROSSWITZ', dtg: '251200 APR 45',
+            sub: 'Flat farmland short of the Elbe on the day the Allied armies met on the river: a village for each side and the manor of Gut Rosswitz in its walled park between them. Three a side, the 29th Infantry Division or the Red Army against the 352. Infanterie-Division.',
+            cards: [['OPEN FIELDS', 'The flanks are tank country: long sight lines and nothing to stop a hull but what stands in the fields.'],
+                    ['STRONGPOINTS', 'The farms, the stacks, the carts and the manor\'s wall are where infantry lives. Move from one to the next.']],
+            brief: 'Three victory flags on the midline: the windmill, Gut Rosswitz and the field barn. Cut-off sectors stop producing resources.' }
 };
 /* The ground last picked is kept on the device, the way the control scheme is, and Omaha is
    the ground when nothing is kept. A key that names a map the game no longer offers (Ortona
@@ -61207,7 +61440,8 @@ function edDockLight() {
    for whoever wants them. */
 var ED_SHIPPED = [
   ['omaha', 'Omaha Beach', 'Dog and Easy, 6 June 1944: from the water up the draws to the bocage'],
-  ['stlo', 'Saint-Lô', '18 July 1944: three a side, the old town on its rock and the station over the Vire']];
+  ['stlo', 'Saint-Lô', '18 July 1944: three a side, the old town on its rock and the station over the Vire'],
+  ['elbe', 'Rosswitz', '25 April 1945: three a side over Saxon farmland, a village each and the manor between']];
 var ED_STARTS = [
   ['country', 'COUNTRY', 'Farms, groves and field walls round a hamlet, a trench line in front of each side'],
   ['village', 'VILLAGE', 'A crossroads village with a square, gardens and the fields round it'],
@@ -62491,6 +62725,7 @@ function edPanelLoad() {
   html += '<div class="edh">THE SHIPPED MAPS</div>';
   html += '<div class="edli"><div class="t">Omaha Beach<small>Dog and Easy, 6 June 1944, from the water to the village</small></div><button class="edb" id="edloadomaha">LOAD</button></div>';
   html += '<div class="edli"><div class="t">Saint-L\u00f4<small>18 July 1944, three a side through the old town and over the Vire</small></div><button class="edb" id="edloadstlo">LOAD</button></div>';
+  html += '<div class="edli"><div class="t">Rosswitz<small>25 April 1945, three a side over Saxon farmland to the manor</small></div><button class="edb" id="edloadelbe">LOAD</button></div>';
   edPanel('LOAD A MAP', html);
   document.querySelectorAll('#edpanelbody [data-load]').forEach(function (b) { b.addEventListener('click', function () { edLoadSlot(decodeURIComponent(b.getAttribute('data-load'))); }); });
   document.querySelectorAll('#edpanelbody [data-kill]').forEach(function (b) { b.addEventListener('click', function () { edDeleteSlot(decodeURIComponent(b.getAttribute('data-kill'))); }); });
@@ -62502,6 +62737,7 @@ function edPanelLoad() {
   }
   el('edloadomaha').addEventListener('click', function () { edLoadShipped('omaha', 'Omaha Beach'); });
   el('edloadstlo').addEventListener('click', function () { edLoadShipped('stlo', 'Saint-L\u00f4'); });
+  el('edloadelbe').addEventListener('click', function () { edLoadShipped('elbe', 'Rosswitz'); });
 }
 function edPanelName(title, label, value, onok) {
   edPanel(title, '<div class="edh">' + label + '</div><input type="text" id="edpname" value="' + value.replace(/"/g, '') + '" maxlength="40"><div class="edbtns" style="display:flex;gap:6px;margin-top:8px"><button class="edb" id="edpok" style="flex:1;min-height:44px">OK</button><button class="edb warn" id="edpcancel" style="flex:1;min-height:44px">CANCEL</button></div>');
@@ -62740,6 +62976,7 @@ function edPanelCheckShow() {
   }
   el('edmomaha').addEventListener('click', function () { edReload('omaha', 'Omaha Beach'); });
   el('edmstlo').addEventListener('click', function () { edReload('stlo', 'Saint-L\u00f4'); });
+  el('edmelbe').addEventListener('click', function () { edReload('elbe', 'Rosswitz'); });
   el('edmexport').addEventListener('click', function () { edExport(); edMenu(false); });
   el('edmimport').addEventListener('click', function () { el('edfile').click(); edMenu(false); });
   el('edfile').addEventListener('change', function (ev) { if (ev.target.files[0]) edImportFile(ev.target.files[0]); ev.target.value = ''; });
