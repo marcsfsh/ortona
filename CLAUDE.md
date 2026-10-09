@@ -2288,6 +2288,26 @@ and the tank walks come to 80,461 units from the American headquarters against 8
 German. In ninety seconds of a 3v3 with the player's slot left empty, the three German brains
 had the three victory flags and the forward row.
 
+**The second stage is the country's own buildings**, drawn by builders of their own (`SAX` is the
+palette, tagged in `registerMaterials`). Six are `nhouse` styles in `NSTYLE`, so they are standing,
+garrisonable and brought down like any house: the farmhouse (`sxhouse`, a rendered ground floor on a
+sandstone plinth and a framed storey standing out over it), the barn (`sxbarn`, framed to the eaves
+with brick between the timbers, half-hipped, the cart gate through both long sides), the stable
+(`sxstable`, a brick byre with a framed knee wall and the loft over it), the field barn (`sxfbarn`,
+boarded and battened with threshing doors in both ends), the manor (`sxmanor`, two storeys rendered
+yellow under a hipped roof with dormers, the middle forward under a pediment) and the village church
+(`sxchurch`, a west tower with the baroque cap of a Saxon village church). The timbers are laid by
+`sxFrame` and `sxFrameX` (sill, rail, plate, a post a bay and a brace in each end bay) and every roof
+by `sxRoof`, gabled or half-hipped. Nine are `FEATURE`s: the post mill (`postmill`, the body on its
+trestle with four lattice sails and the tail pole), the straw stack (`straw`, the long Feldmiete),
+the round haystack (`hay`), the hay wagon (`haywagon`), the stone cross (`stonecross`), the field
+chapel (`chapel`), the woodpile, the dung heap and the yard gate; the last three and the cross are
+`solid: 0`. Two trees go with them, the lime and the poplar (`tree` with `kind`). All of it is on the
+editor's SAXONY tray. Two things about building them: `sxLoftX` and `sxLoftZ` loft a convex section
+along x or a profile about z, which is what the stacks, the load and the church's cap are; and a roof
+slope with a vertex twice over (a hexagon with its hip corners at the ridge) draws inside out and
+black, so a plain gable is laid as a quad.
+
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
 position; `updateModels` animates the individual soldiers. `tools/move.mjs` is the card
