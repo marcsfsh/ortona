@@ -258,6 +258,36 @@ function checkMap(map) {
     }
   }
 
+  /* ---- 6. on a map laid open (`apart`), no two buildings face each other across a
+     street. A building fronts a street when its near side is within a hundred of the
+     carriageway; two that front one segment from opposite sides must stand a building's
+     length apart along it (140), so the most they can be is across the corner from each
+     other. A post mill counts, being a building to the eye. ---- */
+  if (map.apart) {
+    const bl = houses.concat(farms).concat(of('feature').filter(e => e.look === 'postmill'));
+    for (const r of roads) for (const [x1, y1, x2, y2] of segs(r.pts)) {
+      const L = Math.hypot(x2 - x1, y2 - y1); if (L < 1) continue;
+      const dx = (x2 - x1) / L, dy = (y2 - y1) / L, half = (r.width || 48) / 2;
+      const front = bl.map(b => {
+        let a0 = 1e9, a1 = -1e9, n0 = 1e9, n1 = -1e9;
+        for (const [cx, cy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+          const px = b.x + cx * b.w / 2 - x1, py = b.y + cy * b.h / 2 - y1;
+          const a = px * dx + py * dy, n = -px * dy + py * dx;
+          a0 = Math.min(a0, a); a1 = Math.max(a1, a); n0 = Math.min(n0, n); n1 = Math.max(n1, n);
+        }
+        if (a1 < 0 || a0 > L) return null;
+        if (n0 > 0 && n0 < half + 100) return { b, a0, a1, s: 1 };
+        if (n1 < 0 && -n1 < half + 100) return { b, a0, a1, s: -1 };
+        return null;
+      }).filter(Boolean);
+      for (const p of front) for (const q of front) {
+        if (p.s !== 1 || q.s !== -1) continue;
+        const gap = Math.max(q.a0 - p.a1, p.a0 - q.a1);
+        if (gap < 140) bad('across', `the building at (${p.b.x}, ${p.b.y}) faces the one at (${q.b.x}, ${q.b.y}) across the street from (${r.pts[0].x}, ${r.pts[0].y}), ${Math.round(gap)} apart along it`);
+      }
+    }
+  }
+
   /* ---- 5. streets ---------------------------------------------------------- */
   for (const r of roads) {
     if (r.width < 24) bad('street/narrow', `a street of width ${r.width} at (${r.pts[0].x}, ${r.pts[0].y})`);

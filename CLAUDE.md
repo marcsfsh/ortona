@@ -14,7 +14,7 @@ their stats are listed in `docs/soviet-roster.csv`, and none of them is built un
 by name. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
-Two maps ship and a third is kept hidden. **Omaha Beach**, the Dog and Easy sectors on the
+Three maps ship and a fourth is kept hidden. **Omaha Beach**, the Dog and Easy sectors on the
 morning of the 6th of June 1944, is the first map that is not a field with a headquarters at
 either end: a corridor 1500 across and 4000 deep, the Americans starting on the sand at the
 bottom among the craft that brought them in and the Germans in a manor in the bocage at the
@@ -22,7 +22,11 @@ top, with the seawall and the Atlantic Wall across the middle and two draws up t
 behind it that are the only way armour gets off the beach. **Saint-Lô**, the 18th of July
 1944, is the town on the Vire the 29th came into that evening, laid for three a side: 3800 by
 2800, the old town walled on its rock in the middle, the river and the station on the right
-and the faubourgs on the left, laid in five stages (see *Saint-Lô*). **The Gothic Line**, the
+and the faubourgs on the left, laid in five stages (see *Saint-Lô*). **Rosswitz**, the 25th of
+April 1945, is flat Saxon farmland short of the Elbe, laid for three a side and for either Allied
+army against the 352nd: a village for each side and the manor of Gut Rosswitz in its walled park
+between them, the size of Saint-Lô and mirrored the same way, and being laid in stages; the first
+is in (see *Rosswitz*). **The Gothic Line**, the
 Foglia valley at the end of August 1944, two ridges with fourteen hundred units of no man's
 land between them, is hidden (`MAPS.gothic.hidden`): neither the title screen nor the editor
 offers it, and it is kept to be rebuilt as a map of the eastern front, so the map check and the
@@ -38,7 +42,7 @@ names no country, along with the Italian town house and the rest of the pieces O
 of. Every figure in this file measured on Ortona, which is most of the older ones, is history:
 it was true of that map and cannot be measured again.
 
-The two grounds are picked on the title screen under GROUND and both open in the editor. The
+The three grounds are picked on the title screen under GROUND and all three open in the editor. The
 title screen keeps the last one picked on the device (`ORT_MAP`, `mapLoad`) and opens on Omaha
 when nothing is kept, and a key that names a map it no longer offers is no choice at all. The
 tools are told which ground to run on instead (see *Verifying*): Saint-Lô, unless a card is
@@ -1030,6 +1034,13 @@ bay's width off its goods shed and that is a real place and not a slot. Calibrat
 wagon and a tree on a bridge in a scratch copy: all three came back, and the shipped maps
 read clean.
 
+**And on a map laid open it keeps buildings off each other's doorsteps.** A map whose data says
+`apart` (Rosswitz) is asked one more rule, `across`: no two buildings front the same stretch of street
+from opposite sides unless they stand 140 apart along it. A building fronts a street when its near side
+is within a hundred of the carriageway, and a post mill counts as a building. Its first run on the
+stage-3 Rosswitz found forty, every farm in both villages among them and the twin field barns and mills
+facing each other across the midline track.
+
 ### `tools/lint.mjs` - the rules, mechanically
 
 Checks what a screenshot cannot: that the script still parses, that the file is
@@ -1234,6 +1245,15 @@ onto, a twin on the same footprint for every solid thing however each half dress
 cover inside 110 of every flag, every one of the 96 walks from a headquarters to a flag
 arriving and the two halves' walks within two per cent, and ninety seconds of battle with
 every brain raising something. It runs before the Omaha rows, which reload.
+
+**And Rosswitz is asked the same, with a tank beside the man.** The ground against its own
+reflection, six headquarters on the map's own spots with ground to march out onto, fifteen flags
+with three of them victory flags, and all ninety walks from a headquarters to a flag arriving for
+a man and for a tank with the two halves within two per cent, because the flanks are laid for
+armour and a flank a hull cannot cross is not one; then ninety seconds of battle with every brain
+raising something. It prints how many flags have no tier-3 cover inside 110 and does not ask it
+yet, because the strongpoints round the flags are the map's next stage. It is in the base areas
+row as well, with Saint-Lô and the Gothic Line.
 
 **And a fourth asks the beach which army it is fought by.** The side button on the title screen has
 to name the 29th Infantry Division, the sections the Allied side opens with have to be American
@@ -2230,6 +2250,110 @@ the first at 6:24 and the 29th the second at 7:18, the army at the top end both 
 Germans led on points early in both. Two battles are two coins; the ground is its own mirror
 and the walks agree, so what is left is the armies and the brains, and it wants more runs than
 there was time for to say anything about either. All three lanes were fought over in both.
+
+**Rosswitz.** The fifth map, and the first on German soil: flat Saxon farmland a few miles short
+of the Elbe at noon on the 25th of April 1945, the day the American and the Soviet armies met on
+the river, so it suits either Allied army against the 352nd. It was asked for as a generic German
+map for both matchups, and the answers that shaped it were these: central Germany in the spring
+of 1945, flat farmland with none of the natural features offered (no river, ridge, woods, ponds
+or sunken lanes), a village for each side with the field between them, half-timbered four-sided
+farmyards, lightly touched by the fighting, hasty field works, the manor of Gut Rosswitz in the
+middle, the victory flags on the midline, bright noon, and three a side at Saint-Lô's size. And
+one brief over all of it: it has to suit tank warfare and infantry warfare both, with small
+strongpoints for the men, natural or made and not only defensive works (carts, hay and straw
+stacks, a farm, a barn), and open ground between them for the tanks.
+
+It is 3800 by 2800 and mirrored about y 1400 in everything that plays (`elbeMapData`, with
+`pair` and `both` as on Saint-Lô), and dressed differently on each half, more so than Saint-Lô:
+the fields are already laid in the same blocks with their own strips and crops on each half. Three
+lanes, each with a headquarters at either end: the centre lane is the infantry's, Wendelsdorf (the
+German half's village, Schönfeld on the American), the lime avenue, the park and the manor one
+after another; the two flanks are open fields for armour, with a flag on a small strongpoint every
+few hundred units (the Vorwerk and the Schäferei by the headquarters, the wayside cross and the
+straw stacks on the forward row, the windmill and the field barn on the midline). The Landstrasse
+crosses the map along y 700 through each village, tarred outside it and cobbled through it; below
+it the farm tracks are rolled dirt.
+
+The ground is flat (`elbeZ`, a drift of two units either way and a little grain), with no water,
+so a sight line across a flank is as long as the eye; the base areas are levelled out of it like
+any other (`base` with an `f` of 220, because the village's north row stands close behind them).
+Its own soil (`SOILS.elbe`, loess and the first green of the year) and its own light
+(`ATMO_ELBE`, the sun at fifty-two degrees due south and a little west, which is down the screen
+and to the right, white and hard). A field is paint and nothing else, and the painter knows five
+more kinds for it (`rye` in its drills, `tilled` in furrows, `sown` harrowed, `clover` in clumps,
+`meadow` with the dandelions out), each strip bounded by a balk of rough grass, laid in blocks of
+parallel strips (`gewann`) the way the country round a Saxon village was ploughed. A country with
+`bareFields` grows no grass on a field ploughed or sown this spring (`fieldBare`).
+
+It is laid in stages, as Omaha and Saint-Lô were, each photographed and signed off before the
+next: the ground, the roads and tracks, the fields, the park wall, the headquarters and the flags
+are the first. The farmyards, the manor and its farm, the church, the windmill, the barns, the
+stacks, the carts and the trees are the second and third, then what the fighting has done to it
+and the field works, then the flags and the balance. Measured at the first stage: the ground is
+its own reflection to the float, every one of the ninety walks for a man and for a tank arrives,
+and the tank walks come to 80,461 units from the American headquarters against 80,545 from the
+German. In ninety seconds of a 3v3 with the player's slot left empty, the three German brains
+had the three victory flags and the forward row.
+
+**The second stage is the country's own buildings**, drawn by builders of their own (`SAX` is the
+palette, tagged in `registerMaterials`). Six are `nhouse` styles in `NSTYLE`, so they are standing,
+garrisonable and brought down like any house: the farmhouse (`sxhouse`, a rendered ground floor on a
+sandstone plinth and a framed storey standing out over it), the barn (`sxbarn`, framed to the eaves
+with brick between the timbers, half-hipped, the cart gate through both long sides), the stable
+(`sxstable`, a brick byre with a framed knee wall and the loft over it), the field barn (`sxfbarn`,
+boarded and battened with threshing doors in both ends), the manor (`sxmanor`, two storeys rendered
+yellow under a hipped roof with dormers, the middle forward under a pediment) and the village church
+(`sxchurch`, a west tower with the baroque cap of a Saxon village church). The timbers are laid by
+`sxFrame` and `sxFrameX` (sill, rail, plate, a post a bay and a brace in each end bay) and every roof
+by `sxRoof`, gabled or half-hipped. Nine are `FEATURE`s: the post mill (`postmill`, the body on its
+trestle with four lattice sails and the tail pole), the straw stack (`straw`, the long Feldmiete),
+the round haystack (`hay`), the hay wagon (`haywagon`), the stone cross (`stonecross`), the field
+chapel (`chapel`), the woodpile, the dung heap and the yard gate; the last three and the cross are
+`solid: 0`. Two trees go with them, the lime and the poplar (`tree` with `kind`). All of it is on the
+editor's SAXONY tray. Two things about building them: `sxLoftX` and `sxLoftZ` loft a convex section
+along x or a profile about z, which is what the stacks, the load and the church's cap are; and a roof
+slope with a vertex twice over (a hexagon with its hip corners at the ridge) draws inside out and
+black, so a plain gable is laid as a quad.
+
+**The third stage lays them** (in `elbeMapData`). A farm is one building or two, never more
+(`farm`, `paved` of kind `yard`): one is the house and the byre under one long roof along the street
+with the yard behind it (`o.one`), and two is an L, the house along the street and the barn at right
+angles to it with its street end built against the back of one end of the house, so the two stand on
+one wall and leave no slot, and the cobbled yard is the inside of the L. It was four buildings round a
+yard at first, and the player had it cut down to this. `farms` lays a farm and its twin on the other
+half on the same footprint with its dressing drawn off other dice (`DRESS`: the dung heap, a wagon, a
+cart, a lime by the house, apple trees, a haystack; the woodpile against the back of the house is
+solid and so is in the same place on both). `bld`, `feat` and `tree` do the same for a single
+building, a feature and a tree. **Nothing faces anything across a street** (the player's rule, and the
+map check's `across` on a map that says `apart`): a building whose near side is within a hundred of a
+carriageway fronts it, and two that front one stretch from opposite sides stand at least 140 apart along
+it, so the most two can be is across the corner from each other. So each village is a street village
+whose frontages take turns along the Landstrasse, from the west: the inn on the south short of the lane,
+an L farm on the north, a long farm on the south at the corner of the avenue, the church on the north at
+the corner of the headquarters road, an L farm on the south and the smithy on the north at the far end,
+with a long farm up the west side of the headquarters road well short of the church, and the green where
+the avenue leaves the street with nothing on its east side. The outlying farms by the flank headquarters
+carry those two flags in their yards (the Vorwerk at 430, 552 and the Schäferei at 3370, 552), with
+nothing across the road from them. On the forward row the west flank has a field barn, a straw stack, the
+stone cross and a lime at the junction, the east flank two straw stacks, two haystacks and a hay wagon,
+and the avenue one lodge and the limes down to the park gate. On the midline, where a twin pair would
+face each other across the midline track: one post mill standing on the midline in the west with the
+track stopping either side of it, Gut Rosswitz in its park in the middle (the manor across the midline
+facing the west gate, its two barns north and south of the cobbled courtyard east of it, where the flag
+is), and one field barn on the midline in the east at the end of its track.
+
+**And then the life of the place**, laid after everything else by a scatter that puts each piece on the
+German half and on the same spot on the American, and only where it stands clear of every road, building,
+yard, tree and flag already down on both halves (`clear`): an avenue of apples, with the odd lime, along
+both verges of the tarred Landstrasse outside the villages, telegraph poles along its south verge, bushes
+in clumps along the verges of the dirt tracks, a tree or a bush at a corner of the balks, long grass
+patches on the meadows and the clover (`LAND.tufts` puts 2.4 times the tufts on a map that asks, and
+`LAND.patch` the share of them in its patches, which a hand-laid map had none of), sixteen copses and
+thirty lone trees in the open, fewer on the flanks, and what a farm leaves in its fields in April: carts,
+two hay wagons, woodpiles, straw and round stacks, dung heaps on the tilled strips, two wayside crosses and
+a field chapel. Nothing of it is solid but the stacks, the woodpiles, the chapel and the wagons, so the open
+fields stay open to a hull, and a tree or a bush is tier-1 cover to a man. 32 buildings, 69 solid features
+and 291 trees and bushes.
 
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
