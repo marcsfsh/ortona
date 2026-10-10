@@ -4690,7 +4690,7 @@ var LANDS = {
      Saint-Lo, and fields that have been turned over this spring growing no grass */
   elbe: { name: 'elbe', build: landElbe, at: elbeZ, coast: null, rail: null, val: [],
           padR: 210, padY: 150, padM: 120, soil: 'elbe', atmo: ATMO_ELBE, hand: 1, mirrorY: 1400, bareFields: 1,
-          base: { a: 440, f: 220, g: .015 } }
+          base: { a: 440, f: 220, g: .015 }, tufts: 2.4, patch: .6 }
 };
 var LAND = LANDS.ortona;
 /* Where the armies deploy, which is where their headquarters stand. This was two
@@ -6333,6 +6333,127 @@ function elbeMapData() {
   E.push({ t: 'nhouse', style: 'sxfbarn', x: 3098, y: MID, w: 56, h: 130, s: dice(50, 1), flip: 0 });
   feat('straw', 2920, 1335, 80, 34, 51);
   feat('hay', 2992, 1342, 26, 26, 52);
+
+  /* ---- the life of the place. A fruit avenue along the Landstrasse outside the villages
+     and the telegraph poles beside it, bushes along the verges of the farm tracks, a tree or
+     a bush at a corner of the balks here and there and a copse or two in the open, and what a
+     farm leaves out in its fields in April: round stacks and a straw stack, carts, a wagon,
+     woodpiles, dung heaps spread for the ploughing, a wayside cross and a field chapel, and
+     the grass long on the meadows. Every piece is laid on the German half and on the American
+     on the same spot, and only where it stands clear of every road, building, yard, tree and
+     flag already down; nothing here is solid but the stacks, the woodpiles, the chapel and
+     the wagon, so the open fields stay open to a hull. ---- */
+  var OCC = [], TRE = [], RDS = [], FLG = [];
+  E.forEach(function (e) {
+    if (e.t === 'nhouse' || (e.t === 'feature' && e.solid !== 0)) OCC.push([e.x - e.w / 2, e.y - e.h / 2, e.x + e.w / 2, e.y + e.h / 2]);
+    else if (e.t === 'feature' || e.t === 'cart') OCC.push([e.x - 14, e.y - 14, e.x + 14, e.y + 14]);
+    else if (e.t === 'paved') OCC.push([e.x, e.y, e.x + e.w, e.y + e.h]);
+    else if (e.t === 'tree' || e.t === 'scrub') TRE.push([e.x, e.y, e.r || 12]);
+    else if (e.t === 'road') for (var i = 0; i < e.pts.length - 1; i++) RDS.push([e.pts[i].x, e.pts[i].y, e.pts[i + 1].x, e.pts[i + 1].y, e.width]);
+    else if (e.t === 'sector' || e.t === 'hq') FLG.push([e.x, e.y, e.t === 'hq' ? 240 : 40]);
+  });
+  function clear1(x, y, r) {
+    var i, b, t;
+    if (x < r + 20 || x > 3780 - r || y < 220) return false;
+    for (i = 0; i < OCC.length; i++) { b = OCC[i]; if (x > b[0] - r - 8 && x < b[2] + r + 8 && y > b[1] - r - 8 && y < b[3] + r + 8) return false; }
+    for (i = 0; i < RDS.length; i++) { b = RDS[i]; if (distToSeg(x, y, b[0], b[1], b[2], b[3]) < b[4] / 2 + r + 5) return false; }
+    for (i = 0; i < TRE.length; i++) { t = TRE[i]; if (Math.hypot(x - t[0], y - t[1]) < t[2] + r + 6) return false; }
+    for (i = 0; i < FLG.length; i++) { t = FLG[i]; if (Math.hypot(x - t[0], y - t[1]) < t[2] + r) return false; }
+    return true;
+  }
+  /* clear on both halves, since the dressing round the farms is drawn off different dice */
+  function clear(x, y, r) { return y < MID - r - 20 && clear1(x, y, r) && clear1(x, my(y), r); }
+  function takeT(x, y, r) { TRE.push([x, y, r], [x, my(y), r]); }
+  function takeB(x, y, r) { OCC.push([x - r, y - r, x + r, y + r], [x - r, my(y) - r, x + r, my(y) + r]); }
+  function bush(x, y, r) {
+    if (!clear(x, y, r)) return;
+    E.push({ t: 'scrub', x: x, y: y, r: r, s: rr() });
+    E.push({ t: 'scrub', x: x + Math.round((rr() - .5) * 8), y: my(y) + Math.round((rr() - .5) * 8), r: r, s: rr() });
+    takeT(x, y, r + 4);
+  }
+  function tree1(kind, x, y, r) { if (!clear(x, y, r)) return false; tree(kind, x, y, r, 200 + sd); sd++; takeT(x, y, r + 4); return true; }
+  function thing(look, x, y, w, h, solid, a) {
+    var rad = Math.max(w, h) / 2;
+    if (!clear(x, y, rad)) return false;
+    feat(look, x, y, w, h, 300 + sd, solid, a); sd++; takeB(x, y, rad + 4); return true;
+  }
+  function cart(x, y, a) {
+    if (!clear(x, y, 22)) return false;
+    E.push({ t: 'cart', x: x, y: y, a: a }, { t: 'cart', x: x, y: my(y), a: -a });
+    takeB(x, y, 24); return true;
+  }
+  var ti, tx, ty, k, g;
+  /* the fruit avenue: apples and the odd pear-shaped lime along the tarred stretches, both
+     verges, short of every junction; the poles along the south verge the whole length */
+  [[30, 600], [660, 1170], [1230, 1320], [2480, 2570], [2650, 3150], [3210, 3770]].forEach(function (sg) {
+    for (tx = sg[0] + 20; tx < sg[1] - 20; tx += 64) {
+      if (Math.abs(tx - 250) < 50 || Math.abs(tx - 3550) < 50) continue;
+      ty = tx < 620 ? 690 + (tx / 620) * 10 : tx > 3180 ? 700 - ((tx - 3180) / 620) * 10 : 702;
+      if (rr() < .82) tree1(rr() < .85 ? 'apple' : 'lime', tx + Math.round((rr() - .5) * 8), Math.round(ty - 42), 11 + Math.round(rr() * 3));
+      if (rr() < .82) tree1(rr() < .85 ? 'apple' : 'lime', tx + 30 + Math.round((rr() - .5) * 8), Math.round(ty + 42), 11 + Math.round(rr() * 3));
+    }
+  });
+  for (tx = 60; tx < 3760; tx += 105) {
+    ty = 754;
+    if (clear(tx, ty, 4)) { E.push({ t: 'pole', x: tx, y: ty }, { t: 'pole', x: tx, y: my(ty) }); takeB(tx, ty, 6); }
+  }
+  /* bushes along the verges of the dirt tracks, in clumps of one to three */
+  E.filter(function (e) { return e.t === 'road' && !e.style && e.pts[0].y < MID; }).forEach(function (r) {
+    for (var i = 0; i < r.pts.length - 1; i++) {
+      var a = r.pts[i], b = r.pts[i + 1], L = Math.hypot(b.x - a.x, b.y - a.y), nx = -(b.y - a.y) / L, ny = (b.x - a.x) / L;
+      for (var d = 40; d < L - 40; d += 46) {
+        if (rr() > .42) continue;
+        var sd2 = rr() < .5 ? -1 : 1, off = r.width / 2 + 14 + rr() * 14, n = 1 + Math.floor(rr() * 3);
+        for (var j = 0; j < n; j++) {
+          var t = (d + j * 17) / L;
+          bush(Math.round(a.x + (b.x - a.x) * t + nx * sd2 * (off + j * 3)), Math.round(a.y + (b.y - a.y) * t + ny * sd2 * (off + j * 3)), 8 + Math.round(rr() * 6));
+        }
+      }
+    }
+  });
+  /* the balks: at a corner of a strip now and then a tree or a bush; on the meadows and the
+     clover the grass stands long, with a round stack or two out on them */
+  E.filter(function (e) { return e.t === 'field' && e.k !== 'park' && e.y + e.h < MID; }).forEach(function (f) {
+    var u = rr();
+    if (u < .22) tree1(rr() < .5 ? 'oak' : rr() < .6 ? 'lime' : 'poplar', f.x + (rr() < .5 ? 6 : f.w - 6), f.y + (rr() < .5 ? 6 : f.h - 6), 14 + Math.round(rr() * 6));
+    else if (u < .5) bush(Math.round(f.x + (rr() < .5 ? 8 : f.w - 8)), Math.round(f.y + (rr() < .5 ? 8 : f.h - 8)), 9 + Math.round(rr() * 5));
+    if (f.k === 'meadow' || f.k === 'clover') {
+      var gx = Math.round(f.x + f.w / 2), gy = Math.round(f.y + f.h / 2), gr = Math.round(Math.min(130, Math.max(f.w, f.h) * .45));
+      E.push({ t: 'grass', x: gx, y: gy, r: gr, tone: .7 }, { t: 'grass', x: gx, y: my(gy), r: gr, tone: .7 });
+      if (f.k === 'meadow' && rr() < .5) thing('hay', Math.round(f.x + f.w * (.25 + rr() * .5)), Math.round(f.y + f.h * (.25 + rr() * .5)), 24, 24);
+    } else if (f.k === 'tilled' && rr() < .3) thing('dung', Math.round(f.x + f.w * (.2 + rr() * .6)), Math.round(f.y + f.h * (.2 + rr() * .6)), 26, 20, 0);
+  });
+  /* copses and lone trees out in the open, fewer on the flanks than between them */
+  for (ti = 0, g = 0; ti < 220 && g < 16; ti++) {
+    tx = 120 + rr() * 3560; ty = 260 + rr() * 1060;
+    if ((tx < 760 || tx > 3040) && rr() < .55) continue;
+    if (!clear(tx, ty, 60)) continue;
+    g++;
+    var nT = 2 + Math.floor(rr() * 4), nB = 2 + Math.floor(rr() * 4);
+    for (k = 0; k < nT; k++) tree1(rr() < .6 ? 'oak' : 'lime', Math.round(tx + (rr() - .5) * 70), Math.round(ty + (rr() - .5) * 60), 15 + Math.round(rr() * 6));
+    for (k = 0; k < nB; k++) bush(Math.round(tx + (rr() - .5) * 100), Math.round(ty + (rr() - .5) * 80), 9 + Math.round(rr() * 5));
+  }
+  for (ti = 0, g = 0; ti < 300 && g < 30; ti++) {
+    tx = 100 + rr() * 3600; ty = 250 + rr() * 1080;
+    if (tree1(rr() < .5 ? 'oak' : rr() < .5 ? 'lime' : 'poplar', Math.round(tx), Math.round(ty), 14 + Math.round(rr() * 7))) g++;
+  }
+  /* what is left out in the fields: carts, a wagon, woodpiles, straw and round stacks, dung
+     heaps, a wayside cross and a field chapel */
+  var THINGS = [['cart', 9], ['haywagon', 2], ['woodpile', 5], ['straw', 3], ['hay', 10], ['dung', 6], ['stonecross', 2], ['chapel', 1]];
+  THINGS.forEach(function (th) {
+    for (var n = 0, tr = 0; n < th[1] && tr < 200; tr++) {
+      var x = Math.round(120 + rr() * 3560), y = Math.round(260 + rr() * 1060), a = (rr() - .5) * 3, ok;
+      if (th[0] === 'cart') ok = cart(x, y, a);
+      else if (th[0] === 'haywagon') ok = thing('haywagon', x, y, 56, 30, 0, a);
+      else if (th[0] === 'woodpile') ok = thing('woodpile', x, y, 36, 8);
+      else if (th[0] === 'straw') ok = thing('straw', x, y, 80, 34);
+      else if (th[0] === 'hay') ok = thing('hay', x, y, 24, 24);
+      else if (th[0] === 'dung') ok = thing('dung', x, y, 26, 20, 0);
+      else if (th[0] === 'stonecross') ok = thing('stonecross', x, y, 10, 8, 0);
+      else ok = thing('chapel', x, y, 34, 24);
+      if (ok) n++;
+    }
+  });
 
   E = baseOpen(E, null, 'elbe', 3800, 2800);
   return { name: 'Rosswitz', when: 'SAXONY · 25 APR 1945', version: 1, land: 'elbe', w: 3800, h: 2800,
@@ -23232,7 +23353,7 @@ function cypressModel(r) {
 function buildGrass() {
   /* crossed quads carrying the grass tile, scattered over the winter grass patches and
      thinly elsewhere, never on paving, roads, trenches or the sea */
-  var out = [], mi = matIndex('grass'), count = MOB ? 2600 : 5200;
+  var out = [], mi = matIndex('grass'), count = Math.round((MOB ? 2600 : 5200) * (LAND.tufts || 1));
   _s = 90210;
   function blocked(x, y) {
     if (inland(x, y) < 60 || y > railY(x) - 30) return true;
@@ -23249,7 +23370,7 @@ function buildGrass() {
   while (placed < count && tries < count * 6) {
     tries++;
     var gp = G.grass[Math.floor(srand() * G.grass.length)];
-    var inPatch = !LAND.hand && srand() < .78, x, y;
+    var inPatch = G.grass.length && srand() < (LAND.hand ? LAND.patch || 0 : .78), x, y;
     if (inPatch) { var a = srange(0, TAU), rr = Math.sqrt(srand()) * gp.r; x = gp.x + Math.cos(a) * rr; y = gp.y + Math.sin(a) * rr * .62; }
     else { x = srange(40, WORLD.w - 40); y = srange(220, WORLD.h - 40); }
     if (blocked(x, y)) continue;

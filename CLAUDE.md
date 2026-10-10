@@ -2340,8 +2340,20 @@ and the avenue one lodge and the limes down to the park gate. On the midline, wh
 face each other across the midline track: one post mill standing on the midline in the west with the
 track stopping either side of it, Gut Rosswitz in its park in the middle (the manor across the midline
 facing the west gate, its two barns north and south of the cobbled courtyard east of it, where the flag
-is), and one field barn on the midline in the east at the end of its track. 32 buildings, 27 solid
-features and 50 trees.
+is), and one field barn on the midline in the east at the end of its track.
+
+**And then the life of the place**, laid after everything else by a scatter that puts each piece on the
+German half and on the same spot on the American, and only where it stands clear of every road, building,
+yard, tree and flag already down on both halves (`clear`): an avenue of apples, with the odd lime, along
+both verges of the tarred Landstrasse outside the villages, telegraph poles along its south verge, bushes
+in clumps along the verges of the dirt tracks, a tree or a bush at a corner of the balks, long grass
+patches on the meadows and the clover (`LAND.tufts` puts 2.4 times the tufts on a map that asks, and
+`LAND.patch` the share of them in its patches, which a hand-laid map had none of), sixteen copses and
+thirty lone trees in the open, fewer on the flanks, and what a farm leaves in its fields in April: carts,
+two hay wagons, woodpiles, straw and round stacks, dung heaps on the tilled strips, two wayside crosses and
+a field chapel. Nothing of it is solid but the stacks, the woodpiles, the chapel and the wagons, so the open
+fields stay open to a hull, and a tree or a bush is tier-1 cover to a man. 32 buildings, 69 solid features
+and 291 trees and bushes.
 
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
