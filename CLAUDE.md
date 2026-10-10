@@ -1034,6 +1034,13 @@ bay's width off its goods shed and that is a real place and not a slot. Calibrat
 wagon and a tree on a bridge in a scratch copy: all three came back, and the shipped maps
 read clean.
 
+**And on a map laid open it keeps buildings off each other's doorsteps.** A map whose data says
+`apart` (Rosswitz) is asked one more rule, `across`: no two buildings front the same stretch of street
+from opposite sides unless they stand 140 apart along it. A building fronts a street when its near side
+is within a hundred of the carriageway, and a post mill counts as a building. Its first run on the
+stage-3 Rosswitz found forty, every farm in both villages among them and the twin field barns and mills
+facing each other across the midline track.
+
 ### `tools/lint.mjs` - the rules, mechanically
 
 Checks what a screenshot cannot: that the script still parses, that the file is
@@ -2317,17 +2324,24 @@ yard at first, and the player had it cut down to this. `farms` lays a farm and i
 half on the same footprint with its dressing drawn off other dice (`DRESS`: the dung heap, a wagon, a
 cart, a lime by the house, apple trees, a haystack; the woodpile against the back of the house is
 solid and so is in the same place on both). `bld`, `feat` and `tree` do the same for a single
-building, a feature and a tree. Each village is four farms, two of them an L and two single, either side of the
-street on either side of the headquarters road, with a cottage and a smithy on the north side and the church and the inn on
-the south, the green between them where the avenue leaves the street. The outlying farms by the flank
-headquarters carry those two flags in their yards now (the Vorwerk at 430, 552 and the Schäferei at
-3370, 552), each with a long shed below the road. On the forward row the west flank has a field barn,
-a straw stack, the stone cross and a lime at the junction, the east flank two straw stacks, two
-haystacks and a hay wagon, and the avenue two lodges and the limes down to the park gate. On the
-midline: the two post mills either side of the midline track in the west, Gut Rosswitz in its park in
-the middle (the manor across the midline facing the west gate, its two barns north and south of the
-cobbled courtyard east of it, where the flag is), and the two field barns in the east. 43 buildings,
-30 solid features and 52 trees.
+building, a feature and a tree. **Nothing faces anything across a street** (the player's rule, and the
+map check's `across` on a map that says `apart`): a building whose near side is within a hundred of a
+carriageway fronts it, and two that front one stretch from opposite sides stand at least 140 apart along
+it, so the most two can be is across the corner from each other. So each village is a street village
+whose frontages take turns along the Landstrasse, from the west: the inn on the south short of the lane,
+an L farm on the north, a long farm on the south at the corner of the avenue, the church on the north at
+the corner of the headquarters road, an L farm on the south and the smithy on the north at the far end,
+with a long farm up the west side of the headquarters road well short of the church, and the green where
+the avenue leaves the street with nothing on its east side. The outlying farms by the flank headquarters
+carry those two flags in their yards (the Vorwerk at 430, 552 and the Schäferei at 3370, 552), with
+nothing across the road from them. On the forward row the west flank has a field barn, a straw stack, the
+stone cross and a lime at the junction, the east flank two straw stacks, two haystacks and a hay wagon,
+and the avenue one lodge and the limes down to the park gate. On the midline, where a twin pair would
+face each other across the midline track: one post mill standing on the midline in the west with the
+track stopping either side of it, Gut Rosswitz in its park in the middle (the manor across the midline
+facing the west gate, its two barns north and south of the cobbled courtyard east of it, where the flag
+is), and one field barn on the midline in the east at the end of its track. 32 buildings, 27 solid
+features and 50 trees.
 
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
